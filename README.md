@@ -45,16 +45,21 @@ The demo answers three questions, one per audience, all from the same engine.
 Clew computes over a lineage graph. Two extractors produce one today, and
 they emit the same JSON, so everything downstream is identical either way.
 
-**Preferred: Nextflow's native data lineage** (25.04+). Enable it before the
-run and Nextflow records every task, output file, and link into a `.lineage`
-store with content-addressed `lid://` identifiers. The repo ships
-[lineage.config](lineage.config) for this:
+**Preferred: Nextflow's native data lineage** (25.04+). Enable it in your
+Nextflow configuration before the run, exactly as the
+[Nextflow docs](https://www.nextflow.io/docs/latest/data-lineage.html)
+describe:
 
-```bash
-nextflow run <pipeline> -c lineage.config
+```groovy
+lineage {
+    enabled = true
+}
 ```
 
-Then build the graph from the store:
+Nextflow then records every task, output file, and link into a `.lineage`
+store with content-addressed `lid://` identifiers. Clew has no opinion on
+where you put that setting; it only reads the store the engine writes.
+Build the graph from it:
 
 ```bash
 python3 extract_from_lineage_store.py --store /path/to/.lineage --list-runs
