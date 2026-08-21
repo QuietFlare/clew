@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+# generated graphs (graph5.json is committed on purpose as demo data)
+graph_ls.json

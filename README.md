@@ -61,23 +61,36 @@ and lineage that was never captured cannot be reconstructed.
 Clew computes over a lineage graph. It does not care who produced it, and
 there are two ways to feed it today plus one planned:
 
-1. **The `work/` symlink extractor** (above, ships now). Works retroactively
-   on any run whose `work/` directory still exists, on any Nextflow version.
-   This is the only option for runs that already happened.
-2. **Nextflow's native data lineage** (25.04+). Enable it before the run and
-   Nextflow records every task, output file, and link into a `.lineage`
-   store with content-addressed `lid://` identifiers:
+1. **Nextflow's native data lineage** (25.04+, the preferred path). Enable it
+   before the run and Nextflow records every task, output file, and link into
+   a `.lineage` store with content-addressed `lid://` identifiers:
 
    ```bash
    nextflow run <pipeline> -c lineage.config
    ```
 
-   The repo ships [lineage.config](lineage.config) for this. An adapter that
-   reads the `.lineage` store directly is the planned primary ingest path
-   going forward, since the engine itself is the best witness of what it ran.
+   The repo ships [lineage.config](lineage.config) for this. Then:
+
+   ```bash
+   python3 extract_from_lineage_store.py --store /path/to/.lineage --list-runs
+   python3 extract_from_lineage_store.py --store /path/to/.lineage \
+       --run <run-name> --json-out graph.json
+   ```
+
+   The engine is the best witness of what it ran: inputs are typed, external
+   files carry checksums, and every task names its run, so sharing one store
+   across many runs is safe by construction.
+2. **The `work/` symlink extractor** (above). Works retroactively on any run
+   whose `work/` directory still exists, on any Nextflow version. This is
+   the only option for runs that already happened without lineage enabled.
 3. **nf-prov output** (planned). Runs that emit Workflow Run RO-Crate via the
    nf-prov plugin carry the same edges in a standard format, and Clew should
    read that rather than invent its own.
+
+Both shipping extractors emit the same graph JSON, and on the same sarek
+pipeline they produce identical impact numbers (the test suite enforces
+this). The one difference found: the symlink extractor double-counts inputs
+that sarek stages under two names, which the store records once.
 
 Capture and computation stay separate on purpose. The engines are getting
 good at recording what happened. Clew's job starts where they stop: whether a
