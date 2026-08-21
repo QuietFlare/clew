@@ -15,10 +15,16 @@ with loud consequences".
 
 from . import nfcore
 
+# Basenames as they appear in a real 2.6.0 run's lineage store (219-task
+# COG-UK run). The same files carry different names in other releases —
+# which is itself the argument for matching what the store recorded, not
+# what a config file promises.
 LOAD_BEARING_INPUTS = (
-    "GCA_009858895.3_ASM985889v3_genomic.200409.fna.gz",   # SARS-CoV-2 reference
-    "GCA_009858895.3_ASM985889v3_genomic.200409.gff.gz",   # annotation
-    "nCoV-2019.artic.V3.scheme.bed",                       # amplicon primer scheme
+    "nCoV-2019.reference.fasta",       # SARS-CoV-2 reference — 49 direct consumers
+    "nCoV-2019.primer.bed",            # ARTIC primer scheme — the frequent-update trigger
+    "GCA_009858895.3_ASM985889v3_genomic.200409.gff.gz",  # annotation
+    "kraken2_human.tar.gz",            # host-removal database
+    "nextclade_sars-cov-2_MN908947_2022-06-14T12_00_00Z.tar.gz",  # clade-call dataset
 )
 
 
