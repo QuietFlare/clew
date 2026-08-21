@@ -97,6 +97,56 @@ Capture and computation stay separate on purpose. The engines are getting
 good at recording what happened. Clew's job starts where they stop: whether a
 contribution can be taken back out, and what must happen when it cannot.
 
+## Anatomy of a trigger: selector × mode
+
+Clew has no hardcoded scenarios. Every trigger is the combination of two
+independent choices, and the familiar stories are just named cells in that
+grid.
+
+**The selector answers "where does the problem enter the graph?"** Three
+ship today:
+
+| Selector | Flag | Entry nodes |
+|---|---|---|
+| subject | `--donor X` | every task attributed to one sample or donor |
+| container | `--container Y` | every task that ran in a matching container |
+| external input | `--input Z` | every task that consumed that outside file |
+
+**The mode answers "what kind of wrong is it?"** Two exist, and they are
+not interchangeable:
+
+- `remove` — the source must be taken out (a withdrawal). Ownership
+  matters: an artifact existing only because of this subject has nothing
+  left to serve, so it can be destroyed.
+- `distrust` — the data is suspect but still wanted (contamination, a tool
+  defect, a stale reference). Nothing is destroyed; the worst verdict is
+  quarantine, because you will want these artifacts again once the cause
+  is fixed.
+
+The stories, mapped:
+
+| Story | Selector | Mode |
+|---|---|---|
+| Consent withdrawal | subject | remove |
+| Sample contamination, swap, QC failure | subject | distrust |
+| Tool or container defect | container | distrust |
+| Reference / annotation update | external input | distrust |
+| Primer scheme correction | external input | distrust |
+| Upstream dataset retraction | external input | remove — not yet supported: removal needs an owner, and computing what exists *only* because of one input needs multi-root traversal |
+
+Defaults preserve the common cases (`--donor` implies remove, the others
+imply distrust), and `--mode` overrides them: contamination is
+`--donor X --mode distrust`.
+
+**Will selectors be extended? Yes — that is the extension point.** A
+selector is anything that can name a set of entry nodes; the engine only
+ever sees the set. Obvious future selectors: by file checksum (one exact
+artifact), by batch or time window (every task in the run of a bad
+reagent lot), by facility, by edge kind (everything *calibrated against*
+a control, not merely derived from it). Modes are the closed part: new
+verdicts would change what remediation means, so a new mode is a design
+event, not a plugin.
+
 ## Three questions it answers
 
 ### Pipeline engineer: "We bumped the reference genome. What must be re-run?"

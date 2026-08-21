@@ -171,6 +171,13 @@ def main():
     trigger.add_argument("--container", help="flag every task run in a matching container")
     trigger.add_argument("--input", dest="input_file",
                          help="invalidate an external input file by basename")
+    parser.add_argument("--mode", choices=("remove", "distrust"),
+                        help="what kind of wrong: remove = the source must be "
+                             "taken out (withdrawal; exclusive artifacts can be "
+                             "destroyed); distrust = the data is suspect but "
+                             "still wanted (contamination, defects; worst case "
+                             "quarantine). Defaults: remove for --donor, "
+                             "distrust for --container/--input.")
     parser.add_argument("--assertions", help="JSON file of externally-asserted facts")
     parser.add_argument("--files", action="store_true", help="list affected output files")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
@@ -184,6 +191,15 @@ def main():
 
     # --- doubt triggers: single subject, nothing exclusive -------------------
     if args.container or args.input_file:
+        if args.mode == "remove":
+            # Removal needs an owner: "exclusive" only means something when
+            # other subjects exist to compare against. A retracted upstream
+            # dataset is a real remove-shaped input trigger, but computing
+            # its exclusive set needs multi-root traversal we don't do yet.
+            raise SystemExit(
+                "--mode remove requires a subject trigger (--donor); "
+                "container and input triggers cast doubt, they do not remove "
+                "an owned source.")
         if args.container:
             subjects = domain.container_entry_nodes(graph, args.container)
         else:
@@ -222,8 +238,20 @@ def main():
         raise SystemExit(f"unknown donor {args.donor!r}; known: {', '.join(sorted(radius))}")
 
     result = radius[args.donor]
-    plan = print_plan(domain, graph, f"withdrawal of {args.donor}", entry[args.donor],
-                      result["affected"], result["exclusive"], published)
+    mode = args.mode or "remove"
+    if mode == "remove":
+        # Withdrawal: the subject's exclusive artifacts have nothing left to
+        # serve and can be destroyed.
+        label = f"withdrawal of {args.donor}"
+        exclusive = result["exclusive"]
+    else:
+        # Contamination / swap / QC failure: the subject's data is WRONG, not
+        # withdrawn. Every artifact is still wanted once the cause is fixed,
+        # so nothing is owned-and-destroyable; worst case is quarantine.
+        label = f"distrust of {args.donor}"
+        exclusive = set()
+    plan = print_plan(domain, graph, label, entry[args.donor],
+                      result["affected"], exclusive, published)
 
     if args.files:
         exclusive_files = domain.outputs_for(graph, result["exclusive"])
@@ -242,8 +270,7 @@ def main():
     print_caveats(bool(published))
     # Last on stdout on purpose: with --json -, a consumer can split at the
     # final '{' and parse cleanly.
-    write_json(args.json_out, domain, graph, f"withdrawal of {args.donor}",
-               entry[args.donor], plan)
+    write_json(args.json_out, domain, graph, label, entry[args.donor], plan)
 
 
 def write_json(json_out, domain, graph, subject, entry_nodes, plan):
