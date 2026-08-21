@@ -49,10 +49,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from core import blast_radius as core
 from core import contribution
-from domains import sarek
+from domains import rnaseq, sarek, viralrecon
+
+# Which adapter translates between this pipeline's vocabulary and core's.
+# Adding a pipeline = adding a module in domains/ and one entry here.
+DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
 
 
-def print_plan(graph, subject, entry_nodes, affected, exclusive_set, published):
+def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set, published):
     """Classify every affected task and print the remediation plan."""
     forward = core.forward_index(graph["edges"])
 
@@ -62,7 +66,7 @@ def print_plan(graph, subject, entry_nodes, affected, exclusive_set, published):
 
     plan = []
     for task_hash in sorted(affected):
-        facts = sarek.classify(
+        facts = domain.classify(
             graph, task_hash, task_hash in exclusive_set, published=published
         )
         action = contribution.remediate(
@@ -83,7 +87,7 @@ def print_plan(graph, subject, entry_nodes, affected, exclusive_set, published):
         print(f"\n  {action}  ({len(rows)})  — {contribution.explain(action)}")
         for task_hash, facts in rows:
             scope = "exclusive" if facts["exclusive"] else "shared"
-            print(f"    {task_hash}  {sarek.describe(graph, task_hash):<26} "
+            print(f"    {task_hash}  {domain.describe(graph, task_hash):<26} "
                   f"{facts['contribution']:<12} {scope}")
             if facts["terminal"]:
                 print(f"        {facts['reason']}")
@@ -92,7 +96,7 @@ def print_plan(graph, subject, entry_nodes, affected, exclusive_set, published):
                 # claim is checkable rather than merely asserted.
                 for path in core.paths_to(entry_nodes, task_hash, forward, limit=1):
                     hops = " -> ".join(
-                        f"{h}[{sarek.describe(graph, h)}]" for h in path
+                        f"{h}[{domain.describe(graph, h)}]" for h in path
                     )
                     print(f"        via {hops}")
     return plan
@@ -100,8 +104,10 @@ def print_plan(graph, subject, entry_nodes, affected, exclusive_set, published):
 
 def main():
     parser = argparse.ArgumentParser(description="Compute a blast radius and remediation plan.")
-    parser.add_argument("--graph", required=True, help="graph JSON from extract_lineage.py")
-    parser.add_argument("--samplesheet", required=True, help="sarek samplesheet CSV")
+    parser.add_argument("--graph", required=True, help="graph JSON from an extractor")
+    parser.add_argument("--samplesheet", required=True, help="nf-core samplesheet CSV")
+    parser.add_argument("--pipeline", choices=sorted(DOMAINS), default="sarek",
+                        help="which domain adapter reads the samplesheet and names")
     trigger = parser.add_mutually_exclusive_group()
     trigger.add_argument("--donor", help="withdraw a donor")
     trigger.add_argument("--container", help="flag every task run in a matching container")
@@ -111,16 +117,17 @@ def main():
     parser.add_argument("--files", action="store_true", help="list affected output files")
     args = parser.parse_args()
 
+    domain = DOMAINS[args.pipeline]
     graph = core.load_graph(args.graph)
-    donors = sarek.load_donors(args.samplesheet)
-    published = sarek.load_assertions(args.assertions)
+    donors = domain.load_subjects(args.samplesheet)
+    published = domain.load_assertions(args.assertions)
 
     # --- doubt triggers: single subject, nothing exclusive -------------------
     if args.container or args.input_file:
         if args.container:
-            subjects = sarek.container_entry_nodes(graph, args.container)
+            subjects = domain.container_entry_nodes(graph, args.container)
         else:
-            subjects = sarek.external_input_entry_nodes(graph, args.input_file)
+            subjects = domain.external_input_entry_nodes(graph, args.input_file)
 
         subject, entry_nodes = next(iter(subjects.items()))
         if not entry_nodes:
@@ -129,13 +136,13 @@ def main():
         radius = core.blast_radius(graph, subjects)
         affected = radius[subject]["affected"]
         # Doubt, not removal: every artifact is still wanted. See header.
-        print_plan(graph, subject, entry_nodes, affected, exclusive_set=set(),
-                   published=published)
+        print_plan(domain, graph, subject, entry_nodes, affected,
+                   exclusive_set=set(), published=published)
         print_caveats(bool(published))
         return
 
     # --- withdrawal: exclusive/shared computed against the other donors ------
-    entry = sarek.subject_entry_nodes(graph, donors)
+    entry = domain.subject_entry_nodes(graph, donors)
     radius = core.blast_radius(graph, entry)
 
     if not args.donor:
@@ -152,12 +159,12 @@ def main():
         raise SystemExit(f"unknown donor {args.donor!r}; known: {', '.join(sorted(radius))}")
 
     result = radius[args.donor]
-    print_plan(graph, f"withdrawal of {args.donor}", entry[args.donor],
+    print_plan(domain, graph, f"withdrawal of {args.donor}", entry[args.donor],
                result["affected"], result["exclusive"], published)
 
     if args.files:
-        exclusive_files = sarek.outputs_for(graph, result["exclusive"])
-        shared_files = sarek.outputs_for(graph, result["shared"])
+        exclusive_files = domain.outputs_for(graph, result["exclusive"])
+        shared_files = domain.outputs_for(graph, result["shared"])
         print(f"\nFILES exclusive to {args.donor}: {len(exclusive_files)}")
         for path in exclusive_files[:20]:
             print(f"    {path}")

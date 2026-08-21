@@ -1,0 +1,3234 @@
+{
+  "tasks": {
+    "ae/8f8616": {
+      "hash": "ae/8f8616",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/ae/8f8616fa53e1eae50d0ea7006a226f",
+      "script": "\n    vcftools \\\n        --gzvcf donor_005.strelka.variants.vcf.gz \\\n        --out donor_005.strelka.variants \\\n        --FILTER-summary \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "10/a98109": {
+      "hash": "10/a98109",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/10/a98109c1469161d5f8c2e4bd4006f4",
+      "script": "\n    samtools \\\n        index \\\n        -@ 0 \\\n         \\\n        donor_005.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "97/b02335": {
+      "hash": "97/b02335",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/97/b02335587018fd8f6fde04435c08d1",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        BaseRecalibrator  \\\n        --input donor_001.md.cram \\\n        --output donor_001.recal.table \\\n        --reference genome.fasta \\\n        --intervals chr22_1-40001.bed \\\n        --known-sites dbsnp_146.hg38.vcf.gz --known-sites mills_and_1000G.indels.vcf.gz \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "74/4ae0cf": {
+      "hash": "74/4ae0cf",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/74/4ae0cf5ccd8dce71fa3aec3c928822",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_005.recal \\\n        donor_005.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "cf/aa99f5": {
+      "hash": "cf/aa99f5",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/cf/aa99f5a1a590be38f928f3463abbb5",
+      "script": "\n    vcftools \\\n        --gzvcf donor_003.strelka.variants.vcf.gz \\\n        --out donor_003.strelka.variants \\\n        --TsTv-by-qual \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "c4/0bcd25": {
+      "hash": "c4/0bcd25",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/c4/0bcd2522b846f062e91b847349225d",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_005.recal.cram \\\n        > donor_005.recal.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "e4/da687c": {
+      "hash": "e4/da687c",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/e4/da687c3e99cef7b7dfa5fd1a2b5843",
+      "script": "\n    vcftools \\\n        --gzvcf donor_004.strelka.variants.vcf.gz \\\n        --out donor_004.strelka.variants \\\n        --FILTER-summary \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "8b/bf510c": {
+      "hash": "8b/bf510c",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE",
+      "container": "quay.io/biocontainers/strelka:2.9.10--h9ee0642_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/8b/bf510c8d236b0a706997f854b15953",
+      "script": "\n    configureStrelkaGermlineWorkflow.py \\\n        --bam donor_004.recal.cram \\\n        --referenceFasta genome.fasta \\\n        --callRegions chr22_1-40001.bed.gz \\\n         \\\n        --runDir strelka\n\n    sed -i s/\"isEmail = isLocalSmtp()\"/\"isEmail = False\"/g strelka/runWorkflow.py\n\n    python strelka/runWorkflow.py -m local -j 4\n    mv strelka/results/variants/genome.*.vcf.gz     donor_004.strelka.genome.vcf.gz\n    mv strelka/results/variants/genome.*.vcf.gz.tbi donor_004.strelka.genome.vcf.gz.tbi\n    mv strelka/results/variants/variants.vcf.gz     donor_004.strelka.variants.vcf.gz\n    mv strelka/results/variants/variants.vcf.gz.tbi donor_004.strelka.variants.vcf.gz.tbi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE\":\n        strelka: $( configureStrelkaGermlineWorkflow.py --version )\n    END_VERSIONS\n    "
+    },
+    "76/fa7c3c": {
+      "hash": "76/fa7c3c",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/76/fa7c3cd0209dec197ca4f97e6bfc6d",
+      "script": "\n    vcftools \\\n        --gzvcf donor_001.strelka.variants.vcf.gz \\\n        --out donor_001.strelka.variants \\\n        --TsTv-by-qual \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "6b/4fd54c": {
+      "hash": "6b/4fd54c",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/6b/4fd54c50de13a0c012f9c4187aab97",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_002.md \\\n        donor_002.md.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "60/05eef6": {
+      "hash": "60/05eef6",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/60/05eef6f74727b4284da815d0012db7",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_003.recal.cram \\\n        > donor_003.recal.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "50/06dbf4": {
+      "hash": "50/06dbf4",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS",
+      "container": "community.wave.seqera.io/library/bcftools:1.21--4335bec1d7b44d11",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/50/06dbf4ae3e71b546a6b78d57c64cf3",
+      "script": "\n    bcftools stats \\\n         \\\n         \\\n         \\\n         \\\n         \\\n         \\\n        donor_002.strelka.variants.vcf.gz > donor_002.strelka.variants.bcftools_stats.txt\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS\":\n        bcftools: $(bcftools --version 2>&1 | head -n1 | sed 's/^.*bcftools //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "28/c44947": {
+      "hash": "28/c44947",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/28/c4494775fed47008028f0aac0cf28a",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_002.md.cram \\\n        > donor_002.md.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "c8/75f0e4": {
+      "hash": "c8/75f0e4",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/c8/75f0e4cb6a468a57c9d268851f5e56",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_003.md.cram \\\n        > donor_003.md.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "3d/f55b41": {
+      "hash": "3d/f55b41",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQC (donor_004-L1)",
+      "process": "NFCORE_SAREK:SAREK:FASTQC",
+      "container": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/3d/f55b41a74e9a801a6d24daf0344562",
+      "script": "\n    printf \"%s %s\\n\" test_1.fastq.gz donor_004-L1_1.gz test_2.fastq.gz donor_004-L1_2.gz | while read old_name new_name; do\n        [ -f \"${new_name}\" ] || ln -s $old_name $new_name\n    done\n\n    fastqc \\\n        --quiet \\\n        --threads 4 \\\n        --memory 1024 \\\n        donor_004-L1_1.gz donor_004-L1_2.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQC\":\n        fastqc: $( fastqc --version | sed '/FastQC v/!d; s/.*v//' )\n    END_VERSIONS\n    "
+    },
+    "41/cb64a3": {
+      "hash": "41/cb64a3",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/41/cb64a35adbaa5a26ffc4b1d62cc4f6",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_001.recal \\\n        donor_001.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "ec/e266f9": {
+      "hash": "ec/e266f9",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/ec/e266f9b8752a31180ea5e05dca5b77",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        BaseRecalibrator  \\\n        --input donor_002.md.cram \\\n        --output donor_002.recal.table \\\n        --reference genome.fasta \\\n        --intervals chr22_1-40001.bed \\\n        --known-sites dbsnp_146.hg38.vcf.gz --known-sites mills_and_1000G.indels.vcf.gz \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "51/575d54": {
+      "hash": "51/575d54",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS",
+      "container": "community.wave.seqera.io/library/bcftools:1.21--4335bec1d7b44d11",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/51/575d549229535a04690b26e1b0bf63",
+      "script": "\n    bcftools stats \\\n         \\\n         \\\n         \\\n         \\\n         \\\n         \\\n        donor_005.strelka.variants.vcf.gz > donor_005.strelka.variants.bcftools_stats.txt\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS\":\n        bcftools: $(bcftools --version 2>&1 | head -n1 | sed 's/^.*bcftools //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "3f/10eac3": {
+      "hash": "3f/10eac3",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:c1e4292d6ee27439",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/3f/10eac3bb2ee2ef6ce76c0c0ef8e659",
+      "script": "\n    gatk --java-options \"-Xmx12288M -XX:-UsePerfData\" \\\n        MarkDuplicates \\\n        --INPUT donor_004.sorted.bam \\\n        --OUTPUT donor_004.md.bam \\\n        --METRICS_FILE donor_004.md.cram.metrics \\\n        --TMP_DIR . \\\n        --REFERENCE_SEQUENCE genome.fasta \\\n        --REMOVE_DUPLICATES false --VALIDATION_STRINGENCY LENIENT\n\n    # If cram files are wished as output, the run samtools for conversion\n    if [[ donor_004.md.cram == *.cram ]]; then\n        samtools view -Ch -T genome.fasta -o donor_004.md.cram donor_004.md.bam\n        rm donor_004.md.bam\n        samtools index donor_004.md.cram\n    fi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "bd/f9935f": {
+      "hash": "bd/f9935f",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:c1e4292d6ee27439",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/bd/f9935f8a54d0c3aa118e096d7ba750",
+      "script": "\n    gatk --java-options \"-Xmx12288M -XX:-UsePerfData\" \\\n        MarkDuplicates \\\n        --INPUT donor_005.sorted.bam \\\n        --OUTPUT donor_005.md.bam \\\n        --METRICS_FILE donor_005.md.cram.metrics \\\n        --TMP_DIR . \\\n        --REFERENCE_SEQUENCE genome.fasta \\\n        --REMOVE_DUPLICATES false --VALIDATION_STRINGENCY LENIENT\n\n    # If cram files are wished as output, the run samtools for conversion\n    if [[ donor_005.md.cram == *.cram ]]; then\n        samtools view -Ch -T genome.fasta -o donor_005.md.cram donor_005.md.bam\n        rm donor_005.md.bam\n        samtools index donor_005.md.cram\n    fi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "ea/87a952": {
+      "hash": "ea/87a952",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/ea/87a9520f2ea1b516d7d6978d88f777",
+      "script": "\n    vcftools \\\n        --gzvcf donor_004.strelka.variants.vcf.gz \\\n        --out donor_004.strelka.variants \\\n        --TsTv-by-qual \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "0b/00330f": {
+      "hash": "0b/00330f",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/0b/00330fd0ca95bd33dbdc8a71d94c54",
+      "script": "\n    vcftools \\\n        --gzvcf donor_005.strelka.variants.vcf.gz \\\n        --out donor_005.strelka.variants \\\n        --TsTv-by-count \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "a8/ffd943": {
+      "hash": "a8/ffd943",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/a8/ffd9434f9bc12f1c9d82160b811c08",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        ApplyBQSR \\\n        --input donor_002.md.cram \\\n        --output donor_002.recal.cram \\\n        --reference genome.fasta \\\n        --bqsr-recal-file donor_002.recal.table \\\n        --intervals chr22_1-40001.bed \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "e8/1de076": {
+      "hash": "e8/1de076",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQC (donor_003-L1)",
+      "process": "NFCORE_SAREK:SAREK:FASTQC",
+      "container": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/e8/1de076e9312b40deef673ff0558b27",
+      "script": "\n    printf \"%s %s\\n\" test_1.fastq.gz donor_003-L1_1.gz test_2.fastq.gz donor_003-L1_2.gz | while read old_name new_name; do\n        [ -f \"${new_name}\" ] || ln -s $old_name $new_name\n    done\n\n    fastqc \\\n        --quiet \\\n        --threads 4 \\\n        --memory 1024 \\\n        donor_003-L1_1.gz donor_003-L1_2.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQC\":\n        fastqc: $( fastqc --version | sed '/FastQC v/!d; s/.*v//' )\n    END_VERSIONS\n    "
+    },
+    "54/a4f0ac": {
+      "hash": "54/a4f0ac",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/54/a4f0ac356f36a713cd54b3d6233552",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        BaseRecalibrator  \\\n        --input donor_005.md.cram \\\n        --output donor_005.recal.table \\\n        --reference genome.fasta \\\n        --intervals chr22_1-40001.bed \\\n        --known-sites dbsnp_146.hg38.vcf.gz --known-sites mills_and_1000G.indels.vcf.gz \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "66/759590": {
+      "hash": "66/759590",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/66/759590b4675a51722e79a65ad0b3ef",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_003.recal \\\n        donor_003.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "c7/ea4130": {
+      "hash": "c7/ea4130",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/c7/ea4130e1ba3543324e39a5ecd7985e",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_001.recal.cram \\\n        > donor_001.recal.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "89/280491": {
+      "hash": "89/280491",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/89/2804917c38fbce8bac4e2baa3f98cc",
+      "script": "\n    samtools \\\n        index \\\n        -@ 0 \\\n         \\\n        donor_001.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "39/711047": {
+      "hash": "39/711047",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/39/711047cedc3e4afba2818753f31e79",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        BaseRecalibrator  \\\n        --input donor_004.md.cram \\\n        --output donor_004.recal.table \\\n        --reference genome.fasta \\\n        --intervals chr22_1-40001.bed \\\n        --known-sites dbsnp_146.hg38.vcf.gz --known-sites mills_and_1000G.indels.vcf.gz \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "b6/cde5ff": {
+      "hash": "b6/cde5ff",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:c1e4292d6ee27439",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/b6/cde5ff7299e103c1bf57722edbc59b",
+      "script": "\n    gatk --java-options \"-Xmx12288M -XX:-UsePerfData\" \\\n        MarkDuplicates \\\n        --INPUT donor_002.sorted.bam \\\n        --OUTPUT donor_002.md.bam \\\n        --METRICS_FILE donor_002.md.cram.metrics \\\n        --TMP_DIR . \\\n        --REFERENCE_SEQUENCE genome.fasta \\\n        --REMOVE_DUPLICATES false --VALIDATION_STRINGENCY LENIENT\n\n    # If cram files are wished as output, the run samtools for conversion\n    if [[ donor_002.md.cram == *.cram ]]; then\n        samtools view -Ch -T genome.fasta -o donor_002.md.cram donor_002.md.bam\n        rm donor_002.md.bam\n        samtools index donor_002.md.cram\n    fi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "54/f3bf38": {
+      "hash": "54/f3bf38",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/54/f3bf388173ebfbe99edde965f60865",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_004.md.cram \\\n        > donor_004.md.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "95/3aca0e": {
+      "hash": "95/3aca0e",
+      "task_id": null,
+      "name": "NFCORE_SAREK:PREPARE_GENOME:BWAMEM1_INDEX (genome.fasta)",
+      "process": "NFCORE_SAREK:PREPARE_GENOME:BWAMEM1_INDEX",
+      "container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/95/3aca0e13382656e18bbee27d2db627",
+      "script": "\n    mkdir bwa\n    bwa \\\n        index \\\n         \\\n        -p bwa/genome \\\n        genome.fasta\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:PREPARE_GENOME:BWAMEM1_INDEX\":\n        bwa: $(echo $(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*$//')\n    END_VERSIONS\n    "
+    },
+    "0f/a50d46": {
+      "hash": "0f/a50d46",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE",
+      "container": "quay.io/biocontainers/strelka:2.9.10--h9ee0642_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/0f/a50d467eb833548e292d337b993523",
+      "script": "\n    configureStrelkaGermlineWorkflow.py \\\n        --bam donor_001.recal.cram \\\n        --referenceFasta genome.fasta \\\n        --callRegions chr22_1-40001.bed.gz \\\n         \\\n        --runDir strelka\n\n    sed -i s/\"isEmail = isLocalSmtp()\"/\"isEmail = False\"/g strelka/runWorkflow.py\n\n    python strelka/runWorkflow.py -m local -j 4\n    mv strelka/results/variants/genome.*.vcf.gz     donor_001.strelka.genome.vcf.gz\n    mv strelka/results/variants/genome.*.vcf.gz.tbi donor_001.strelka.genome.vcf.gz.tbi\n    mv strelka/results/variants/variants.vcf.gz     donor_001.strelka.variants.vcf.gz\n    mv strelka/results/variants/variants.vcf.gz.tbi donor_001.strelka.variants.vcf.gz.tbi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE\":\n        strelka: $( configureStrelkaGermlineWorkflow.py --version )\n    END_VERSIONS\n    "
+    },
+    "94/af882b": {
+      "hash": "94/af882b",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/94/af882bb624c0f20b96af6f0dca3a31",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_005.md.cram \\\n        > donor_005.md.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "bc/9effb3": {
+      "hash": "bc/9effb3",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/bc/9effb3aa9334da3bc303bf7a95de5d",
+      "script": "\n    vcftools \\\n        --gzvcf donor_001.strelka.variants.vcf.gz \\\n        --out donor_001.strelka.variants \\\n        --TsTv-by-count \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "1c/59f472": {
+      "hash": "1c/59f472",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM",
+      "container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/1c/59f472161fada28f422b497f070d87",
+      "script": "\n    INDEX=`find -L ./ -name \"*.amb\" | sed 's/\\.amb$//'`\n\n    bwa mem \\\n        -K 100000000 -Y -R \"@RG\\tID:donor_004.L1\\tPU:L1\\tSM:donor_004_donor_004\\tLB:donor_004\\tDS:https://raw.githubusercontent.com/nf-core/test-datasets/modules/data//genomics/homo_sapiens/genome/genome.fasta\\tPL:ILLUMINA\" \\\n        -t 4 \\\n        $INDEX \\\n        test_1.fastq.gz test_2.fastq.gz \\\n        | samtools sort   --threads 4 -o donor_004.sorted.bam -\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM\":\n        bwa: $(echo $(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "bc/703115": {
+      "hash": "bc/703115",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/bc/70311598b31734b7fbba9ee8ac7301",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_005.md \\\n        donor_005.md.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "9c/00fcc9": {
+      "hash": "9c/00fcc9",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM",
+      "container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/9c/00fcc9c9d27928dbda6a0b83bd3585",
+      "script": "\n    INDEX=`find -L ./ -name \"*.amb\" | sed 's/\\.amb$//'`\n\n    bwa mem \\\n        -K 100000000 -Y -R \"@RG\\tID:donor_005.L1\\tPU:L1\\tSM:donor_005_donor_005\\tLB:donor_005\\tDS:https://raw.githubusercontent.com/nf-core/test-datasets/modules/data//genomics/homo_sapiens/genome/genome.fasta\\tPL:ILLUMINA\" \\\n        -t 4 \\\n        $INDEX \\\n        test_1.fastq.gz test_2.fastq.gz \\\n        | samtools sort   --threads 4 -o donor_005.sorted.bam -\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM\":\n        bwa: $(echo $(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "cc/e51e18": {
+      "hash": "cc/e51e18",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/cc/e51e1808d2ac9af00382462747f77f",
+      "script": "\n    samtools \\\n        index \\\n        -@ 0 \\\n         \\\n        donor_003.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "66/2ec587": {
+      "hash": "66/2ec587",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE",
+      "container": "quay.io/biocontainers/strelka:2.9.10--h9ee0642_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/66/2ec58735470bfd040b8192fee83b45",
+      "script": "\n    configureStrelkaGermlineWorkflow.py \\\n        --bam donor_002.recal.cram \\\n        --referenceFasta genome.fasta \\\n        --callRegions chr22_1-40001.bed.gz \\\n         \\\n        --runDir strelka\n\n    sed -i s/\"isEmail = isLocalSmtp()\"/\"isEmail = False\"/g strelka/runWorkflow.py\n\n    python strelka/runWorkflow.py -m local -j 4\n    mv strelka/results/variants/genome.*.vcf.gz     donor_002.strelka.genome.vcf.gz\n    mv strelka/results/variants/genome.*.vcf.gz.tbi donor_002.strelka.genome.vcf.gz.tbi\n    mv strelka/results/variants/variants.vcf.gz     donor_002.strelka.variants.vcf.gz\n    mv strelka/results/variants/variants.vcf.gz.tbi donor_002.strelka.variants.vcf.gz.tbi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE\":\n        strelka: $( configureStrelkaGermlineWorkflow.py --version )\n    END_VERSIONS\n    "
+    },
+    "b2/cec245": {
+      "hash": "b2/cec245",
+      "task_id": null,
+      "name": "NFCORE_SAREK:PREPARE_INTERVALS:TABIX_BGZIPTABIX_INTERVAL_SPLIT (chr22_1-40001)",
+      "process": "NFCORE_SAREK:PREPARE_INTERVALS:TABIX_BGZIPTABIX_INTERVAL_SPLIT",
+      "container": "community.wave.seqera.io/library/htslib:1.21--ff8e28a189fbecaa",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/b2/cec245b8eef422101f65147b70d099",
+      "script": "\n    bgzip  --threads 1 -c  chr22_1-40001.bed > chr22_1-40001.bed.gz\n    tabix --threads 1  chr22_1-40001.bed.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:PREPARE_INTERVALS:TABIX_BGZIPTABIX_INTERVAL_SPLIT\":\n        tabix: $(echo $(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "9b/f821d8": {
+      "hash": "9b/f821d8",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/9b/f821d8dbe546489ff68e9f027328d4",
+      "script": "\n    vcftools \\\n        --gzvcf donor_005.strelka.variants.vcf.gz \\\n        --out donor_005.strelka.variants \\\n        --TsTv-by-qual \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "a6/cab906": {
+      "hash": "a6/cab906",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/a6/cab906d5555a89bd60456f9dff5b91",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_004.md \\\n        donor_004.md.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "8d/f740eb": {
+      "hash": "8d/f740eb",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/8d/f740ebbb40343b229f92e7afe744c2",
+      "script": "\n    vcftools \\\n        --gzvcf donor_003.strelka.variants.vcf.gz \\\n        --out donor_003.strelka.variants \\\n        --FILTER-summary \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "28/9215fd": {
+      "hash": "28/9215fd",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS",
+      "container": "community.wave.seqera.io/library/bcftools:1.21--4335bec1d7b44d11",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/28/9215fd4919fe5376ab3d8e103898c4",
+      "script": "\n    bcftools stats \\\n         \\\n         \\\n         \\\n         \\\n         \\\n         \\\n        donor_003.strelka.variants.vcf.gz > donor_003.strelka.variants.bcftools_stats.txt\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS\":\n        bcftools: $(bcftools --version 2>&1 | head -n1 | sed 's/^.*bcftools //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "fb/c2055b": {
+      "hash": "fb/c2055b",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE",
+      "container": "quay.io/biocontainers/strelka:2.9.10--h9ee0642_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/fb/c2055bed1d9e4b1710394119c3da6a",
+      "script": "\n    configureStrelkaGermlineWorkflow.py \\\n        --bam donor_003.recal.cram \\\n        --referenceFasta genome.fasta \\\n        --callRegions chr22_1-40001.bed.gz \\\n         \\\n        --runDir strelka\n\n    sed -i s/\"isEmail = isLocalSmtp()\"/\"isEmail = False\"/g strelka/runWorkflow.py\n\n    python strelka/runWorkflow.py -m local -j 4\n    mv strelka/results/variants/genome.*.vcf.gz     donor_003.strelka.genome.vcf.gz\n    mv strelka/results/variants/genome.*.vcf.gz.tbi donor_003.strelka.genome.vcf.gz.tbi\n    mv strelka/results/variants/variants.vcf.gz     donor_003.strelka.variants.vcf.gz\n    mv strelka/results/variants/variants.vcf.gz.tbi donor_003.strelka.variants.vcf.gz.tbi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE\":\n        strelka: $( configureStrelkaGermlineWorkflow.py --version )\n    END_VERSIONS\n    "
+    },
+    "23/e810e7": {
+      "hash": "23/e810e7",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM",
+      "container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/23/e810e7f3bdda56731d40dcc3dbed32",
+      "script": "\n    INDEX=`find -L ./ -name \"*.amb\" | sed 's/\\.amb$//'`\n\n    bwa mem \\\n        -K 100000000 -Y -R \"@RG\\tID:donor_001.L1\\tPU:L1\\tSM:donor_001_donor_001\\tLB:donor_001\\tDS:https://raw.githubusercontent.com/nf-core/test-datasets/modules/data//genomics/homo_sapiens/genome/genome.fasta\\tPL:ILLUMINA\" \\\n        -t 4 \\\n        $INDEX \\\n        test_1.fastq.gz test_2.fastq.gz \\\n        | samtools sort   --threads 4 -o donor_001.sorted.bam -\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM\":\n        bwa: $(echo $(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "9e/f7d66b": {
+      "hash": "9e/f7d66b",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:MULTIQC",
+      "process": "NFCORE_SAREK:SAREK:MULTIQC",
+      "container": "community.wave.seqera.io/library/multiqc:1.33--ee7739d47738383b",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/9e/f7d66b87672e0730f00bcb3e1fa60e",
+      "script": "\n    multiqc \\\n        --force \\\n         \\\n        --config multiqc_config.yml \\\n         \\\n         \\\n         \\\n         \\\n         \\\n        .\n    "
+    },
+    "ce/7c877b": {
+      "hash": "ce/7c877b",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/ce/7c877b3f1ae67834f1e143a9d6e500",
+      "script": "\n    vcftools \\\n        --gzvcf donor_001.strelka.variants.vcf.gz \\\n        --out donor_001.strelka.variants \\\n        --FILTER-summary \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "ae/4f8832": {
+      "hash": "ae/4f8832",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/ae/4f883270df61e9b64a65c50af5ce87",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        ApplyBQSR \\\n        --input donor_003.md.cram \\\n        --output donor_003.recal.cram \\\n        --reference genome.fasta \\\n        --bqsr-recal-file donor_003.recal.table \\\n        --intervals chr22_1-40001.bed \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "19/84c6a6": {
+      "hash": "19/84c6a6",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/19/84c6a6ffa11a9e7b5d74622cad11f8",
+      "script": "\n    vcftools \\\n        --gzvcf donor_002.strelka.variants.vcf.gz \\\n        --out donor_002.strelka.variants \\\n        --FILTER-summary \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_SUMMARY\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "6c/51d970": {
+      "hash": "6c/51d970",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/6c/51d9706effbc2dd4668867f6b1ac7a",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_002.recal \\\n        donor_002.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "7d/3658de": {
+      "hash": "7d/3658de",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/7d/3658de45ee438146a64799cdec40a1",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_001.md.cram \\\n        > donor_001.md.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "98/c308dc": {
+      "hash": "98/c308dc",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/98/c308dc84a8ffd7614b7b508bb4b530",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_002.recal.cram \\\n        > donor_002.recal.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "21/488402": {
+      "hash": "21/488402",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM",
+      "container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/21/488402060b41203d54c02caa6c2090",
+      "script": "\n    INDEX=`find -L ./ -name \"*.amb\" | sed 's/\\.amb$//'`\n\n    bwa mem \\\n        -K 100000000 -Y -R \"@RG\\tID:donor_003.L1\\tPU:L1\\tSM:donor_003_donor_003\\tLB:donor_003\\tDS:https://raw.githubusercontent.com/nf-core/test-datasets/modules/data//genomics/homo_sapiens/genome/genome.fasta\\tPL:ILLUMINA\" \\\n        -t 4 \\\n        $INDEX \\\n        test_1.fastq.gz test_2.fastq.gz \\\n        | samtools sort   --threads 4 -o donor_003.sorted.bam -\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM\":\n        bwa: $(echo $(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "5a/974cad": {
+      "hash": "5a/974cad",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/5a/974cad3442225d856bcdf61a9bcef4",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        ApplyBQSR \\\n        --input donor_005.md.cram \\\n        --output donor_005.recal.cram \\\n        --reference genome.fasta \\\n        --bqsr-recal-file donor_005.recal.table \\\n        --intervals chr22_1-40001.bed \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "0e/8c789b": {
+      "hash": "0e/8c789b",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/0e/8c789bae75c05b61b95979b0ddfd8e",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        BaseRecalibrator  \\\n        --input donor_003.md.cram \\\n        --output donor_003.recal.table \\\n        --reference genome.fasta \\\n        --intervals chr22_1-40001.bed \\\n        --known-sites dbsnp_146.hg38.vcf.gz --known-sites mills_and_1000G.indels.vcf.gz \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_BASERECALIBRATOR:GATK4_BASERECALIBRATOR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "11/94e677": {
+      "hash": "11/94e677",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/11/94e67725bfdd01ac6bc4c8e01a4153",
+      "script": "\n    samtools \\\n        index \\\n        -@ 0 \\\n         \\\n        donor_002.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "79/f85238": {
+      "hash": "79/f85238",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/79/f852384490eb47a2109d4eb0d6f072",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        ApplyBQSR \\\n        --input donor_004.md.cram \\\n        --output donor_004.recal.cram \\\n        --reference genome.fasta \\\n        --bqsr-recal-file donor_004.recal.table \\\n        --intervals chr22_1-40001.bed \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "9c/f5ec71": {
+      "hash": "9c/f5ec71",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/9c/f5ec71f2e9fcf4e18f337ee1819d61",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_003.md \\\n        donor_003.md.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "c4/290c92": {
+      "hash": "c4/290c92",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:c1e4292d6ee27439",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/c4/290c92fa7d5bfbec23e9705a12eac6",
+      "script": "\n    gatk --java-options \"-Xmx12288M -XX:-UsePerfData\" \\\n        MarkDuplicates \\\n        --INPUT donor_003.sorted.bam \\\n        --OUTPUT donor_003.md.bam \\\n        --METRICS_FILE donor_003.md.cram.metrics \\\n        --TMP_DIR . \\\n        --REFERENCE_SEQUENCE genome.fasta \\\n        --REMOVE_DUPLICATES false --VALIDATION_STRINGENCY LENIENT\n\n    # If cram files are wished as output, the run samtools for conversion\n    if [[ donor_003.md.cram == *.cram ]]; then\n        samtools view -Ch -T genome.fasta -o donor_003.md.cram donor_003.md.bam\n        rm donor_003.md.bam\n        samtools index donor_003.md.cram\n    fi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "93/e16b5e": {
+      "hash": "93/e16b5e",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/93/e16b5ef3bd6556bf9481a8f15714bf",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_001.md \\\n        donor_001.md.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:CRAM_QC_MOSDEPTH_SAMTOOLS:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "7b/958a35": {
+      "hash": "7b/958a35",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/7b/958a352e3ce46ae1893671d796e833",
+      "script": "\n    vcftools \\\n        --gzvcf donor_002.strelka.variants.vcf.gz \\\n        --out donor_002.strelka.variants \\\n        --TsTv-by-count \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "af/6a8b38": {
+      "hash": "af/6a8b38",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQC (donor_002-L1)",
+      "process": "NFCORE_SAREK:SAREK:FASTQC",
+      "container": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/af/6a8b38dffd0ad91f48a07ff6d4b34b",
+      "script": "\n    printf \"%s %s\\n\" test_1.fastq.gz donor_002-L1_1.gz test_2.fastq.gz donor_002-L1_2.gz | while read old_name new_name; do\n        [ -f \"${new_name}\" ] || ln -s $old_name $new_name\n    done\n\n    fastqc \\\n        --quiet \\\n        --threads 4 \\\n        --memory 1024 \\\n        donor_002-L1_1.gz donor_002-L1_2.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQC\":\n        fastqc: $( fastqc --version | sed '/FastQC v/!d; s/.*v//' )\n    END_VERSIONS\n    "
+    },
+    "f1/e7c9ff": {
+      "hash": "f1/e7c9ff",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/f1/e7c9ffe471320e7bd042be19c9c429",
+      "script": "\n    samtools \\\n        index \\\n        -@ 0 \\\n         \\\n        donor_004.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:CRAM_MERGE_INDEX_SAMTOOLS:INDEX_CRAM\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "4d/1a1485": {
+      "hash": "4d/1a1485",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM",
+      "container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/4d/1a1485b75bb48179cf9280809c240f",
+      "script": "\n    INDEX=`find -L ./ -name \"*.amb\" | sed 's/\\.amb$//'`\n\n    bwa mem \\\n        -K 100000000 -Y -R \"@RG\\tID:donor_002.L1\\tPU:L1\\tSM:donor_002_donor_002\\tLB:donor_002\\tDS:https://raw.githubusercontent.com/nf-core/test-datasets/modules/data//genomics/homo_sapiens/genome/genome.fasta\\tPL:ILLUMINA\" \\\n        -t 4 \\\n        $INDEX \\\n        test_1.fastq.gz test_2.fastq.gz \\\n        | samtools sort   --threads 4 -o donor_002.sorted.bam -\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:FASTQ_ALIGN:BWAMEM1_MEM\":\n        bwa: $(echo $(bwa 2>&1) | sed 's/^.*Version: //; s/Contact:.*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "28/30348a": {
+      "hash": "28/30348a",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS",
+      "container": "community.wave.seqera.io/library/bcftools:1.21--4335bec1d7b44d11",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/28/30348ac3d2a291274b569c5343b93f",
+      "script": "\n    bcftools stats \\\n         \\\n         \\\n         \\\n         \\\n         \\\n         \\\n        donor_001.strelka.variants.vcf.gz > donor_001.strelka.variants.bcftools_stats.txt\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS\":\n        bcftools: $(bcftools --version 2>&1 | head -n1 | sed 's/^.*bcftools //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "e0/4df464": {
+      "hash": "e0/4df464",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/e0/4df4640d96f23d8e8e463e29e367d4",
+      "script": "\n    gatk --java-options \"-Xmx3276M -XX:-UsePerfData\" \\\n        ApplyBQSR \\\n        --input donor_001.md.cram \\\n        --output donor_001.recal.cram \\\n        --reference genome.fasta \\\n        --bqsr-recal-file donor_001.recal.table \\\n        --intervals chr22_1-40001.bed \\\n        --tmp-dir . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_APPLYBQSR:GATK4_APPLYBQSR\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "da/2dcb14": {
+      "hash": "da/2dcb14",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL (donor_002)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/da/2dcb14c3450e6ae445d7ec11e93d48",
+      "script": "\n    vcftools \\\n        --gzvcf donor_002.strelka.variants.vcf.gz \\\n        --out donor_002.strelka.variants \\\n        --TsTv-by-qual \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_QUAL\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "54/0534a5": {
+      "hash": "54/0534a5",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE (donor_005)",
+      "process": "NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE",
+      "container": "quay.io/biocontainers/strelka:2.9.10--h9ee0642_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/54/0534a503b5302e03e72a6363160575",
+      "script": "\n    configureStrelkaGermlineWorkflow.py \\\n        --bam donor_005.recal.cram \\\n        --referenceFasta genome.fasta \\\n        --callRegions chr22_1-40001.bed.gz \\\n         \\\n        --runDir strelka\n\n    sed -i s/\"isEmail = isLocalSmtp()\"/\"isEmail = False\"/g strelka/runWorkflow.py\n\n    python strelka/runWorkflow.py -m local -j 4\n    mv strelka/results/variants/genome.*.vcf.gz     donor_005.strelka.genome.vcf.gz\n    mv strelka/results/variants/genome.*.vcf.gz.tbi donor_005.strelka.genome.vcf.gz.tbi\n    mv strelka/results/variants/variants.vcf.gz     donor_005.strelka.variants.vcf.gz\n    mv strelka/results/variants/variants.vcf.gz.tbi donor_005.strelka.variants.vcf.gz.tbi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:BAM_VARIANT_CALLING_GERMLINE_ALL:BAM_VARIANT_CALLING_SINGLE_STRELKA:STRELKA_SINGLE\":\n        strelka: $( configureStrelkaGermlineWorkflow.py --version )\n    END_VERSIONS\n    "
+    },
+    "75/5bffc9": {
+      "hash": "75/5bffc9",
+      "task_id": null,
+      "name": "NFCORE_SAREK:PREPARE_INTERVALS:TABIX_BGZIPTABIX_INTERVAL_COMBINED (genome)",
+      "process": "NFCORE_SAREK:PREPARE_INTERVALS:TABIX_BGZIPTABIX_INTERVAL_COMBINED",
+      "container": "community.wave.seqera.io/library/htslib:1.21--ff8e28a189fbecaa",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/75/5bffc911a85304acb682e6eb9a4dd5",
+      "script": "\n    bgzip  --threads 1 -c  genome.bed > genome.bed.gz\n    tabix --threads 1  genome.bed.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:PREPARE_INTERVALS:TABIX_BGZIPTABIX_INTERVAL_COMBINED\":\n        tabix: $(echo $(tabix -h 2>&1) | sed 's/^.*Version: //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "6f/d5adaf": {
+      "hash": "6f/d5adaf",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQC (donor_001-L1)",
+      "process": "NFCORE_SAREK:SAREK:FASTQC",
+      "container": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/6f/d5adaf5ca4b81f8007a53e78b4b867",
+      "script": "\n    printf \"%s %s\\n\" test_1.fastq.gz donor_001-L1_1.gz test_2.fastq.gz donor_001-L1_2.gz | while read old_name new_name; do\n        [ -f \"${new_name}\" ] || ln -s $old_name $new_name\n    done\n\n    fastqc \\\n        --quiet \\\n        --threads 4 \\\n        --memory 1024 \\\n        donor_001-L1_1.gz donor_001-L1_2.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQC\":\n        fastqc: $( fastqc --version | sed '/FastQC v/!d; s/.*v//' )\n    END_VERSIONS\n    "
+    },
+    "9f/d03692": {
+      "hash": "9f/d03692",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS",
+      "container": "community.wave.seqera.io/library/bcftools:1.21--4335bec1d7b44d11",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/9f/d036925b28872e8b8f2faae289e608",
+      "script": "\n    bcftools stats \\\n         \\\n         \\\n         \\\n         \\\n         \\\n         \\\n        donor_004.strelka.variants.vcf.gz > donor_004.strelka.variants.bcftools_stats.txt\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:BCFTOOLS_STATS\":\n        bcftools: $(bcftools --version 2>&1 | head -n1 | sed 's/^.*bcftools //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "0f/73c124": {
+      "hash": "0f/73c124",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQC (donor_005-L1)",
+      "process": "NFCORE_SAREK:SAREK:FASTQC",
+      "container": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/0f/73c124af5da76c5d05670a2ba653c5",
+      "script": "\n    printf \"%s %s\\n\" test_1.fastq.gz donor_005-L1_1.gz test_2.fastq.gz donor_005-L1_2.gz | while read old_name new_name; do\n        [ -f \"${new_name}\" ] || ln -s $old_name $new_name\n    done\n\n    fastqc \\\n        --quiet \\\n        --threads 4 \\\n        --memory 1024 \\\n        donor_005-L1_1.gz donor_005-L1_2.gz\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQC\":\n        fastqc: $( fastqc --version | sed '/FastQC v/!d; s/.*v//' )\n    END_VERSIONS\n    "
+    },
+    "25/7b8e37": {
+      "hash": "25/7b8e37",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT (donor_003)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/25/7b8e37ad61d5aa0fc6eef1bc34ead3",
+      "script": "\n    vcftools \\\n        --gzvcf donor_003.strelka.variants.vcf.gz \\\n        --out donor_003.strelka.variants \\\n        --TsTv-by-count \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "71/921fef": {
+      "hash": "71/921fef",
+      "task_id": null,
+      "name": "NFCORE_SAREK:PREPARE_INTERVALS:CREATE_INTERVALS_BED (genome.interval_list)",
+      "process": "NFCORE_SAREK:PREPARE_INTERVALS:CREATE_INTERVALS_BED",
+      "container": "quay.io/biocontainers/gawk:5.3.0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/71/921fef2eb945af360af2dbb7120444",
+      "script": "\n        grep -v '^@' genome.interval_list | awk -vFS=\"\t\" '{\n            name = sprintf(\"%s_%d-%d\", $1, $2, $3);\n            printf(\"%s\\t%d\\t%d\\n\", $1, $2-1, $3) > name \".bed\"\n        }'\n\n        cat <<-END_VERSIONS > versions.yml\n        \"NFCORE_SAREK:PREPARE_INTERVALS:CREATE_INTERVALS_BED\":\n            gawk: $(awk -Wversion | sed '1!d; s/.*Awk //; s/,.*//')\n        END_VERSIONS\n        "
+    },
+    "54/e4d898": {
+      "hash": "54/e4d898",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES (donor_001)",
+      "process": "NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel_htslib_samtools:c1e4292d6ee27439",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/54/e4d89824dbb6f7e3605e39c66e19ad",
+      "script": "\n    gatk --java-options \"-Xmx12288M -XX:-UsePerfData\" \\\n        MarkDuplicates \\\n        --INPUT donor_001.sorted.bam \\\n        --OUTPUT donor_001.md.bam \\\n        --METRICS_FILE donor_001.md.cram.metrics \\\n        --TMP_DIR . \\\n        --REFERENCE_SEQUENCE genome.fasta \\\n        --REMOVE_DUPLICATES false --VALIDATION_STRINGENCY LENIENT\n\n    # If cram files are wished as output, the run samtools for conversion\n    if [[ donor_001.md.cram == *.cram ]]; then\n        samtools view -Ch -T genome.fasta -o donor_001.md.cram donor_001.md.bam\n        rm donor_001.md.bam\n        samtools index donor_001.md.cram\n    fi\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:FASTQ_PREPROCESS_GATK:BAM_MARKDUPLICATES:GATK4_MARKDUPLICATES\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "c4/c0ddd2": {
+      "hash": "c4/c0ddd2",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH",
+      "container": "quay.io/biocontainers/mosdepth:0.3.10--h4e814b3_1",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/c4/c0ddd221b3e5c8c573aa29ad3c549a",
+      "script": "\n    mosdepth \\\n        --threads 4 \\\n         \\\n        --fasta genome.fasta \\\n        -n --fast-mode --by 500 \\\n        donor_004.recal \\\n        donor_004.recal.cram\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:MOSDEPTH\":\n        mosdepth: $(mosdepth --version 2>&1 | sed 's/^.*mosdepth //; s/ .*$//')\n    END_VERSIONS\n    "
+    },
+    "cc/5fe360": {
+      "hash": "cc/5fe360",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS",
+      "container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/cc/5fe3605092139cf859c377e451ea78",
+      "script": "\n    samtools \\\n        stats \\\n        --threads 1 \\\n        --reference genome.fasta \\\n        donor_004.recal.cram \\\n        > donor_004.recal.cram.stats\n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:CRAM_SAMPLEQC:CRAM_QC_RECAL:SAMTOOLS_STATS\":\n        samtools: $(echo $(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*$//')\n    END_VERSIONS\n    "
+    },
+    "cf/79badb": {
+      "hash": "cf/79badb",
+      "task_id": null,
+      "name": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT (donor_004)",
+      "process": "NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT",
+      "container": "quay.io/biocontainers/vcftools:0.1.16--he513fc3_4",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/cf/79badb1f1bb6a45d5718053d8ec630",
+      "script": "\n    vcftools \\\n        --gzvcf donor_004.strelka.variants.vcf.gz \\\n        --out donor_004.strelka.variants \\\n        --TsTv-by-count \\\n         \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:SAREK:VCF_QC_BCFTOOLS_VCFTOOLS:VCFTOOLS_TSTV_COUNT\":\n        vcftools: $(echo $(vcftools --version 2>&1) | sed 's/^.*VCFtools (//;s/).*//')\n    END_VERSIONS\n    "
+    },
+    "de/3ac0ee": {
+      "hash": "de/3ac0ee",
+      "task_id": null,
+      "name": "NFCORE_SAREK:PREPARE_INTERVALS:GATK4_INTERVALLISTTOBED (genome)",
+      "process": "NFCORE_SAREK:PREPARE_INTERVALS:GATK4_INTERVALLISTTOBED",
+      "container": "community.wave.seqera.io/library/gatk4_gcnvkernel:e48d414933d188cd",
+      "status": "",
+      "workdir": "/Users/seemajagadeesh/workspace/BioTechJourney/Petri/work/de/3ac0ee3d557c10c01fa79a7befc5ea",
+      "script": "\n    gatk --java-options \"-Xmx9830M -XX:-UsePerfData\" \\\n        IntervalListToBed \\\n        --INPUT genome.interval_list \\\n        --OUTPUT genome.bed \\\n        --TMP_DIR . \\\n        \n\n    cat <<-END_VERSIONS > versions.yml\n    \"NFCORE_SAREK:PREPARE_INTERVALS:GATK4_INTERVALLISTTOBED\":\n        gatk4: $(echo $(gatk --version 2>&1) | sed 's/^.*(GATK) v//; s/ .*$//')\n    END_VERSIONS\n    "
+    }
+  },
+  "edges": [
+    {
+      "consumer": "ae/8f8616",
+      "producer": "54/0534a5",
+      "filename": "donor_005.strelka.variants.vcf.gz",
+      "target": "lid://540534a503b5302e03e72a6363160575/donor_005.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "ae/8f8616",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "10/a98109",
+      "producer": "5a/974cad",
+      "filename": "donor_005.recal.cram",
+      "target": "lid://5a974cad3442225d856bcdf61a9bcef4/donor_005.recal.cram"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram.crai",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram.crai"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz#c4e70eb5a46b91076aeb1d9b3f0debd3"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz#6d4365e2c4cb3ab0329530cca748e459"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz.tbi#5dd868e5d320d22b288e533a03f0b38b"
+    },
+    {
+      "consumer": "97/b02335",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz.tbi#30f7109f053192742730cb65c912332d"
+    },
+    {
+      "consumer": "74/4ae0cf",
+      "producer": "5a/974cad",
+      "filename": "donor_005.recal.cram",
+      "target": "lid://5a974cad3442225d856bcdf61a9bcef4/donor_005.recal.cram"
+    },
+    {
+      "consumer": "74/4ae0cf",
+      "producer": "10/a98109",
+      "filename": "donor_005.recal.cram.crai",
+      "target": "lid://10a98109c1469161d5f8c2e4bd4006f4/donor_005.recal.cram.crai"
+    },
+    {
+      "consumer": "74/4ae0cf",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "cf/aa99f5",
+      "producer": "fb/c2055b",
+      "filename": "donor_003.strelka.variants.vcf.gz",
+      "target": "lid://fbc2055bed1d9e4b1710394119c3da6a/donor_003.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "cf/aa99f5",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "c4/0bcd25",
+      "producer": "5a/974cad",
+      "filename": "donor_005.recal.cram",
+      "target": "lid://5a974cad3442225d856bcdf61a9bcef4/donor_005.recal.cram"
+    },
+    {
+      "consumer": "c4/0bcd25",
+      "producer": "10/a98109",
+      "filename": "donor_005.recal.cram.crai",
+      "target": "lid://10a98109c1469161d5f8c2e4bd4006f4/donor_005.recal.cram.crai"
+    },
+    {
+      "consumer": "c4/0bcd25",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "e4/da687c",
+      "producer": "8b/bf510c",
+      "filename": "donor_004.strelka.variants.vcf.gz",
+      "target": "lid://8bbf510c8d236b0a706997f854b15953/donor_004.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "e4/da687c",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "8b/bf510c",
+      "producer": "79/f85238",
+      "filename": "donor_004.recal.cram",
+      "target": "lid://79f852384490eb47a2109d4eb0d6f072/donor_004.recal.cram"
+    },
+    {
+      "consumer": "8b/bf510c",
+      "producer": "f1/e7c9ff",
+      "filename": "donor_004.recal.cram.crai",
+      "target": "lid://f1e7c9ffe471320e7bd042be19c9c429/donor_004.recal.cram.crai"
+    },
+    {
+      "consumer": "8b/bf510c",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz"
+    },
+    {
+      "consumer": "8b/bf510c",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz.tbi",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz.tbi"
+    },
+    {
+      "consumer": "8b/bf510c",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "8b/bf510c",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "76/fa7c3c",
+      "producer": "0f/a50d46",
+      "filename": "donor_001.strelka.variants.vcf.gz",
+      "target": "lid://0fa50d467eb833548e292d337b993523/donor_001.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "76/fa7c3c",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "6b/4fd54c",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram"
+    },
+    {
+      "consumer": "6b/4fd54c",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram.crai",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram.crai"
+    },
+    {
+      "consumer": "6b/4fd54c",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "60/05eef6",
+      "producer": "ae/4f8832",
+      "filename": "donor_003.recal.cram",
+      "target": "lid://ae4f883270df61e9b64a65c50af5ce87/donor_003.recal.cram"
+    },
+    {
+      "consumer": "60/05eef6",
+      "producer": "cc/e51e18",
+      "filename": "donor_003.recal.cram.crai",
+      "target": "lid://cce51e1808d2ac9af00382462747f77f/donor_003.recal.cram.crai"
+    },
+    {
+      "consumer": "60/05eef6",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "50/06dbf4",
+      "producer": "66/2ec587",
+      "filename": "donor_002.strelka.variants.vcf.gz",
+      "target": "lid://662ec58735470bfd040b8192fee83b45/donor_002.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "28/c44947",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram"
+    },
+    {
+      "consumer": "28/c44947",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram.crai",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram.crai"
+    },
+    {
+      "consumer": "28/c44947",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "c8/75f0e4",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram"
+    },
+    {
+      "consumer": "c8/75f0e4",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram.crai",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram.crai"
+    },
+    {
+      "consumer": "c8/75f0e4",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "3d/f55b41",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "3d/f55b41",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "41/cb64a3",
+      "producer": "e0/4df464",
+      "filename": "donor_001.recal.cram",
+      "target": "lid://e04df4640d96f23d8e8e463e29e367d4/donor_001.recal.cram"
+    },
+    {
+      "consumer": "41/cb64a3",
+      "producer": "89/280491",
+      "filename": "donor_001.recal.cram.crai",
+      "target": "lid://892804917c38fbce8bac4e2baa3f98cc/donor_001.recal.cram.crai"
+    },
+    {
+      "consumer": "41/cb64a3",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram.crai",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram.crai"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz#c4e70eb5a46b91076aeb1d9b3f0debd3"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz#6d4365e2c4cb3ab0329530cca748e459"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz.tbi#5dd868e5d320d22b288e533a03f0b38b"
+    },
+    {
+      "consumer": "ec/e266f9",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz.tbi#30f7109f053192742730cb65c912332d"
+    },
+    {
+      "consumer": "51/575d54",
+      "producer": "54/0534a5",
+      "filename": "donor_005.strelka.variants.vcf.gz",
+      "target": "lid://540534a503b5302e03e72a6363160575/donor_005.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "3f/10eac3",
+      "producer": "1c/59f472",
+      "filename": "donor_004.sorted.bam",
+      "target": "lid://1c59f472161fada28f422b497f070d87/donor_004.sorted.bam"
+    },
+    {
+      "consumer": "3f/10eac3",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "3f/10eac3",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "bd/f9935f",
+      "producer": "9c/00fcc9",
+      "filename": "donor_005.sorted.bam",
+      "target": "lid://9c00fcc9c9d27928dbda6a0b83bd3585/donor_005.sorted.bam"
+    },
+    {
+      "consumer": "bd/f9935f",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "bd/f9935f",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "ea/87a952",
+      "producer": "8b/bf510c",
+      "filename": "donor_004.strelka.variants.vcf.gz",
+      "target": "lid://8bbf510c8d236b0a706997f854b15953/donor_004.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "ea/87a952",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "0b/00330f",
+      "producer": "54/0534a5",
+      "filename": "donor_005.strelka.variants.vcf.gz",
+      "target": "lid://540534a503b5302e03e72a6363160575/donor_005.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "0b/00330f",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram.crai",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram.crai"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "ec/e266f9",
+      "filename": "donor_002.recal.table",
+      "target": "lid://ece266f9b8752a31180ea5e05dca5b77/donor_002.recal.table"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "a8/ffd943",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "e8/1de076",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "e8/1de076",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram.crai",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram.crai"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz#c4e70eb5a46b91076aeb1d9b3f0debd3"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz#6d4365e2c4cb3ab0329530cca748e459"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz.tbi#5dd868e5d320d22b288e533a03f0b38b"
+    },
+    {
+      "consumer": "54/a4f0ac",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz.tbi#30f7109f053192742730cb65c912332d"
+    },
+    {
+      "consumer": "66/759590",
+      "producer": "ae/4f8832",
+      "filename": "donor_003.recal.cram",
+      "target": "lid://ae4f883270df61e9b64a65c50af5ce87/donor_003.recal.cram"
+    },
+    {
+      "consumer": "66/759590",
+      "producer": "cc/e51e18",
+      "filename": "donor_003.recal.cram.crai",
+      "target": "lid://cce51e1808d2ac9af00382462747f77f/donor_003.recal.cram.crai"
+    },
+    {
+      "consumer": "66/759590",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "c7/ea4130",
+      "producer": "e0/4df464",
+      "filename": "donor_001.recal.cram",
+      "target": "lid://e04df4640d96f23d8e8e463e29e367d4/donor_001.recal.cram"
+    },
+    {
+      "consumer": "c7/ea4130",
+      "producer": "89/280491",
+      "filename": "donor_001.recal.cram.crai",
+      "target": "lid://892804917c38fbce8bac4e2baa3f98cc/donor_001.recal.cram.crai"
+    },
+    {
+      "consumer": "c7/ea4130",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "89/280491",
+      "producer": "e0/4df464",
+      "filename": "donor_001.recal.cram",
+      "target": "lid://e04df4640d96f23d8e8e463e29e367d4/donor_001.recal.cram"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram.crai",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram.crai"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz#c4e70eb5a46b91076aeb1d9b3f0debd3"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz#6d4365e2c4cb3ab0329530cca748e459"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz.tbi#5dd868e5d320d22b288e533a03f0b38b"
+    },
+    {
+      "consumer": "39/711047",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz.tbi#30f7109f053192742730cb65c912332d"
+    },
+    {
+      "consumer": "b6/cde5ff",
+      "producer": "4d/1a1485",
+      "filename": "donor_002.sorted.bam",
+      "target": "lid://4d1a1485b75bb48179cf9280809c240f/donor_002.sorted.bam"
+    },
+    {
+      "consumer": "b6/cde5ff",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "b6/cde5ff",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "54/f3bf38",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram"
+    },
+    {
+      "consumer": "54/f3bf38",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram.crai",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram.crai"
+    },
+    {
+      "consumer": "54/f3bf38",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "95/3aca0e",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "0f/a50d46",
+      "producer": "e0/4df464",
+      "filename": "donor_001.recal.cram",
+      "target": "lid://e04df4640d96f23d8e8e463e29e367d4/donor_001.recal.cram"
+    },
+    {
+      "consumer": "0f/a50d46",
+      "producer": "89/280491",
+      "filename": "donor_001.recal.cram.crai",
+      "target": "lid://892804917c38fbce8bac4e2baa3f98cc/donor_001.recal.cram.crai"
+    },
+    {
+      "consumer": "0f/a50d46",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz"
+    },
+    {
+      "consumer": "0f/a50d46",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz.tbi",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz.tbi"
+    },
+    {
+      "consumer": "0f/a50d46",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "0f/a50d46",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "94/af882b",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram"
+    },
+    {
+      "consumer": "94/af882b",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram.crai",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram.crai"
+    },
+    {
+      "consumer": "94/af882b",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "bc/9effb3",
+      "producer": "0f/a50d46",
+      "filename": "donor_001.strelka.variants.vcf.gz",
+      "target": "lid://0fa50d467eb833548e292d337b993523/donor_001.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "bc/9effb3",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "1c/59f472",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "1c/59f472",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "1c/59f472",
+      "producer": "95/3aca0e",
+      "filename": "bwa",
+      "target": "lid://953aca0e13382656e18bbee27d2db627/bwa"
+    },
+    {
+      "consumer": "bc/703115",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram"
+    },
+    {
+      "consumer": "bc/703115",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram.crai",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram.crai"
+    },
+    {
+      "consumer": "bc/703115",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "9c/00fcc9",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "9c/00fcc9",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "9c/00fcc9",
+      "producer": "95/3aca0e",
+      "filename": "bwa",
+      "target": "lid://953aca0e13382656e18bbee27d2db627/bwa"
+    },
+    {
+      "consumer": "cc/e51e18",
+      "producer": "ae/4f8832",
+      "filename": "donor_003.recal.cram",
+      "target": "lid://ae4f883270df61e9b64a65c50af5ce87/donor_003.recal.cram"
+    },
+    {
+      "consumer": "66/2ec587",
+      "producer": "a8/ffd943",
+      "filename": "donor_002.recal.cram",
+      "target": "lid://a8ffd9434f9bc12f1c9d82160b811c08/donor_002.recal.cram"
+    },
+    {
+      "consumer": "66/2ec587",
+      "producer": "11/94e677",
+      "filename": "donor_002.recal.cram.crai",
+      "target": "lid://1194e67725bfdd01ac6bc4c8e01a4153/donor_002.recal.cram.crai"
+    },
+    {
+      "consumer": "66/2ec587",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz"
+    },
+    {
+      "consumer": "66/2ec587",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz.tbi",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz.tbi"
+    },
+    {
+      "consumer": "66/2ec587",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "66/2ec587",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "b2/cec245",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "9b/f821d8",
+      "producer": "54/0534a5",
+      "filename": "donor_005.strelka.variants.vcf.gz",
+      "target": "lid://540534a503b5302e03e72a6363160575/donor_005.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "9b/f821d8",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "a6/cab906",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram"
+    },
+    {
+      "consumer": "a6/cab906",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram.crai",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram.crai"
+    },
+    {
+      "consumer": "a6/cab906",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "8d/f740eb",
+      "producer": "fb/c2055b",
+      "filename": "donor_003.strelka.variants.vcf.gz",
+      "target": "lid://fbc2055bed1d9e4b1710394119c3da6a/donor_003.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "8d/f740eb",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "28/9215fd",
+      "producer": "fb/c2055b",
+      "filename": "donor_003.strelka.variants.vcf.gz",
+      "target": "lid://fbc2055bed1d9e4b1710394119c3da6a/donor_003.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "fb/c2055b",
+      "producer": "ae/4f8832",
+      "filename": "donor_003.recal.cram",
+      "target": "lid://ae4f883270df61e9b64a65c50af5ce87/donor_003.recal.cram"
+    },
+    {
+      "consumer": "fb/c2055b",
+      "producer": "cc/e51e18",
+      "filename": "donor_003.recal.cram.crai",
+      "target": "lid://cce51e1808d2ac9af00382462747f77f/donor_003.recal.cram.crai"
+    },
+    {
+      "consumer": "fb/c2055b",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz"
+    },
+    {
+      "consumer": "fb/c2055b",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz.tbi",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz.tbi"
+    },
+    {
+      "consumer": "fb/c2055b",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "fb/c2055b",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "23/e810e7",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "23/e810e7",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "23/e810e7",
+      "producer": "95/3aca0e",
+      "filename": "bwa",
+      "target": "lid://953aca0e13382656e18bbee27d2db627/bwa"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "EXTERNAL",
+      "filename": "methods_description_mqc.yaml",
+      "target": "work/tmp/31/696702b3dcb8ded6655f69e2d35686/methods_description_mqc.yaml#250040b755912afd14a64b329295a6d6"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "EXTERNAL",
+      "filename": "workflow_summary_mqc.yaml",
+      "target": "work/tmp/cb/f71c11db488f26761963f072d57114/workflow_summary_mqc.yaml#a234b9edd3f228b41c8f7efcc92e7712"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "3d/f55b41",
+      "filename": "donor_004-L1_1_fastqc.zip",
+      "target": "lid://3df55b41a74e9a801a6d24daf0344562/donor_004-L1_1_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "3d/f55b41",
+      "filename": "donor_004-L1_2_fastqc.zip",
+      "target": "lid://3df55b41a74e9a801a6d24daf0344562/donor_004-L1_2_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "af/6a8b38",
+      "filename": "donor_002-L1_1_fastqc.zip",
+      "target": "lid://af6a8b38dffd0ad91f48a07ff6d4b34b/donor_002-L1_1_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "af/6a8b38",
+      "filename": "donor_002-L1_2_fastqc.zip",
+      "target": "lid://af6a8b38dffd0ad91f48a07ff6d4b34b/donor_002-L1_2_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "6f/d5adaf",
+      "filename": "donor_001-L1_1_fastqc.zip",
+      "target": "lid://6fd5adaf5ca4b81f8007a53e78b4b867/donor_001-L1_1_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "6f/d5adaf",
+      "filename": "donor_001-L1_2_fastqc.zip",
+      "target": "lid://6fd5adaf5ca4b81f8007a53e78b4b867/donor_001-L1_2_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "0f/73c124",
+      "filename": "donor_005-L1_1_fastqc.zip",
+      "target": "lid://0f73c124af5da76c5d05670a2ba653c5/donor_005-L1_1_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "0f/73c124",
+      "filename": "donor_005-L1_2_fastqc.zip",
+      "target": "lid://0f73c124af5da76c5d05670a2ba653c5/donor_005-L1_2_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "e8/1de076",
+      "filename": "donor_003-L1_1_fastqc.zip",
+      "target": "lid://e81de076e9312b40deef673ff0558b27/donor_003-L1_1_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "e8/1de076",
+      "filename": "donor_003-L1_2_fastqc.zip",
+      "target": "lid://e81de076e9312b40deef673ff0558b27/donor_003-L1_2_fastqc.zip"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "ec/e266f9",
+      "filename": "donor_002.recal.table",
+      "target": "lid://ece266f9b8752a31180ea5e05dca5b77/donor_002.recal.table"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "0e/8c789b",
+      "filename": "donor_003.recal.table",
+      "target": "lid://0e8c789bae75c05b61b95979b0ddfd8e/donor_003.recal.table"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "54/a4f0ac",
+      "filename": "donor_005.recal.table",
+      "target": "lid://54a4f0ac356f36a713cd54b3d6233552/donor_005.recal.table"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "97/b02335",
+      "filename": "donor_001.recal.table",
+      "target": "lid://97b02335587018fd8f6fde04435c08d1/donor_001.recal.table"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "39/711047",
+      "filename": "donor_004.recal.table",
+      "target": "lid://39711047cedc3e4afba2818753f31e79/donor_004.recal.table"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "b6/cde5ff",
+      "filename": "donor_002.md.cram.metrics",
+      "target": "lid://b6cde5ff7299e103c1bf57722edbc59b/donor_002.md.cram.metrics"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram.metrics",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram.metrics"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram.metrics",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram.metrics"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram.metrics",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram.metrics"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram.metrics",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram.metrics"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "6b/4fd54c",
+      "filename": "donor_002.md.mosdepth.region.dist.txt",
+      "target": "lid://6b4fd54c50de13a0c012f9c4187aab97/donor_002.md.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "6b/4fd54c",
+      "filename": "donor_002.md.mosdepth.global.dist.txt",
+      "target": "lid://6b4fd54c50de13a0c012f9c4187aab97/donor_002.md.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "28/c44947",
+      "filename": "donor_002.md.cram.stats",
+      "target": "lid://28c4494775fed47008028f0aac0cf28a/donor_002.md.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "9c/f5ec71",
+      "filename": "donor_003.md.mosdepth.region.dist.txt",
+      "target": "lid://9cf5ec71f2e9fcf4e18f337ee1819d61/donor_003.md.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "9c/f5ec71",
+      "filename": "donor_003.md.mosdepth.global.dist.txt",
+      "target": "lid://9cf5ec71f2e9fcf4e18f337ee1819d61/donor_003.md.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "c8/75f0e4",
+      "filename": "donor_003.md.cram.stats",
+      "target": "lid://c875f0e4cb6a468a57c9d268851f5e56/donor_003.md.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "bc/703115",
+      "filename": "donor_005.md.mosdepth.region.dist.txt",
+      "target": "lid://bc70311598b31734b7fbba9ee8ac7301/donor_005.md.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "bc/703115",
+      "filename": "donor_005.md.mosdepth.global.dist.txt",
+      "target": "lid://bc70311598b31734b7fbba9ee8ac7301/donor_005.md.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "94/af882b",
+      "filename": "donor_005.md.cram.stats",
+      "target": "lid://94af882bb624c0f20b96af6f0dca3a31/donor_005.md.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "7d/3658de",
+      "filename": "donor_001.md.cram.stats",
+      "target": "lid://7d3658de45ee438146a64799cdec40a1/donor_001.md.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "93/e16b5e",
+      "filename": "donor_001.md.mosdepth.region.dist.txt",
+      "target": "lid://93e16b5ef3bd6556bf9481a8f15714bf/donor_001.md.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "93/e16b5e",
+      "filename": "donor_001.md.mosdepth.global.dist.txt",
+      "target": "lid://93e16b5ef3bd6556bf9481a8f15714bf/donor_001.md.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "a6/cab906",
+      "filename": "donor_004.md.mosdepth.region.dist.txt",
+      "target": "lid://a6cab906d5555a89bd60456f9dff5b91/donor_004.md.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "a6/cab906",
+      "filename": "donor_004.md.mosdepth.global.dist.txt",
+      "target": "lid://a6cab906d5555a89bd60456f9dff5b91/donor_004.md.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "54/f3bf38",
+      "filename": "donor_004.md.cram.stats",
+      "target": "lid://54f3bf388173ebfbe99edde965f60865/donor_004.md.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "98/c308dc",
+      "filename": "donor_002.recal.cram.stats",
+      "target": "lid://98c308dc84a8ffd7614b7b508bb4b530/donor_002.recal.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "6c/51d970",
+      "filename": "donor_002.recal.mosdepth.global.dist.txt",
+      "target": "lid://6c51d9706effbc2dd4668867f6b1ac7a/donor_002.recal.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "6c/51d970",
+      "filename": "donor_002.recal.mosdepth.region.dist.txt",
+      "target": "lid://6c51d9706effbc2dd4668867f6b1ac7a/donor_002.recal.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "c4/0bcd25",
+      "filename": "donor_005.recal.cram.stats",
+      "target": "lid://c40bcd2522b846f062e91b847349225d/donor_005.recal.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "74/4ae0cf",
+      "filename": "donor_005.recal.mosdepth.global.dist.txt",
+      "target": "lid://744ae0cf5ccd8dce71fa3aec3c928822/donor_005.recal.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "74/4ae0cf",
+      "filename": "donor_005.recal.mosdepth.region.dist.txt",
+      "target": "lid://744ae0cf5ccd8dce71fa3aec3c928822/donor_005.recal.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "60/05eef6",
+      "filename": "donor_003.recal.cram.stats",
+      "target": "lid://6005eef6f74727b4284da815d0012db7/donor_003.recal.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "66/759590",
+      "filename": "donor_003.recal.mosdepth.region.dist.txt",
+      "target": "lid://66759590b4675a51722e79a65ad0b3ef/donor_003.recal.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "66/759590",
+      "filename": "donor_003.recal.mosdepth.global.dist.txt",
+      "target": "lid://66759590b4675a51722e79a65ad0b3ef/donor_003.recal.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "c7/ea4130",
+      "filename": "donor_001.recal.cram.stats",
+      "target": "lid://c7ea4130e1ba3543324e39a5ecd7985e/donor_001.recal.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "cc/5fe360",
+      "filename": "donor_004.recal.cram.stats",
+      "target": "lid://cc5fe3605092139cf859c377e451ea78/donor_004.recal.cram.stats"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "41/cb64a3",
+      "filename": "donor_001.recal.mosdepth.region.dist.txt",
+      "target": "lid://41cb64a35adbaa5a26ffc4b1d62cc4f6/donor_001.recal.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "41/cb64a3",
+      "filename": "donor_001.recal.mosdepth.global.dist.txt",
+      "target": "lid://41cb64a35adbaa5a26ffc4b1d62cc4f6/donor_001.recal.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "c4/c0ddd2",
+      "filename": "donor_004.recal.mosdepth.region.dist.txt",
+      "target": "lid://c4c0ddd221b3e5c8c573aa29ad3c549a/donor_004.recal.mosdepth.region.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "c4/c0ddd2",
+      "filename": "donor_004.recal.mosdepth.global.dist.txt",
+      "target": "lid://c4c0ddd221b3e5c8c573aa29ad3c549a/donor_004.recal.mosdepth.global.dist.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "50/06dbf4",
+      "filename": "donor_002.strelka.variants.bcftools_stats.txt",
+      "target": "lid://5006dbf4ae3e71b546a6b78d57c64cf3/donor_002.strelka.variants.bcftools_stats.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "28/9215fd",
+      "filename": "donor_003.strelka.variants.bcftools_stats.txt",
+      "target": "lid://289215fd4919fe5376ab3d8e103898c4/donor_003.strelka.variants.bcftools_stats.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "51/575d54",
+      "filename": "donor_005.strelka.variants.bcftools_stats.txt",
+      "target": "lid://51575d549229535a04690b26e1b0bf63/donor_005.strelka.variants.bcftools_stats.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "9f/d03692",
+      "filename": "donor_004.strelka.variants.bcftools_stats.txt",
+      "target": "lid://9fd036925b28872e8b8f2faae289e608/donor_004.strelka.variants.bcftools_stats.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "28/30348a",
+      "filename": "donor_001.strelka.variants.bcftools_stats.txt",
+      "target": "lid://2830348ac3d2a291274b569c5343b93f/donor_001.strelka.variants.bcftools_stats.txt"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "7b/958a35",
+      "filename": "donor_002.strelka.variants.TsTv.count",
+      "target": "lid://7b958a352e3ce46ae1893671d796e833/donor_002.strelka.variants.TsTv.count"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "25/7b8e37",
+      "filename": "donor_003.strelka.variants.TsTv.count",
+      "target": "lid://257b8e37ad61d5aa0fc6eef1bc34ead3/donor_003.strelka.variants.TsTv.count"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "0b/00330f",
+      "filename": "donor_005.strelka.variants.TsTv.count",
+      "target": "lid://0b00330fd0ca95bd33dbdc8a71d94c54/donor_005.strelka.variants.TsTv.count"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "cf/79badb",
+      "filename": "donor_004.strelka.variants.TsTv.count",
+      "target": "lid://cf79badb1f1bb6a45d5718053d8ec630/donor_004.strelka.variants.TsTv.count"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "bc/9effb3",
+      "filename": "donor_001.strelka.variants.TsTv.count",
+      "target": "lid://bc9effb3aa9334da3bc303bf7a95de5d/donor_001.strelka.variants.TsTv.count"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "19/84c6a6",
+      "filename": "donor_002.strelka.variants.FILTER.summary",
+      "target": "lid://1984c6a6ffa11a9e7b5d74622cad11f8/donor_002.strelka.variants.FILTER.summary"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "8d/f740eb",
+      "filename": "donor_003.strelka.variants.FILTER.summary",
+      "target": "lid://8df740ebbb40343b229f92e7afe744c2/donor_003.strelka.variants.FILTER.summary"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "ae/8f8616",
+      "filename": "donor_005.strelka.variants.FILTER.summary",
+      "target": "lid://ae8f8616fa53e1eae50d0ea7006a226f/donor_005.strelka.variants.FILTER.summary"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "e4/da687c",
+      "filename": "donor_004.strelka.variants.FILTER.summary",
+      "target": "lid://e4da687c3e99cef7b7dfa5fd1a2b5843/donor_004.strelka.variants.FILTER.summary"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "ce/7c877b",
+      "filename": "donor_001.strelka.variants.FILTER.summary",
+      "target": "lid://ce7c877b3f1ae67834f1e143a9d6e500/donor_001.strelka.variants.FILTER.summary"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "da/2dcb14",
+      "filename": "donor_002.strelka.variants.TsTv.qual",
+      "target": "lid://da2dcb14c3450e6ae445d7ec11e93d48/donor_002.strelka.variants.TsTv.qual"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "cf/aa99f5",
+      "filename": "donor_003.strelka.variants.TsTv.qual",
+      "target": "lid://cfaa99f5a1a590be38f928f3463abbb5/donor_003.strelka.variants.TsTv.qual"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "9b/f821d8",
+      "filename": "donor_005.strelka.variants.TsTv.qual",
+      "target": "lid://9bf821d8dbe546489ff68e9f027328d4/donor_005.strelka.variants.TsTv.qual"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "ea/87a952",
+      "filename": "donor_004.strelka.variants.TsTv.qual",
+      "target": "lid://ea87a9520f2ea1b516d7d6978d88f777/donor_004.strelka.variants.TsTv.qual"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "76/fa7c3c",
+      "filename": "donor_001.strelka.variants.TsTv.qual",
+      "target": "lid://76fa7c3cd0209dec197ca4f97e6bfc6d/donor_001.strelka.variants.TsTv.qual"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "EXTERNAL",
+      "filename": "nf_core_sarek_software_mqc_versions.yml",
+      "target": "results/a86b1435-3ac1-4c98-b997-391eaecb10ed/pipeline_info/nf_core_sarek_software_mqc_versions.yml#b6e10ba6858d9ce712991b58e828f57e"
+    },
+    {
+      "consumer": "9e/f7d66b",
+      "producer": "EXTERNAL",
+      "filename": "multiqc_config.yml",
+      "target": "https://github.com/nf-core/sarek/tree/4bd2948f98c5bf7b785c91cf6708fffccab25467/assets/multiqc_config.yml#3c2b0ea1476edb48032074d0889eb9b1"
+    },
+    {
+      "consumer": "ce/7c877b",
+      "producer": "0f/a50d46",
+      "filename": "donor_001.strelka.variants.vcf.gz",
+      "target": "lid://0fa50d467eb833548e292d337b993523/donor_001.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "ce/7c877b",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram.crai",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram.crai"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "0e/8c789b",
+      "filename": "donor_003.recal.table",
+      "target": "lid://0e8c789bae75c05b61b95979b0ddfd8e/donor_003.recal.table"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "ae/4f8832",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "19/84c6a6",
+      "producer": "66/2ec587",
+      "filename": "donor_002.strelka.variants.vcf.gz",
+      "target": "lid://662ec58735470bfd040b8192fee83b45/donor_002.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "19/84c6a6",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "6c/51d970",
+      "producer": "a8/ffd943",
+      "filename": "donor_002.recal.cram",
+      "target": "lid://a8ffd9434f9bc12f1c9d82160b811c08/donor_002.recal.cram"
+    },
+    {
+      "consumer": "6c/51d970",
+      "producer": "11/94e677",
+      "filename": "donor_002.recal.cram.crai",
+      "target": "lid://1194e67725bfdd01ac6bc4c8e01a4153/donor_002.recal.cram.crai"
+    },
+    {
+      "consumer": "6c/51d970",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "7d/3658de",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram"
+    },
+    {
+      "consumer": "7d/3658de",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram.crai",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram.crai"
+    },
+    {
+      "consumer": "7d/3658de",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "98/c308dc",
+      "producer": "a8/ffd943",
+      "filename": "donor_002.recal.cram",
+      "target": "lid://a8ffd9434f9bc12f1c9d82160b811c08/donor_002.recal.cram"
+    },
+    {
+      "consumer": "98/c308dc",
+      "producer": "11/94e677",
+      "filename": "donor_002.recal.cram.crai",
+      "target": "lid://1194e67725bfdd01ac6bc4c8e01a4153/donor_002.recal.cram.crai"
+    },
+    {
+      "consumer": "98/c308dc",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "21/488402",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "21/488402",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "21/488402",
+      "producer": "95/3aca0e",
+      "filename": "bwa",
+      "target": "lid://953aca0e13382656e18bbee27d2db627/bwa"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "bd/f9935f",
+      "filename": "donor_005.md.cram.crai",
+      "target": "lid://bdf9935f8a54d0c3aa118e096d7ba750/donor_005.md.cram.crai"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "54/a4f0ac",
+      "filename": "donor_005.recal.table",
+      "target": "lid://54a4f0ac356f36a713cd54b3d6233552/donor_005.recal.table"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "5a/974cad",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram.crai",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram.crai"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz#c4e70eb5a46b91076aeb1d9b3f0debd3"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz#6d4365e2c4cb3ab0329530cca748e459"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "dbsnp_146.hg38.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/dbsnp_146.hg38.vcf.gz.tbi#5dd868e5d320d22b288e533a03f0b38b"
+    },
+    {
+      "consumer": "0e/8c789b",
+      "producer": "EXTERNAL",
+      "filename": "mills_and_1000G.indels.vcf.gz.tbi",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/vcf/mills_and_1000G.indels.vcf.gz.tbi#30f7109f053192742730cb65c912332d"
+    },
+    {
+      "consumer": "11/94e677",
+      "producer": "a8/ffd943",
+      "filename": "donor_002.recal.cram",
+      "target": "lid://a8ffd9434f9bc12f1c9d82160b811c08/donor_002.recal.cram"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "3f/10eac3",
+      "filename": "donor_004.md.cram.crai",
+      "target": "lid://3f10eac3bb2ee2ef6ce76c0c0ef8e659/donor_004.md.cram.crai"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "39/711047",
+      "filename": "donor_004.recal.table",
+      "target": "lid://39711047cedc3e4afba2818753f31e79/donor_004.recal.table"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "79/f85238",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "9c/f5ec71",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram"
+    },
+    {
+      "consumer": "9c/f5ec71",
+      "producer": "c4/290c92",
+      "filename": "donor_003.md.cram.crai",
+      "target": "lid://c4290c92fa7d5bfbec23e9705a12eac6/donor_003.md.cram.crai"
+    },
+    {
+      "consumer": "9c/f5ec71",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "c4/290c92",
+      "producer": "21/488402",
+      "filename": "donor_003.sorted.bam",
+      "target": "lid://21488402060b41203d54c02caa6c2090/donor_003.sorted.bam"
+    },
+    {
+      "consumer": "c4/290c92",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "c4/290c92",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "93/e16b5e",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram"
+    },
+    {
+      "consumer": "93/e16b5e",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram.crai",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram.crai"
+    },
+    {
+      "consumer": "93/e16b5e",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "7b/958a35",
+      "producer": "66/2ec587",
+      "filename": "donor_002.strelka.variants.vcf.gz",
+      "target": "lid://662ec58735470bfd040b8192fee83b45/donor_002.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "7b/958a35",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "af/6a8b38",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "af/6a8b38",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "f1/e7c9ff",
+      "producer": "79/f85238",
+      "filename": "donor_004.recal.cram",
+      "target": "lid://79f852384490eb47a2109d4eb0d6f072/donor_004.recal.cram"
+    },
+    {
+      "consumer": "4d/1a1485",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "4d/1a1485",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "4d/1a1485",
+      "producer": "95/3aca0e",
+      "filename": "bwa",
+      "target": "lid://953aca0e13382656e18bbee27d2db627/bwa"
+    },
+    {
+      "consumer": "28/30348a",
+      "producer": "0f/a50d46",
+      "filename": "donor_001.strelka.variants.vcf.gz",
+      "target": "lid://0fa50d467eb833548e292d337b993523/donor_001.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "54/e4d898",
+      "filename": "donor_001.md.cram.crai",
+      "target": "lid://54e4d89824dbb6f7e3605e39c66e19ad/donor_001.md.cram.crai"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "97/b02335",
+      "filename": "donor_001.recal.table",
+      "target": "lid://97b02335587018fd8f6fde04435c08d1/donor_001.recal.table"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "71/921fef",
+      "filename": "chr22_1-40001.bed",
+      "target": "lid://71921fef2eb945af360af2dbb7120444/chr22_1-40001.bed"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "e0/4df464",
+      "producer": "EXTERNAL",
+      "filename": "genome.dict",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.dict#ad835bd0331f57d2c5ab6be38b78dfba"
+    },
+    {
+      "consumer": "da/2dcb14",
+      "producer": "66/2ec587",
+      "filename": "donor_002.strelka.variants.vcf.gz",
+      "target": "lid://662ec58735470bfd040b8192fee83b45/donor_002.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "da/2dcb14",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "54/0534a5",
+      "producer": "5a/974cad",
+      "filename": "donor_005.recal.cram",
+      "target": "lid://5a974cad3442225d856bcdf61a9bcef4/donor_005.recal.cram"
+    },
+    {
+      "consumer": "54/0534a5",
+      "producer": "10/a98109",
+      "filename": "donor_005.recal.cram.crai",
+      "target": "lid://10a98109c1469161d5f8c2e4bd4006f4/donor_005.recal.cram.crai"
+    },
+    {
+      "consumer": "54/0534a5",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz"
+    },
+    {
+      "consumer": "54/0534a5",
+      "producer": "b2/cec245",
+      "filename": "chr22_1-40001.bed.gz.tbi",
+      "target": "lid://b2cec245b8eef422101f65147b70d099/chr22_1-40001.bed.gz.tbi"
+    },
+    {
+      "consumer": "54/0534a5",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "54/0534a5",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "75/5bffc9",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "6f/d5adaf",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "6f/d5adaf",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "9f/d03692",
+      "producer": "8b/bf510c",
+      "filename": "donor_004.strelka.variants.vcf.gz",
+      "target": "lid://8bbf510c8d236b0a706997f854b15953/donor_004.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "0f/73c124",
+      "producer": "EXTERNAL",
+      "filename": "test_1.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_1.fastq.gz#aff05805084f88350739e5d011440371"
+    },
+    {
+      "consumer": "0f/73c124",
+      "producer": "EXTERNAL",
+      "filename": "test_2.fastq.gz",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/illumina/fastq/test_2.fastq.gz#bd20a7f2c2cc508c08259d940b099f47"
+    },
+    {
+      "consumer": "25/7b8e37",
+      "producer": "fb/c2055b",
+      "filename": "donor_003.strelka.variants.vcf.gz",
+      "target": "lid://fbc2055bed1d9e4b1710394119c3da6a/donor_003.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "25/7b8e37",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "71/921fef",
+      "producer": "EXTERNAL",
+      "filename": "genome.interval_list",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.interval_list#82ad9dfc70a8f22cea4fb28392984585"
+    },
+    {
+      "consumer": "54/e4d898",
+      "producer": "23/e810e7",
+      "filename": "donor_001.sorted.bam",
+      "target": "lid://23e810e7f3bdda56731d40dcc3dbed32/donor_001.sorted.bam"
+    },
+    {
+      "consumer": "54/e4d898",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "54/e4d898",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta.fai",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta.fai#d6b97d6b2f1a3540046564d671e9f15f"
+    },
+    {
+      "consumer": "c4/c0ddd2",
+      "producer": "79/f85238",
+      "filename": "donor_004.recal.cram",
+      "target": "lid://79f852384490eb47a2109d4eb0d6f072/donor_004.recal.cram"
+    },
+    {
+      "consumer": "c4/c0ddd2",
+      "producer": "f1/e7c9ff",
+      "filename": "donor_004.recal.cram.crai",
+      "target": "lid://f1e7c9ffe471320e7bd042be19c9c429/donor_004.recal.cram.crai"
+    },
+    {
+      "consumer": "c4/c0ddd2",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "cc/5fe360",
+      "producer": "79/f85238",
+      "filename": "donor_004.recal.cram",
+      "target": "lid://79f852384490eb47a2109d4eb0d6f072/donor_004.recal.cram"
+    },
+    {
+      "consumer": "cc/5fe360",
+      "producer": "f1/e7c9ff",
+      "filename": "donor_004.recal.cram.crai",
+      "target": "lid://f1e7c9ffe471320e7bd042be19c9c429/donor_004.recal.cram.crai"
+    },
+    {
+      "consumer": "cc/5fe360",
+      "producer": "EXTERNAL",
+      "filename": "genome.fasta",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.fasta#1a7e8a5fa302b1eb68552ac6e72e4dae"
+    },
+    {
+      "consumer": "cf/79badb",
+      "producer": "8b/bf510c",
+      "filename": "donor_004.strelka.variants.vcf.gz",
+      "target": "lid://8bbf510c8d236b0a706997f854b15953/donor_004.strelka.variants.vcf.gz"
+    },
+    {
+      "consumer": "cf/79badb",
+      "producer": "de/3ac0ee",
+      "filename": "genome.bed",
+      "target": "lid://de3ac0ee3d557c10c01fa79a7befc5ea/genome.bed"
+    },
+    {
+      "consumer": "de/3ac0ee",
+      "producer": "EXTERNAL",
+      "filename": "genome.interval_list",
+      "target": "https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/genomics/homo_sapiens/genome/genome.interval_list#82ad9dfc70a8f22cea4fb28392984585"
+    }
+  ],
+  "outputs": {
+    "ae/8f8616": [
+      "donor_005.strelka.variants.FILTER.summary",
+      "versions.yml"
+    ],
+    "10/a98109": [
+      "donor_005.recal.cram.crai",
+      "versions.yml"
+    ],
+    "97/b02335": [
+      "donor_001.recal.table",
+      "versions.yml"
+    ],
+    "74/4ae0cf": [
+      "donor_005.recal.mosdepth.global.dist.txt",
+      "donor_005.recal.mosdepth.region.dist.txt",
+      "donor_005.recal.mosdepth.summary.txt",
+      "donor_005.recal.regions.bed.gz",
+      "donor_005.recal.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "cf/aa99f5": [
+      "donor_003.strelka.variants.TsTv.qual",
+      "versions.yml"
+    ],
+    "c4/0bcd25": [
+      "donor_005.recal.cram.stats",
+      "versions.yml"
+    ],
+    "e4/da687c": [
+      "donor_004.strelka.variants.FILTER.summary",
+      "versions.yml"
+    ],
+    "8b/bf510c": [
+      "donor_004.strelka.genome.vcf.gz",
+      "donor_004.strelka.genome.vcf.gz.tbi",
+      "donor_004.strelka.variants.vcf.gz",
+      "donor_004.strelka.variants.vcf.gz.tbi",
+      "versions.yml"
+    ],
+    "76/fa7c3c": [
+      "donor_001.strelka.variants.TsTv.qual",
+      "versions.yml"
+    ],
+    "6b/4fd54c": [
+      "donor_002.md.mosdepth.global.dist.txt",
+      "donor_002.md.mosdepth.region.dist.txt",
+      "donor_002.md.mosdepth.summary.txt",
+      "donor_002.md.regions.bed.gz",
+      "donor_002.md.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "60/05eef6": [
+      "donor_003.recal.cram.stats",
+      "versions.yml"
+    ],
+    "50/06dbf4": [
+      "donor_002.strelka.variants.bcftools_stats.txt",
+      "versions.yml"
+    ],
+    "28/c44947": [
+      "donor_002.md.cram.stats",
+      "versions.yml"
+    ],
+    "c8/75f0e4": [
+      "donor_003.md.cram.stats",
+      "versions.yml"
+    ],
+    "3d/f55b41": [
+      "donor_004-L1_1_fastqc.html",
+      "donor_004-L1_1_fastqc.zip",
+      "donor_004-L1_2_fastqc.html",
+      "donor_004-L1_2_fastqc.zip",
+      "versions.yml"
+    ],
+    "41/cb64a3": [
+      "donor_001.recal.mosdepth.global.dist.txt",
+      "donor_001.recal.mosdepth.region.dist.txt",
+      "donor_001.recal.mosdepth.summary.txt",
+      "donor_001.recal.regions.bed.gz",
+      "donor_001.recal.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "ec/e266f9": [
+      "donor_002.recal.table",
+      "versions.yml"
+    ],
+    "51/575d54": [
+      "donor_005.strelka.variants.bcftools_stats.txt",
+      "versions.yml"
+    ],
+    "3f/10eac3": [
+      "donor_004.md.cram",
+      "donor_004.md.cram.crai",
+      "donor_004.md.cram.metrics",
+      "versions.yml"
+    ],
+    "bd/f9935f": [
+      "donor_005.md.cram",
+      "donor_005.md.cram.crai",
+      "donor_005.md.cram.metrics",
+      "versions.yml"
+    ],
+    "ea/87a952": [
+      "donor_004.strelka.variants.TsTv.qual",
+      "versions.yml"
+    ],
+    "0b/00330f": [
+      "donor_005.strelka.variants.TsTv.count",
+      "versions.yml"
+    ],
+    "a8/ffd943": [
+      "donor_002.recal.cram",
+      "donor_002.recal.cram.bai",
+      "versions.yml"
+    ],
+    "e8/1de076": [
+      "donor_003-L1_1_fastqc.html",
+      "donor_003-L1_1_fastqc.zip",
+      "donor_003-L1_2_fastqc.html",
+      "donor_003-L1_2_fastqc.zip",
+      "versions.yml"
+    ],
+    "54/a4f0ac": [
+      "donor_005.recal.table",
+      "versions.yml"
+    ],
+    "66/759590": [
+      "donor_003.recal.mosdepth.global.dist.txt",
+      "donor_003.recal.mosdepth.region.dist.txt",
+      "donor_003.recal.mosdepth.summary.txt",
+      "donor_003.recal.regions.bed.gz",
+      "donor_003.recal.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "c7/ea4130": [
+      "donor_001.recal.cram.stats",
+      "versions.yml"
+    ],
+    "89/280491": [
+      "donor_001.recal.cram.crai",
+      "versions.yml"
+    ],
+    "39/711047": [
+      "donor_004.recal.table",
+      "versions.yml"
+    ],
+    "b6/cde5ff": [
+      "donor_002.md.cram",
+      "donor_002.md.cram.crai",
+      "donor_002.md.cram.metrics",
+      "versions.yml"
+    ],
+    "54/f3bf38": [
+      "donor_004.md.cram.stats",
+      "versions.yml"
+    ],
+    "95/3aca0e": [
+      "bwa",
+      "versions.yml"
+    ],
+    "0f/a50d46": [
+      "donor_001.strelka.genome.vcf.gz",
+      "donor_001.strelka.genome.vcf.gz.tbi",
+      "donor_001.strelka.variants.vcf.gz",
+      "donor_001.strelka.variants.vcf.gz.tbi",
+      "versions.yml"
+    ],
+    "94/af882b": [
+      "donor_005.md.cram.stats",
+      "versions.yml"
+    ],
+    "bc/9effb3": [
+      "donor_001.strelka.variants.TsTv.count",
+      "versions.yml"
+    ],
+    "1c/59f472": [
+      "donor_004.sorted.bam",
+      "versions.yml"
+    ],
+    "bc/703115": [
+      "donor_005.md.mosdepth.global.dist.txt",
+      "donor_005.md.mosdepth.region.dist.txt",
+      "donor_005.md.mosdepth.summary.txt",
+      "donor_005.md.regions.bed.gz",
+      "donor_005.md.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "9c/00fcc9": [
+      "donor_005.sorted.bam",
+      "versions.yml"
+    ],
+    "cc/e51e18": [
+      "donor_003.recal.cram.crai",
+      "versions.yml"
+    ],
+    "66/2ec587": [
+      "donor_002.strelka.genome.vcf.gz",
+      "donor_002.strelka.genome.vcf.gz.tbi",
+      "donor_002.strelka.variants.vcf.gz",
+      "donor_002.strelka.variants.vcf.gz.tbi",
+      "versions.yml"
+    ],
+    "b2/cec245": [
+      "chr22_1-40001.bed.gz",
+      "chr22_1-40001.bed.gz.tbi",
+      "versions.yml"
+    ],
+    "9b/f821d8": [
+      "donor_005.strelka.variants.TsTv.qual",
+      "versions.yml"
+    ],
+    "a6/cab906": [
+      "donor_004.md.mosdepth.global.dist.txt",
+      "donor_004.md.mosdepth.region.dist.txt",
+      "donor_004.md.mosdepth.summary.txt",
+      "donor_004.md.regions.bed.gz",
+      "donor_004.md.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "8d/f740eb": [
+      "donor_003.strelka.variants.FILTER.summary",
+      "versions.yml"
+    ],
+    "28/9215fd": [
+      "donor_003.strelka.variants.bcftools_stats.txt",
+      "versions.yml"
+    ],
+    "fb/c2055b": [
+      "donor_003.strelka.genome.vcf.gz",
+      "donor_003.strelka.genome.vcf.gz.tbi",
+      "donor_003.strelka.variants.vcf.gz",
+      "donor_003.strelka.variants.vcf.gz.tbi",
+      "versions.yml"
+    ],
+    "23/e810e7": [
+      "donor_001.sorted.bam",
+      "versions.yml"
+    ],
+    "9e/f7d66b": [
+      "multiqc_data",
+      "multiqc_plots",
+      "multiqc_report.html"
+    ],
+    "ce/7c877b": [
+      "donor_001.strelka.variants.FILTER.summary",
+      "versions.yml"
+    ],
+    "ae/4f8832": [
+      "donor_003.recal.cram",
+      "donor_003.recal.cram.bai",
+      "versions.yml"
+    ],
+    "19/84c6a6": [
+      "donor_002.strelka.variants.FILTER.summary",
+      "versions.yml"
+    ],
+    "6c/51d970": [
+      "donor_002.recal.mosdepth.global.dist.txt",
+      "donor_002.recal.mosdepth.region.dist.txt",
+      "donor_002.recal.mosdepth.summary.txt",
+      "donor_002.recal.regions.bed.gz",
+      "donor_002.recal.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "7d/3658de": [
+      "donor_001.md.cram.stats",
+      "versions.yml"
+    ],
+    "98/c308dc": [
+      "donor_002.recal.cram.stats",
+      "versions.yml"
+    ],
+    "21/488402": [
+      "donor_003.sorted.bam",
+      "versions.yml"
+    ],
+    "5a/974cad": [
+      "donor_005.recal.cram",
+      "donor_005.recal.cram.bai",
+      "versions.yml"
+    ],
+    "0e/8c789b": [
+      "donor_003.recal.table",
+      "versions.yml"
+    ],
+    "11/94e677": [
+      "donor_002.recal.cram.crai",
+      "versions.yml"
+    ],
+    "79/f85238": [
+      "donor_004.recal.cram",
+      "donor_004.recal.cram.bai",
+      "versions.yml"
+    ],
+    "9c/f5ec71": [
+      "donor_003.md.mosdepth.global.dist.txt",
+      "donor_003.md.mosdepth.region.dist.txt",
+      "donor_003.md.mosdepth.summary.txt",
+      "donor_003.md.regions.bed.gz",
+      "donor_003.md.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "c4/290c92": [
+      "donor_003.md.cram",
+      "donor_003.md.cram.crai",
+      "donor_003.md.cram.metrics",
+      "versions.yml"
+    ],
+    "93/e16b5e": [
+      "donor_001.md.mosdepth.global.dist.txt",
+      "donor_001.md.mosdepth.region.dist.txt",
+      "donor_001.md.mosdepth.summary.txt",
+      "donor_001.md.regions.bed.gz",
+      "donor_001.md.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "7b/958a35": [
+      "donor_002.strelka.variants.TsTv.count",
+      "versions.yml"
+    ],
+    "af/6a8b38": [
+      "donor_002-L1_1_fastqc.html",
+      "donor_002-L1_1_fastqc.zip",
+      "donor_002-L1_2_fastqc.html",
+      "donor_002-L1_2_fastqc.zip",
+      "versions.yml"
+    ],
+    "f1/e7c9ff": [
+      "donor_004.recal.cram.crai",
+      "versions.yml"
+    ],
+    "4d/1a1485": [
+      "donor_002.sorted.bam",
+      "versions.yml"
+    ],
+    "28/30348a": [
+      "donor_001.strelka.variants.bcftools_stats.txt",
+      "versions.yml"
+    ],
+    "e0/4df464": [
+      "donor_001.recal.cram",
+      "donor_001.recal.cram.bai",
+      "versions.yml"
+    ],
+    "da/2dcb14": [
+      "donor_002.strelka.variants.TsTv.qual",
+      "versions.yml"
+    ],
+    "54/0534a5": [
+      "donor_005.strelka.genome.vcf.gz",
+      "donor_005.strelka.genome.vcf.gz.tbi",
+      "donor_005.strelka.variants.vcf.gz",
+      "donor_005.strelka.variants.vcf.gz.tbi",
+      "versions.yml"
+    ],
+    "75/5bffc9": [
+      "genome.bed.gz",
+      "genome.bed.gz.tbi",
+      "versions.yml"
+    ],
+    "6f/d5adaf": [
+      "donor_001-L1_1_fastqc.html",
+      "donor_001-L1_1_fastqc.zip",
+      "donor_001-L1_2_fastqc.html",
+      "donor_001-L1_2_fastqc.zip",
+      "versions.yml"
+    ],
+    "9f/d03692": [
+      "donor_004.strelka.variants.bcftools_stats.txt",
+      "versions.yml"
+    ],
+    "0f/73c124": [
+      "donor_005-L1_1_fastqc.html",
+      "donor_005-L1_1_fastqc.zip",
+      "donor_005-L1_2_fastqc.html",
+      "donor_005-L1_2_fastqc.zip",
+      "versions.yml"
+    ],
+    "25/7b8e37": [
+      "donor_003.strelka.variants.TsTv.count",
+      "versions.yml"
+    ],
+    "71/921fef": [
+      "chr22_1-40001.bed",
+      "versions.yml"
+    ],
+    "54/e4d898": [
+      "donor_001.md.cram",
+      "donor_001.md.cram.crai",
+      "donor_001.md.cram.metrics",
+      "versions.yml"
+    ],
+    "c4/c0ddd2": [
+      "donor_004.recal.mosdepth.global.dist.txt",
+      "donor_004.recal.mosdepth.region.dist.txt",
+      "donor_004.recal.mosdepth.summary.txt",
+      "donor_004.recal.regions.bed.gz",
+      "donor_004.recal.regions.bed.gz.csi",
+      "versions.yml"
+    ],
+    "cc/5fe360": [
+      "donor_004.recal.cram.stats",
+      "versions.yml"
+    ],
+    "cf/79badb": [
+      "donor_004.strelka.variants.TsTv.count",
+      "versions.yml"
+    ],
+    "de/3ac0ee": [
+      "genome.bed",
+      "versions.yml"
+    ]
+  }
+}
