@@ -56,6 +56,33 @@ python3 extract_lineage.py \
 Do this during or right after the run. `nextflow clean` removes the symlinks,
 and lineage that was never captured cannot be reconstructed.
 
+## Where the lineage comes from
+
+Clew computes over a lineage graph. It does not care who produced it, and
+there are two ways to feed it today plus one planned:
+
+1. **The `work/` symlink extractor** (above, ships now). Works retroactively
+   on any run whose `work/` directory still exists, on any Nextflow version.
+   This is the only option for runs that already happened.
+2. **Nextflow's native data lineage** (25.04+). Enable it before the run and
+   Nextflow records every task, output file, and link into a `.lineage`
+   store with content-addressed `lid://` identifiers:
+
+   ```bash
+   nextflow run <pipeline> -c lineage.config
+   ```
+
+   The repo ships [lineage.config](lineage.config) for this. An adapter that
+   reads the `.lineage` store directly is the planned primary ingest path
+   going forward, since the engine itself is the best witness of what it ran.
+3. **nf-prov output** (planned). Runs that emit Workflow Run RO-Crate via the
+   nf-prov plugin carry the same edges in a standard format, and Clew should
+   read that rather than invent its own.
+
+Capture and computation stay separate on purpose. The engines are getting
+good at recording what happened. Clew's job starts where they stop: whether a
+contribution can be taken back out, and what must happen when it cannot.
+
 ## Three questions it answers
 
 ### Pipeline engineer: "We bumped the reference genome. What must be re-run?"
