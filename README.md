@@ -42,9 +42,37 @@ The demo answers three questions, one per audience, all from the same engine.
 
 ## Use it on your own run
 
-Rebuild file-level lineage from a Nextflow `work/` directory. No pipeline
-modification, no plugin. Nextflow stages inputs as symlinks to save disk, and
-those symlinks accidentally record the entire history of the run:
+Clew computes over a lineage graph. Two extractors produce one today, and
+they emit the same JSON, so everything downstream is identical either way.
+
+**Preferred: Nextflow's native data lineage** (25.04+). Enable it before the
+run and Nextflow records every task, output file, and link into a `.lineage`
+store with content-addressed `lid://` identifiers. The repo ships
+[lineage.config](lineage.config) for this:
+
+```bash
+nextflow run <pipeline> -c lineage.config
+```
+
+Then build the graph from the store:
+
+```bash
+python3 extract_from_lineage_store.py --store /path/to/.lineage --list-runs
+```
+
+```bash
+python3 extract_from_lineage_store.py --store /path/to/.lineage \
+    --run <run-name> --json-out graph.json
+```
+
+The engine is the best witness of what it ran: inputs are typed, external
+files carry checksums, and every task names its run, so sharing one store
+across many runs is safe by construction.
+
+**Fallback: the `work/` symlink extractor**, for runs that already happened
+without lineage enabled. Nextflow stages inputs as symlinks to save disk,
+and those symlinks accidentally record the entire history of the run. No
+pipeline modification, works on any Nextflow version:
 
 ```bash
 python3 extract_lineage.py \
@@ -53,44 +81,12 @@ python3 extract_lineage.py \
     --json-out graph.json
 ```
 
-Do this during or right after the run. `nextflow clean` removes the symlinks,
-and lineage that was never captured cannot be reconstructed.
+Do this during or right after the run. `nextflow clean` removes the
+symlinks, and lineage that was never captured cannot be reconstructed.
 
-## Where the lineage comes from
-
-Clew computes over a lineage graph. It does not care who produced it, and
-there are two ways to feed it today plus one planned:
-
-1. **Nextflow's native data lineage** (25.04+, the preferred path). Enable it
-   before the run and Nextflow records every task, output file, and link into
-   a `.lineage` store with content-addressed `lid://` identifiers:
-
-   ```bash
-   nextflow run <pipeline> -c lineage.config
-   ```
-
-   The repo ships [lineage.config](lineage.config) for this. Then:
-
-   ```bash
-   python3 extract_from_lineage_store.py --store /path/to/.lineage --list-runs
-   python3 extract_from_lineage_store.py --store /path/to/.lineage \
-       --run <run-name> --json-out graph.json
-   ```
-
-   The engine is the best witness of what it ran: inputs are typed, external
-   files carry checksums, and every task names its run, so sharing one store
-   across many runs is safe by construction.
-2. **The `work/` symlink extractor** (above). Works retroactively on any run
-   whose `work/` directory still exists, on any Nextflow version. This is
-   the only option for runs that already happened without lineage enabled.
-3. **nf-prov output** (planned). Runs that emit Workflow Run RO-Crate via the
-   nf-prov plugin carry the same edges in a standard format, and Clew should
-   read that rather than invent its own.
-
-Both shipping extractors emit the same graph JSON, and on the same sarek
-pipeline they produce identical impact numbers (the test suite enforces
-this). The one difference found: the symlink extractor double-counts inputs
-that sarek stages under two names, which the store records once.
+On the same sarek pipeline the two extractors produce identical impact
+numbers, and the test suite enforces that equivalence. A third input,
+reading nf-prov's Workflow Run RO-Crate output, is planned.
 
 Capture and computation stay separate on purpose. The engines are getting
 good at recording what happened. Clew's job starts where they stop: whether a
