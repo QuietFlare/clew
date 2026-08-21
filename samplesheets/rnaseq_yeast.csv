@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,strandedness
+SRR10440987_wt,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/087/SRR10440987/SRR10440987_1.fastq.gz,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/087/SRR10440987/SRR10440987_2.fastq.gz,auto
+SRR10440988_wt,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/088/SRR10440988/SRR10440988_1.fastq.gz,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/088/SRR10440988/SRR10440988_2.fastq.gz,auto
+SRR10441036_cox4d,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/036/SRR10441036/SRR10441036_1.fastq.gz,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/036/SRR10441036/SRR10441036_2.fastq.gz,auto
+SRR10441037_cox4d,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/037/SRR10441037/SRR10441037_1.fastq.gz,https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR104/037/SRR10441037/SRR10441037_2.fastq.gz,auto

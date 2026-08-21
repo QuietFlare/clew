@@ -11,9 +11,14 @@ what per-input blast radii are for.
 
 from . import nfcore
 
+# Basenames as recorded in a real 3.26.0 run's lineage store (iGenomes
+# R64-1-1). Note the GTF: one direct consumer, yet 149 of 171 tasks in its
+# blast radius — the annotation flows through a single preprocessing step
+# and then touches nearly everything. Shallow entry, deep reach.
 LOAD_BEARING_INPUTS = (
-    "genome.fasta",   # iGenomes R64-1-1 sequence
-    "genes.gtf",      # iGenomes annotation — the frequent-update trigger
+    "genome.fa",    # iGenomes genome sequence
+    "genes.gtf",    # annotation — the frequent-update trigger
+    "genes.bed",    # gene models in BED form, consumed by the QC stack
 )
 
 
