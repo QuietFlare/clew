@@ -40,6 +40,7 @@ yet. Anything unknown fails closed to IRREDUCIBLE.
 """
 
 import argparse
+import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -102,6 +103,63 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set, pub
     return plan
 
 
+def plan_to_dict(domain, graph, subject, entry_nodes, plan):
+    """
+    The remediation plan as data, for scripts and CI rather than eyes.
+
+    Deliberately clock-free: the same inputs must produce byte-identical
+    output, because "re-run it and get the same answer" is the whole basis
+    of Clew's evidence claim. Whoever stores this can wrap it with a
+    timestamp; Clew itself only states what follows from the inputs.
+    """
+    forward = core.forward_index(graph["edges"])
+    items = []
+    for task_hash, facts, action in plan:
+        task = graph["tasks"].get(task_hash, {})
+        item = {
+            "task": task_hash,
+            "process": domain.describe(graph, task_hash),
+            "name": task.get("name", ""),
+            "action": action,
+            "contribution": facts["contribution"],
+            "storage": facts["storage"],
+            "exclusive": facts["exclusive"],
+            "terminal": facts["terminal"],
+            "reason": facts["reason"],
+        }
+        # What a re-run script needs, for the artifacts it must rebuild.
+        if action == "REGENERATE":
+            item["container"] = task.get("container", "")
+            item["script"] = task.get("script", "")
+        # One checkable derivation chain per non-entry task: the evidence.
+        if task_hash not in entry_nodes:
+            paths = core.paths_to(entry_nodes, task_hash, forward, limit=1)
+            if paths:
+                item["evidence_path"] = paths[0]
+        items.append(item)
+
+    counts = defaultdict(int)
+    for _, _, action in plan:
+        counts[action] += 1
+
+    return {
+        "clew_plan_version": 1,
+        "trigger": subject,
+        "entry_tasks": sorted(entry_nodes),
+        "tasks_total": len(graph["tasks"]),
+        "tasks_affected": len(plan),
+        "actions": dict(sorted(counts.items())),
+        "plan": items,
+        "caveats": [
+            "classes assigned from pipeline evidence only "
+            "(script + container recorded, artifact present on disk)",
+            "publication status is an external assertion, not verified by Clew",
+            "MTA transfers and physical destruction are not modelled",
+            "uninstrumented systems are unknown, never clean",
+        ],
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Compute a blast radius and remediation plan.")
     parser.add_argument("--graph", required=True, help="graph JSON from an extractor")
@@ -115,6 +173,8 @@ def main():
                          help="invalidate an external input file by basename")
     parser.add_argument("--assertions", help="JSON file of externally-asserted facts")
     parser.add_argument("--files", action="store_true", help="list affected output files")
+    parser.add_argument("--json", dest="json_out", metavar="PATH",
+                        help="also write the plan as JSON ('-' for stdout)")
     args = parser.parse_args()
 
     domain = DOMAINS[args.pipeline]
@@ -136,9 +196,12 @@ def main():
         radius = core.blast_radius(graph, subjects)
         affected = radius[subject]["affected"]
         # Doubt, not removal: every artifact is still wanted. See header.
-        print_plan(domain, graph, subject, entry_nodes, affected,
-                   exclusive_set=set(), published=published)
+        plan = print_plan(domain, graph, subject, entry_nodes, affected,
+                          exclusive_set=set(), published=published)
         print_caveats(bool(published))
+        # Last on stdout on purpose: with --json -, a consumer can split at
+        # the final '{' and parse cleanly.
+        write_json(args.json_out, domain, graph, subject, entry_nodes, plan)
         return
 
     # --- withdrawal: exclusive/shared computed against the other donors ------
@@ -159,8 +222,8 @@ def main():
         raise SystemExit(f"unknown donor {args.donor!r}; known: {', '.join(sorted(radius))}")
 
     result = radius[args.donor]
-    print_plan(domain, graph, f"withdrawal of {args.donor}", entry[args.donor],
-               result["affected"], result["exclusive"], published)
+    plan = print_plan(domain, graph, f"withdrawal of {args.donor}", entry[args.donor],
+                      result["affected"], result["exclusive"], published)
 
     if args.files:
         exclusive_files = domain.outputs_for(graph, result["exclusive"])
@@ -177,6 +240,22 @@ def main():
             print(f"    ... {len(shared_files) - 20} more")
 
     print_caveats(bool(published))
+    # Last on stdout on purpose: with --json -, a consumer can split at the
+    # final '{' and parse cleanly.
+    write_json(args.json_out, domain, graph, f"withdrawal of {args.donor}",
+               entry[args.donor], plan)
+
+
+def write_json(json_out, domain, graph, subject, entry_nodes, plan):
+    if not json_out:
+        return
+    payload = json.dumps(plan_to_dict(domain, graph, subject, entry_nodes, plan),
+                         indent=2)
+    if json_out == "-":
+        print(payload)
+    else:
+        Path(json_out).write_text(payload)
+        print(f"\nwrote {json_out}")
 
 
 def print_caveats(have_assertions):

@@ -87,7 +87,11 @@ def paths_to(start_nodes, target, forward, limit=3):
         if node == target and len(path) > 1:
             found.append(path)
             continue
-        for nxt in forward.get(node, ()):
+        # Sorted, not incidental set order: which evidence chain gets shown
+        # must not depend on the interpreter's hash seed. Re-running Clew on
+        # the same inputs has to produce byte-identical output — that
+        # replayability is one of the three things Clew actually claims.
+        for nxt in sorted(forward.get(node, ())):
             if nxt not in path:  # no cycles
                 stack.append(path + [nxt])
     return found
