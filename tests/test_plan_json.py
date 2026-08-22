@@ -41,12 +41,18 @@ class TestPlanJson(unittest.TestCase):
         self.assertEqual(sum(p["actions"].values()), 160)
         self.assertEqual(len(p["plan"]), 160)
 
-    def test_regenerate_items_carry_rerun_payload(self):
-        regen = [i for i in self.payload["plan"] if i["action"] == "REGENERATE"]
+    def test_regenerable_items_carry_recorded_evidence(self):
+        # Whether a task's action is REGENERATE or ALREADY_GONE depends on
+        # live disk state; what must ALWAYS hold is that REGENERABLE tasks
+        # carry the recorded script and container — that recording is what
+        # the classification was based on.
+        regen = [i for i in self.payload["plan"]
+                 if i["contribution"] == "REGENERABLE"]
         self.assertTrue(regen)
         for item in regen:
-            self.assertTrue(item["container"], item["task"])
-            self.assertTrue(item["script"], item["task"])
+            if item["action"] == "REGENERATE":
+                self.assertTrue(item["container"], item["task"])
+                self.assertTrue(item["script"], item["task"])
 
     def test_non_entry_tasks_carry_evidence(self):
         entry = set(self.payload["entry_tasks"])

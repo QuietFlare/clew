@@ -57,7 +57,8 @@ from domains import rnaseq, sarek, viralrecon
 DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
 
 
-def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set, published):
+def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
+               published, results_index=None):
     """Classify every affected task and print the remediation plan."""
     forward = core.forward_index(graph["edges"])
 
@@ -70,6 +71,14 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set, pub
         facts = domain.classify(
             graph, task_hash, task_hash in exclusive_set, published=published
         )
+        # The domain's storage check only sees the workdir. If the scratch
+        # copy is gone but published copies are known to exist, the artifact
+        # is NOT already gone — those copies are precisely what remediation
+        # must reach. Scratch cleanup must never launder an obligation.
+        if (facts["storage"] == contribution.DESTROYED
+                and published_copies(graph, task_hash, results_index)):
+            facts["storage"] = contribution.WRITABLE
+            facts["reason"] += "; workdir removed but published copies exist"
         action = contribution.remediate(
             facts["contribution"],
             storage=facts["storage"],
@@ -90,6 +99,12 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set, pub
             scope = "exclusive" if facts["exclusive"] else "shared"
             print(f"    {task_hash}  {domain.describe(graph, task_hash):<26} "
                   f"{facts['contribution']:<12} {scope}")
+            copies = published_copies(graph, task_hash, results_index)
+            if copies:
+                for c in copies:
+                    flag = "  AMBIGUOUS, verify before acting" if c["ambiguous"] else ""
+                    for path in c["published"]:
+                        print(f"        published: {path}{flag}")
             if facts["terminal"]:
                 print(f"        {facts['reason']}")
             elif task_hash not in entry_nodes:
@@ -103,7 +118,45 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set, pub
     return plan
 
 
-def plan_to_dict(domain, graph, subject, entry_nodes, plan):
+def index_results(results_dir):
+    """
+    Index a published-results tree by (basename, size).
+
+    Why this key: the artifacts in results/ are COPIES made by publishDir.
+    The lineage store's checksums are Nextflow's "standard" mode — hashed
+    from path and mtime — so they change on copy and cannot identify one.
+    Basename plus exact size can, almost always; where several published
+    files collide on both, every candidate is listed and the match is
+    flagged ambiguous rather than silently picking one. A deletion list
+    must over-report candidates, never guess.
+    """
+    index = {}
+    root = Path(results_dir)
+    for path in root.rglob("*"):
+        if path.is_file():
+            key = (path.name, path.stat().st_size)
+            index.setdefault(key, []).append(str(path.relative_to(root)))
+    return index
+
+
+def published_copies(graph, task_hash, results_index):
+    """Published copies of one task's outputs, from the (name, size) index."""
+    if not results_index:
+        return []
+    matches = []
+    for detail in graph.get("output_details", {}).get(task_hash, []):
+        key = (Path(detail["file"]).name, detail.get("size"))
+        found = results_index.get(key, [])
+        if found:
+            matches.append({
+                "output": detail["file"],
+                "published": sorted(found),
+                "ambiguous": len(found) > 1,
+            })
+    return matches
+
+
+def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None):
     """
     The remediation plan as data, for scripts and CI rather than eyes.
 
@@ -136,6 +189,9 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan):
             paths = core.paths_to(entry_nodes, task_hash, forward, limit=1)
             if paths:
                 item["evidence_path"] = paths[0]
+        copies = published_copies(graph, task_hash, results_index)
+        if copies:
+            item["published_copies"] = copies
         items.append(item)
 
     counts = defaultdict(int)
@@ -182,10 +238,18 @@ def main():
     parser.add_argument("--files", action="store_true", help="list affected output files")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
                         help="also write the plan as JSON ('-' for stdout)")
+    parser.add_argument("--results", metavar="DIR",
+                        help="the run's published results directory; plan items "
+                             "then name the published copies of each artifact "
+                             "(needs a graph from the lineage store adapter)")
     args = parser.parse_args()
 
     domain = DOMAINS[args.pipeline]
     graph = core.load_graph(args.graph)
+    results_index = index_results(args.results) if args.results else None
+    if args.results and not graph.get("output_details"):
+        print("note: this graph has no output sizes (symlink extractor?); "
+              "--results mapping needs a lineage-store graph\n")
     donors = domain.load_subjects(args.samplesheet)
     published = domain.load_assertions(args.assertions)
 
@@ -213,11 +277,13 @@ def main():
         affected = radius[subject]["affected"]
         # Doubt, not removal: every artifact is still wanted. See header.
         plan = print_plan(domain, graph, subject, entry_nodes, affected,
-                          exclusive_set=set(), published=published)
+                          exclusive_set=set(), published=published,
+                          results_index=results_index)
         print_caveats(bool(published))
         # Last on stdout on purpose: with --json -, a consumer can split at
         # the final '{' and parse cleanly.
-        write_json(args.json_out, domain, graph, subject, entry_nodes, plan)
+        write_json(args.json_out, domain, graph, subject, entry_nodes, plan,
+                   results_index)
         return
 
     # --- withdrawal: exclusive/shared computed against the other donors ------
@@ -251,7 +317,8 @@ def main():
         label = f"distrust of {args.donor}"
         exclusive = set()
     plan = print_plan(domain, graph, label, entry[args.donor],
-                      result["affected"], exclusive, published)
+                      result["affected"], exclusive, published,
+                      results_index=results_index)
 
     if args.files:
         exclusive_files = domain.outputs_for(graph, result["exclusive"])
@@ -270,14 +337,17 @@ def main():
     print_caveats(bool(published))
     # Last on stdout on purpose: with --json -, a consumer can split at the
     # final '{' and parse cleanly.
-    write_json(args.json_out, domain, graph, label, entry[args.donor], plan)
+    write_json(args.json_out, domain, graph, label, entry[args.donor], plan,
+               results_index)
 
 
-def write_json(json_out, domain, graph, subject, entry_nodes, plan):
+def write_json(json_out, domain, graph, subject, entry_nodes, plan,
+               results_index=None):
     if not json_out:
         return
-    payload = json.dumps(plan_to_dict(domain, graph, subject, entry_nodes, plan),
-                         indent=2)
+    payload = json.dumps(
+        plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index),
+        indent=2)
     if json_out == "-":
         print(payload)
     else:

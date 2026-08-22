@@ -7003,5 +7003,5137 @@
       "ERR10000000.CollectMultipleMetrics.read_length_histogram.pdf",
       "versions.yml"
     ]
+  },
+  "output_details": {
+    "1e/ff40a7": [
+      {
+        "file": "ERR10000010.mosdepth.global.dist.txt",
+        "size": 180999
+      },
+      {
+        "file": "ERR10000010.mosdepth.region.dist.txt",
+        "size": 180925
+      },
+      {
+        "file": "ERR10000010.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000010.per-base.bed.gz",
+        "size": 47240
+      },
+      {
+        "file": "ERR10000010.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000010.regions.bed.gz",
+        "size": 1296
+      },
+      {
+        "file": "ERR10000010.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "ERR10000010.thresholds.bed.gz",
+        "size": 1465
+      },
+      {
+        "file": "ERR10000010.thresholds.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 68
+      }
+    ],
+    "53/91bf07": [
+      {
+        "file": "ERR10000000.coverage.masked.bed",
+        "size": 1947
+      },
+      {
+        "file": "versions.yml",
+        "size": 101
+      }
+    ],
+    "8e/025ee6": [
+      {
+        "file": "ERR10000050.MN908947.3_10148_10248.pdf",
+        "size": 15615
+      },
+      {
+        "file": "ERR10000050.MN908947.3_10397_10497.pdf",
+        "size": 15844
+      },
+      {
+        "file": "ERR10000050.MN908947.3_10399_10499.pdf",
+        "size": 15564
+      },
+      {
+        "file": "ERR10000050.MN908947.3_11237_11337.pdf",
+        "size": 15493
+      },
+      {
+        "file": "ERR10000050.MN908947.3_12018_12118.pdf",
+        "size": 15408
+      },
+      {
+        "file": "ERR10000050.MN908947.3_12110_12210.pdf",
+        "size": 15815
+      },
+      {
+        "file": "ERR10000050.MN908947.3_12830_12930.pdf",
+        "size": 15662
+      },
+      {
+        "file": "ERR10000050.MN908947.3_14358_14458.pdf",
+        "size": 15432
+      },
+      {
+        "file": "ERR10000050.MN908947.3_15471_15571.pdf",
+        "size": 15870
+      },
+      {
+        "file": "ERR10000050.MN908947.3_15664_15764.pdf",
+        "size": 15689
+      },
+      {
+        "file": "ERR10000050.MN908947.3_16885_16985.pdf",
+        "size": 15558
+      },
+      {
+        "file": "ERR10000050.MN908947.3_17360_17460.pdf",
+        "size": 15867
+      },
+      {
+        "file": "ERR10000050.MN908947.3_18113_18213.pdf",
+        "size": 15708
+      },
+      {
+        "file": "ERR10000050.MN908947.3_1881_1981.pdf",
+        "size": 16188
+      },
+      {
+        "file": "ERR10000050.MN908947.3_19905_20005.pdf",
+        "size": 13664
+      },
+      {
+        "file": "ERR10000050.MN908947.3_20005_20105.pdf",
+        "size": 15666
+      },
+      {
+        "file": "ERR10000050.MN908947.3_21568_21668.pdf",
+        "size": 15470
+      },
+      {
+        "file": "ERR10000050.MN908947.3_21582_21682.pdf",
+        "size": 15495
+      },
+      {
+        "file": "ERR10000050.MN908947.3_21714_21814.pdf",
+        "size": 16034
+      },
+      {
+        "file": "ERR10000050.MN908947.3_21937_22037.pdf",
+        "size": 15899
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22150_22250.pdf",
+        "size": 15385
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22725_22825.pdf",
+        "size": 16001
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22736_22836.pdf",
+        "size": 15872
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22742_22842.pdf",
+        "size": 16185
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22763_22863.pdf",
+        "size": 16405
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22832_22932.pdf",
+        "size": 15660
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22867_22967.pdf",
+        "size": 16251
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22942_23042.pdf",
+        "size": 15554
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22945_23045.pdf",
+        "size": 15513
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22963_23063.pdf",
+        "size": 15807
+      },
+      {
+        "file": "ERR10000050.MN908947.3_22968_23068.pdf",
+        "size": 15798
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23005_23105.pdf",
+        "size": 15701
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23013_23113.pdf",
+        "size": 15692
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23025_23125.pdf",
+        "size": 15701
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23353_23453.pdf",
+        "size": 15736
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23475_23575.pdf",
+        "size": 15706
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23549_23649.pdf",
+        "size": 15611
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23554_23654.pdf",
+        "size": 15532
+      },
+      {
+        "file": "ERR10000050.MN908947.3_23898_23998.pdf",
+        "size": 15322
+      },
+      {
+        "file": "ERR10000050.MN908947.3_24149_24249.pdf",
+        "size": 15684
+      },
+      {
+        "file": "ERR10000050.MN908947.3_24374_24474.pdf",
+        "size": 15794
+      },
+      {
+        "file": "ERR10000050.MN908947.3_24419_24519.pdf",
+        "size": 15957
+      },
+      {
+        "file": "ERR10000050.MN908947.3_24950_25050.pdf",
+        "size": 15782
+      },
+      {
+        "file": "ERR10000050.MN908947.3_25484_25584.pdf",
+        "size": 15538
+      },
+      {
+        "file": "ERR10000050.MN908947.3_25487_25587.pdf",
+        "size": 15525
+      },
+      {
+        "file": "ERR10000050.MN908947.3_25534_25634.pdf",
+        "size": 15968
+      },
+      {
+        "file": "ERR10000050.MN908947.3_26010_26110.pdf",
+        "size": 15295
+      },
+      {
+        "file": "ERR10000050.MN908947.3_26220_26320.pdf",
+        "size": 15479
+      },
+      {
+        "file": "ERR10000050.MN908947.3_26479_26579.pdf",
+        "size": 15498
+      },
+      {
+        "file": "ERR10000050.MN908947.3_26527_26627.pdf",
+        "size": 15989
+      },
+      {
+        "file": "ERR10000050.MN908947.3_26659_26759.pdf",
+        "size": 15280
+      },
+      {
+        "file": "ERR10000050.MN908947.3_2740_2840.pdf",
+        "size": 15449
+      },
+      {
+        "file": "ERR10000050.MN908947.3_27757_27857.pdf",
+        "size": 15764
+      },
+      {
+        "file": "ERR10000050.MN908947.3_27839_27939.pdf",
+        "size": 15641
+      },
+      {
+        "file": "ERR10000050.MN908947.3_28221_28321.pdf",
+        "size": 15576
+      },
+      {
+        "file": "ERR10000050.MN908947.3_28261_28361.pdf",
+        "size": 16005
+      },
+      {
+        "file": "ERR10000050.MN908947.3_28311_28411.pdf",
+        "size": 15997
+      },
+      {
+        "file": "ERR10000050.MN908947.3_28631_28731.pdf",
+        "size": 15670
+      },
+      {
+        "file": "ERR10000050.MN908947.3_28831_28931.pdf",
+        "size": 15841
+      },
+      {
+        "file": "ERR10000050.MN908947.3_28833_28933.pdf",
+        "size": 15759
+      },
+      {
+        "file": "ERR10000050.MN908947.3_29460_29560.pdf",
+        "size": 15918
+      },
+      {
+        "file": "ERR10000050.MN908947.3_29683_29783.pdf",
+        "size": 12644
+      },
+      {
+        "file": "ERR10000050.MN908947.3_2987_3087.pdf",
+        "size": 15396
+      },
+      {
+        "file": "ERR10000050.MN908947.3_3825_3925.pdf",
+        "size": 16084
+      },
+      {
+        "file": "ERR10000050.MN908947.3_4134_4234.pdf",
+        "size": 15964
+      },
+      {
+        "file": "ERR10000050.MN908947.3_4271_4371.pdf",
+        "size": 16010
+      },
+      {
+        "file": "ERR10000050.MN908947.3_620_720.pdf",
+        "size": 15759
+      },
+      {
+        "file": "ERR10000050.MN908947.3_773_873.pdf",
+        "size": 15699
+      },
+      {
+        "file": "ERR10000050.MN908947.3_8785_8885.pdf",
+        "size": 16004
+      },
+      {
+        "file": "ERR10000050.MN908947.3_9294_9394.pdf",
+        "size": 15353
+      },
+      {
+        "file": "ERR10000050.MN908947.3_9374_9474.pdf",
+        "size": 15406
+      },
+      {
+        "file": "ERR10000050.MN908947.3_9484_9584.pdf",
+        "size": 15975
+      },
+      {
+        "file": "ERR10000050.MN908947.3_9979_10079.pdf",
+        "size": 15567
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "8e/1054fe": [
+      {
+        "file": "ERR10000050.coverage.merged.bed",
+        "size": 174
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "05/85ecca": [
+      {
+        "file": "ERR10000050.consensus.fa",
+        "size": 30366
+      },
+      {
+        "file": "versions.yml",
+        "size": 82
+      }
+    ],
+    "88/1ddd04": [
+      {
+        "file": "ERR10000023.sorted.bam",
+        "size": 22800462
+      },
+      {
+        "file": "versions.yml",
+        "size": 110
+      }
+    ],
+    "03/270981": [
+      {
+        "file": "ERR10000023.fastp.html",
+        "size": 515107
+      },
+      {
+        "file": "ERR10000023.fastp.json",
+        "size": 152158
+      },
+      {
+        "file": "ERR10000023.fastp.log",
+        "size": 1549
+      },
+      {
+        "file": "ERR10000023_1.fastp.fastq.gz",
+        "size": 15425124
+      },
+      {
+        "file": "ERR10000023_2.fastp.fastq.gz",
+        "size": 15141136
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "d7/a4d48d": [
+      {
+        "file": "ERR10000050.sorted.bam",
+        "size": 17464809
+      },
+      {
+        "file": "versions.yml",
+        "size": 110
+      }
+    ],
+    "e7/6ce43f": [
+      {
+        "file": "ERR10000037.classified_1.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000037.classified_2.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000037.kraken2.classifiedreads.txt",
+        "size": 20271394
+      },
+      {
+        "file": "ERR10000037.kraken2.report.txt",
+        "size": 2015
+      },
+      {
+        "file": "ERR10000037.unclassified_1.fastq.gz",
+        "size": 14323303
+      },
+      {
+        "file": "ERR10000037.unclassified_2.fastq.gz",
+        "size": 13878880
+      },
+      {
+        "file": "versions.yml",
+        "size": 79
+      }
+    ],
+    "8d/926b62": [
+      {
+        "file": "ERR10000037.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "38/f9d0f9": [
+      {
+        "file": "ERR10000023.ivar_trim.sorted.bam.stats",
+        "size": 97381
+      },
+      {
+        "file": "versions.yml",
+        "size": 132
+      }
+    ],
+    "76/d2e8a4": [
+      {
+        "file": "ERR10000010.consensus.fa",
+        "size": 30372
+      },
+      {
+        "file": "versions.yml",
+        "size": 82
+      }
+    ],
+    "09/b605a5": [
+      {
+        "file": "ERR10000023.ivar_trim.bam",
+        "size": 23028648
+      },
+      {
+        "file": "ERR10000023.ivar_trim.ivar.log",
+        "size": 0
+      },
+      {
+        "file": "versions.yml",
+        "size": 76
+      }
+    ],
+    "06/10c8ce": [
+      {
+        "file": "ERR10000023.mosdepth.global.dist.txt",
+        "size": 171476
+      },
+      {
+        "file": "ERR10000023.mosdepth.region.dist.txt",
+        "size": 10525
+      },
+      {
+        "file": "ERR10000023.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000023.per-base.bed.gz",
+        "size": 44030
+      },
+      {
+        "file": "ERR10000023.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000023.regions.bed.gz",
+        "size": 1439
+      },
+      {
+        "file": "ERR10000023.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 66
+      }
+    ],
+    "e1/4f4b87": [
+      {
+        "file": "ERR10000000.mosdepth.global.dist.txt",
+        "size": 147852
+      },
+      {
+        "file": "ERR10000000.mosdepth.region.dist.txt",
+        "size": 147813
+      },
+      {
+        "file": "ERR10000000.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000000.per-base.bed.gz",
+        "size": 38687
+      },
+      {
+        "file": "ERR10000000.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000000.regions.bed.gz",
+        "size": 1284
+      },
+      {
+        "file": "ERR10000000.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "ERR10000000.thresholds.bed.gz",
+        "size": 1544
+      },
+      {
+        "file": "ERR10000000.thresholds.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 68
+      }
+    ],
+    "43/886964": [
+      {
+        "file": "ERR10000050.ivar_trim.sorted.bam",
+        "size": 17584469
+      },
+      {
+        "file": "versions.yml",
+        "size": 112
+      }
+    ],
+    "81/6e4074": [
+      {
+        "file": "ERR10000037.fa",
+        "size": 30354
+      },
+      {
+        "file": "versions.yml",
+        "size": 87
+      }
+    ],
+    "a8/ec8352": [
+      {
+        "file": "ERR10000000.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "b5/26da02": [
+      {
+        "file": "ERR10000037.snpeff.csv",
+        "size": 22117
+      },
+      {
+        "file": "ERR10000037.snpeff.genes.txt",
+        "size": 1105
+      },
+      {
+        "file": "ERR10000037.snpeff.summary.html",
+        "size": 236555
+      },
+      {
+        "file": "ERR10000037.snpeff.vcf",
+        "size": 66772
+      },
+      {
+        "file": "versions.yml",
+        "size": 99
+      }
+    ],
+    "43/856ecd": [
+      {
+        "file": "ERR10000010.ivar_trim.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "a5/8ba066": [
+      {
+        "file": "ERR10000023.snpeff.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 137
+      }
+    ],
+    "40/4eb058": [
+      {
+        "file": "ERR10000010.filtered.vcf.gz",
+        "size": 1906
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "81/9ef81d": [
+      {
+        "file": "nCoV-2019.reference.fasta.fai",
+        "size": 26
+      },
+      {
+        "file": "nCoV-2019.reference.fasta.sizes",
+        "size": 17
+      },
+      {
+        "file": "versions.yml",
+        "size": 93
+      }
+    ],
+    "c5/176a43": [
+      {
+        "file": "ERR10000023.aligned.fasta",
+        "size": 29928
+      },
+      {
+        "file": "ERR10000023.auspice.json",
+        "size": 6301827
+      },
+      {
+        "file": "ERR10000023.csv",
+        "size": 3325
+      },
+      {
+        "file": "ERR10000023.errors.csv",
+        "size": 62
+      },
+      {
+        "file": "ERR10000023.insertions.csv",
+        "size": 57
+      },
+      {
+        "file": "ERR10000023.json",
+        "size": 193648
+      },
+      {
+        "file": "ERR10000023.ndjson",
+        "size": 87397
+      },
+      {
+        "file": "ERR10000023.tsv",
+        "size": 3323
+      },
+      {
+        "file": "ERR10000023_gene_E.translation.fasta",
+        "size": 101
+      },
+      {
+        "file": "ERR10000023_gene_M.translation.fasta",
+        "size": 248
+      },
+      {
+        "file": "ERR10000023_gene_N.translation.fasta",
+        "size": 445
+      },
+      {
+        "file": "ERR10000023_gene_ORF1a.translation.fasta",
+        "size": 4426
+      },
+      {
+        "file": "ERR10000023_gene_ORF1b.translation.fasta",
+        "size": 2721
+      },
+      {
+        "file": "ERR10000023_gene_ORF3a.translation.fasta",
+        "size": 301
+      },
+      {
+        "file": "ERR10000023_gene_ORF6.translation.fasta",
+        "size": 87
+      },
+      {
+        "file": "ERR10000023_gene_ORF7a.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000023_gene_ORF7b.translation.fasta",
+        "size": 69
+      },
+      {
+        "file": "ERR10000023_gene_ORF8.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000023_gene_ORF9b.translation.fasta",
+        "size": 123
+      },
+      {
+        "file": "ERR10000023_gene_S.translation.fasta",
+        "size": 1299
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "fd/d96ab8": [
+      {
+        "file": "ERR10000023.classified_1.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000023.classified_2.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000023.kraken2.classifiedreads.txt",
+        "size": 19461884
+      },
+      {
+        "file": "ERR10000023.kraken2.report.txt",
+        "size": 2015
+      },
+      {
+        "file": "ERR10000023.unclassified_1.fastq.gz",
+        "size": 13879333
+      },
+      {
+        "file": "ERR10000023.unclassified_2.fastq.gz",
+        "size": 13676011
+      },
+      {
+        "file": "versions.yml",
+        "size": 79
+      }
+    ],
+    "50/d3a236": [
+      {
+        "file": "ERR10000023.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "74/77aeb4": [
+      {
+        "file": "ERR10000050.masked.fa",
+        "size": 30414
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "d6/d63141": [
+      {
+        "file": "ERR10000050.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "a1/a7d799": [
+      {
+        "file": "ERR10000050.variant_counts.log",
+        "size": 122
+      },
+      {
+        "file": "ERR10000050.variant_counts_mqc.tsv",
+        "size": 466
+      },
+      {
+        "file": "ERR10000050.vcf",
+        "size": 10046
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "2a/df6556": [
+      {
+        "file": "ERR10000000.filtered.vcf.gz",
+        "size": 1901
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "e9/76a366": [
+      {
+        "file": "ERR10000010.snpsift.txt",
+        "size": 74618
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "cb/974045": [
+      {
+        "file": "ERR10000023.ivar_trim.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "e8/f17f43": [
+      {
+        "file": "ERR10000023.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "e4/941c39": [
+      {
+        "file": "ERR10000000.ivar_trim.bam",
+        "size": 16631887
+      },
+      {
+        "file": "ERR10000000.ivar_trim.ivar.log",
+        "size": 0
+      },
+      {
+        "file": "versions.yml",
+        "size": 76
+      }
+    ],
+    "e1/f54d9d": [
+      {
+        "file": "ERR10000010.bcftools_stats.txt",
+        "size": 2813
+      },
+      {
+        "file": "versions.yml",
+        "size": 94
+      }
+    ],
+    "63/e3f212": [
+      {
+        "file": "ERR10000023.bcftools_stats.txt",
+        "size": 2966
+      },
+      {
+        "file": "versions.yml",
+        "size": 94
+      }
+    ],
+    "e9/51ade5": [
+      {
+        "file": "ERR10000000.fa",
+        "size": 30354
+      },
+      {
+        "file": "versions.yml",
+        "size": 87
+      }
+    ],
+    "1f/13f117": [
+      {
+        "file": "ERR10000010.consensus.ACTG_density.pdf",
+        "size": 311325
+      },
+      {
+        "file": "ERR10000010.consensus.N_density.pdf",
+        "size": 77486
+      },
+      {
+        "file": "ERR10000010.consensus.N_run.tsv",
+        "size": 27
+      },
+      {
+        "file": "ERR10000010.consensus.base_counts.pdf",
+        "size": 4519
+      },
+      {
+        "file": "ERR10000010.consensus.base_counts.tsv",
+        "size": 132
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "6e/596fba": [
+      {
+        "file": "ERR10000023.masked.fa",
+        "size": 30414
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "54/34cd30": [
+      {
+        "file": "ERR10000037.mosdepth.global.dist.txt",
+        "size": 145808
+      },
+      {
+        "file": "ERR10000037.mosdepth.region.dist.txt",
+        "size": 145769
+      },
+      {
+        "file": "ERR10000037.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000037.per-base.bed.gz",
+        "size": 35820
+      },
+      {
+        "file": "ERR10000037.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000037.regions.bed.gz",
+        "size": 1294
+      },
+      {
+        "file": "ERR10000037.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "ERR10000037.thresholds.bed.gz",
+        "size": 1613
+      },
+      {
+        "file": "ERR10000037.thresholds.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 68
+      }
+    ],
+    "13/376c48": [
+      {
+        "file": "ERR10000023.coverage.masked.bed",
+        "size": 1947
+      },
+      {
+        "file": "versions.yml",
+        "size": 101
+      }
+    ],
+    "bd/5df954": [
+      {
+        "file": "ERR10000037.consensus.fa",
+        "size": 30366
+      },
+      {
+        "file": "versions.yml",
+        "size": 82
+      }
+    ],
+    "b3/6132dc": [
+      {
+        "file": "ERR10000023.snpeff.bcftools_stats.txt",
+        "size": 2980
+      },
+      {
+        "file": "versions.yml",
+        "size": 143
+      }
+    ],
+    "29/dfc9c6": [
+      {
+        "file": "ERR10000010.snpeff.bcftools_stats.txt",
+        "size": 2827
+      },
+      {
+        "file": "versions.yml",
+        "size": 143
+      }
+    ],
+    "88/51aa9f": [
+      {
+        "file": "ERR10000050.aligned.fasta",
+        "size": 29928
+      },
+      {
+        "file": "ERR10000050.auspice.json",
+        "size": 6305088
+      },
+      {
+        "file": "ERR10000050.csv",
+        "size": 3367
+      },
+      {
+        "file": "ERR10000050.errors.csv",
+        "size": 62
+      },
+      {
+        "file": "ERR10000050.insertions.csv",
+        "size": 57
+      },
+      {
+        "file": "ERR10000050.json",
+        "size": 175626
+      },
+      {
+        "file": "ERR10000050.ndjson",
+        "size": 79424
+      },
+      {
+        "file": "ERR10000050.tsv",
+        "size": 3365
+      },
+      {
+        "file": "ERR10000050_gene_E.translation.fasta",
+        "size": 101
+      },
+      {
+        "file": "ERR10000050_gene_M.translation.fasta",
+        "size": 248
+      },
+      {
+        "file": "ERR10000050_gene_N.translation.fasta",
+        "size": 445
+      },
+      {
+        "file": "ERR10000050_gene_ORF1a.translation.fasta",
+        "size": 4426
+      },
+      {
+        "file": "ERR10000050_gene_ORF1b.translation.fasta",
+        "size": 2721
+      },
+      {
+        "file": "ERR10000050_gene_ORF3a.translation.fasta",
+        "size": 301
+      },
+      {
+        "file": "ERR10000050_gene_ORF6.translation.fasta",
+        "size": 87
+      },
+      {
+        "file": "ERR10000050_gene_ORF7a.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000050_gene_ORF7b.translation.fasta",
+        "size": 69
+      },
+      {
+        "file": "ERR10000050_gene_ORF8.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000050_gene_ORF9b.translation.fasta",
+        "size": 123
+      },
+      {
+        "file": "ERR10000050_gene_S.translation.fasta",
+        "size": 1299
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "c0/2669f7": [
+      {
+        "file": "ERR10000037.ivar_trim.bam",
+        "size": 23168870
+      },
+      {
+        "file": "ERR10000037.ivar_trim.ivar.log",
+        "size": 0
+      },
+      {
+        "file": "versions.yml",
+        "size": 76
+      }
+    ],
+    "46/d96567": [
+      {
+        "file": "ERR10000050.sorted.bam.stats",
+        "size": 99994
+      },
+      {
+        "file": "versions.yml",
+        "size": 130
+      }
+    ],
+    "a2/6de8ed": [
+      {
+        "file": "nextclade_sars-cov-2_MN908947_2022-06-14T12_00_00Z",
+        "size": 320
+      },
+      {
+        "file": "versions.yml",
+        "size": 80
+      }
+    ],
+    "12/b2ea9e": [
+      {
+        "file": "ERR10000037.bcftools_query.txt",
+        "size": 3218
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "5f/120cfb": [
+      {
+        "file": "ERR10000010.MN908947.3_10148_10248.pdf",
+        "size": 15609
+      },
+      {
+        "file": "ERR10000010.MN908947.3_10307_10407.pdf",
+        "size": 15460
+      },
+      {
+        "file": "ERR10000010.MN908947.3_10397_10497.pdf",
+        "size": 15861
+      },
+      {
+        "file": "ERR10000010.MN908947.3_10399_10499.pdf",
+        "size": 15552
+      },
+      {
+        "file": "ERR10000010.MN908947.3_10752_10852.pdf",
+        "size": 15901
+      },
+      {
+        "file": "ERR10000010.MN908947.3_11237_11337.pdf",
+        "size": 15487
+      },
+      {
+        "file": "ERR10000010.MN908947.3_12830_12930.pdf",
+        "size": 15658
+      },
+      {
+        "file": "ERR10000010.MN908947.3_14358_14458.pdf",
+        "size": 15430
+      },
+      {
+        "file": "ERR10000010.MN908947.3_15664_15764.pdf",
+        "size": 15716
+      },
+      {
+        "file": "ERR10000010.MN908947.3_17360_17460.pdf",
+        "size": 15709
+      },
+      {
+        "file": "ERR10000010.MN908947.3_18113_18213.pdf",
+        "size": 15684
+      },
+      {
+        "file": "ERR10000010.MN908947.3_191_291.pdf",
+        "size": 15654
+      },
+      {
+        "file": "ERR10000010.MN908947.3_19905_20005.pdf",
+        "size": 15868
+      },
+      {
+        "file": "ERR10000010.MN908947.3_20005_20105.pdf",
+        "size": 15655
+      },
+      {
+        "file": "ERR10000010.MN908947.3_21568_21668.pdf",
+        "size": 15463
+      },
+      {
+        "file": "ERR10000010.MN908947.3_21582_21682.pdf",
+        "size": 15487
+      },
+      {
+        "file": "ERR10000010.MN908947.3_21937_22037.pdf",
+        "size": 15896
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22150_22250.pdf",
+        "size": 15381
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22528_22628.pdf",
+        "size": 16007
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22624_22724.pdf",
+        "size": 15749
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22629_22729.pdf",
+        "size": 15729
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22636_22736.pdf",
+        "size": 15711
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22638_22738.pdf",
+        "size": 15932
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22725_22825.pdf",
+        "size": 15974
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22736_22836.pdf",
+        "size": 15882
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22762_22862.pdf",
+        "size": 16302
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22832_22932.pdf",
+        "size": 15590
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22942_23042.pdf",
+        "size": 15541
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22945_23045.pdf",
+        "size": 15547
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22963_23063.pdf",
+        "size": 15835
+      },
+      {
+        "file": "ERR10000010.MN908947.3_22990_23090.pdf",
+        "size": 15833
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23005_23105.pdf",
+        "size": 15777
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23013_23113.pdf",
+        "size": 15790
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23025_23125.pdf",
+        "size": 15797
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23198_23298.pdf",
+        "size": 15941
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23353_23453.pdf",
+        "size": 15726
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23475_23575.pdf",
+        "size": 15671
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23549_23649.pdf",
+        "size": 15603
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23554_23654.pdf",
+        "size": 15531
+      },
+      {
+        "file": "ERR10000010.MN908947.3_23898_23998.pdf",
+        "size": 15309
+      },
+      {
+        "file": "ERR10000010.MN908947.3_24374_24474.pdf",
+        "size": 15808
+      },
+      {
+        "file": "ERR10000010.MN908947.3_24419_24519.pdf",
+        "size": 15946
+      },
+      {
+        "file": "ERR10000010.MN908947.3_24950_25050.pdf",
+        "size": 15744
+      },
+      {
+        "file": "ERR10000010.MN908947.3_25534_25634.pdf",
+        "size": 15688
+      },
+      {
+        "file": "ERR10000010.MN908947.3_26010_26110.pdf",
+        "size": 15288
+      },
+      {
+        "file": "ERR10000010.MN908947.3_26220_26320.pdf",
+        "size": 15472
+      },
+      {
+        "file": "ERR10000010.MN908947.3_26527_26627.pdf",
+        "size": 15730
+      },
+      {
+        "file": "ERR10000010.MN908947.3_26659_26759.pdf",
+        "size": 15236
+      },
+      {
+        "file": "ERR10000010.MN908947.3_26808_26908.pdf",
+        "size": 15977
+      },
+      {
+        "file": "ERR10000010.MN908947.3_27209_27309.pdf",
+        "size": 15828
+      },
+      {
+        "file": "ERR10000010.MN908947.3_27332_27432.pdf",
+        "size": 15527
+      },
+      {
+        "file": "ERR10000010.MN908947.3_2740_2840.pdf",
+        "size": 15441
+      },
+      {
+        "file": "ERR10000010.MN908947.3_27757_27857.pdf",
+        "size": 15763
+      },
+      {
+        "file": "ERR10000010.MN908947.3_28221_28321.pdf",
+        "size": 15567
+      },
+      {
+        "file": "ERR10000010.MN908947.3_28261_28361.pdf",
+        "size": 16001
+      },
+      {
+        "file": "ERR10000010.MN908947.3_28311_28411.pdf",
+        "size": 16022
+      },
+      {
+        "file": "ERR10000010.MN908947.3_28831_28931.pdf",
+        "size": 15825
+      },
+      {
+        "file": "ERR10000010.MN908947.3_28833_28933.pdf",
+        "size": 15758
+      },
+      {
+        "file": "ERR10000010.MN908947.3_29460_29560.pdf",
+        "size": 15905
+      },
+      {
+        "file": "ERR10000010.MN908947.3_29683_29783.pdf",
+        "size": 15710
+      },
+      {
+        "file": "ERR10000010.MN908947.3_2987_3087.pdf",
+        "size": 15413
+      },
+      {
+        "file": "ERR10000010.MN908947.3_3552_3652.pdf",
+        "size": 15678
+      },
+      {
+        "file": "ERR10000010.MN908947.3_4134_4234.pdf",
+        "size": 15923
+      },
+      {
+        "file": "ERR10000010.MN908947.3_4271_4371.pdf",
+        "size": 16004
+      },
+      {
+        "file": "ERR10000010.MN908947.3_5819_5919.pdf",
+        "size": 15471
+      },
+      {
+        "file": "ERR10000010.MN908947.3_620_720.pdf",
+        "size": 15729
+      },
+      {
+        "file": "ERR10000010.MN908947.3_8270_8370.pdf",
+        "size": 15705
+      },
+      {
+        "file": "ERR10000010.MN908947.3_9294_9394.pdf",
+        "size": 15350
+      },
+      {
+        "file": "ERR10000010.MN908947.3_9374_9474.pdf",
+        "size": 15423
+      },
+      {
+        "file": "ERR10000010.MN908947.3_9484_9584.pdf",
+        "size": 15966
+      },
+      {
+        "file": "ERR10000010.MN908947.3_9816_9916.pdf",
+        "size": 15870
+      },
+      {
+        "file": "ERR10000010.MN908947.3_9979_10079.pdf",
+        "size": 15486
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "77/9b0fd7": [
+      {
+        "file": "ERR10000010_1_fastqc.html",
+        "size": 688447
+      },
+      {
+        "file": "ERR10000010_1_fastqc.zip",
+        "size": 525113
+      },
+      {
+        "file": "ERR10000010_2_fastqc.html",
+        "size": 668187
+      },
+      {
+        "file": "ERR10000010_2_fastqc.zip",
+        "size": 508682
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "bf/cba89b": [
+      {
+        "file": "ERR10000000.variant_counts.log",
+        "size": 122
+      },
+      {
+        "file": "ERR10000000.variant_counts_mqc.tsv",
+        "size": 466
+      },
+      {
+        "file": "ERR10000000.vcf",
+        "size": 10021
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "4d/091765": [
+      {
+        "file": "ERR10000050.ivar_trim.bam",
+        "size": 17638813
+      },
+      {
+        "file": "ERR10000050.ivar_trim.ivar.log",
+        "size": 0
+      },
+      {
+        "file": "versions.yml",
+        "size": 76
+      }
+    ],
+    "1c/cc3262": [
+      {
+        "file": "ERR10000050.snpsift.txt",
+        "size": 75929
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "77/8ebd53": [
+      {
+        "file": "ERR10000023.variant_counts.log",
+        "size": 122
+      },
+      {
+        "file": "ERR10000023.variant_counts_mqc.tsv",
+        "size": 466
+      },
+      {
+        "file": "ERR10000023.vcf",
+        "size": 10817
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "f5/b35b0e": [
+      {
+        "file": "ERR10000000.sorted.bam.stats",
+        "size": 97828
+      },
+      {
+        "file": "versions.yml",
+        "size": 130
+      }
+    ],
+    "a0/3038c0": [
+      {
+        "file": "ERR10000010.ivar_trim.bam",
+        "size": 22968395
+      },
+      {
+        "file": "ERR10000010.ivar_trim.ivar.log",
+        "size": 0
+      },
+      {
+        "file": "versions.yml",
+        "size": 76
+      }
+    ],
+    "6c/62ce57": [
+      {
+        "file": "ERR10000050.snpeff.vcf.gz.tbi",
+        "size": 125
+      },
+      {
+        "file": "versions.yml",
+        "size": 137
+      }
+    ],
+    "26/cc9694": [
+      {
+        "file": "ERR10000050.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "f5/eec9f8": [
+      {
+        "file": "ERR10000050.mosdepth.global.dist.txt",
+        "size": 136677
+      },
+      {
+        "file": "ERR10000050.mosdepth.region.dist.txt",
+        "size": 136638
+      },
+      {
+        "file": "ERR10000050.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000050.per-base.bed.gz",
+        "size": 34991
+      },
+      {
+        "file": "ERR10000050.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000050.regions.bed.gz",
+        "size": 1277
+      },
+      {
+        "file": "ERR10000050.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "ERR10000050.thresholds.bed.gz",
+        "size": 1609
+      },
+      {
+        "file": "ERR10000050.thresholds.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 68
+      }
+    ],
+    "b8/508e92": [
+      {
+        "file": "bowtie2",
+        "size": 256
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "5c/f190cb": [
+      {
+        "file": "ERR10000010.fa",
+        "size": 30360
+      },
+      {
+        "file": "versions.yml",
+        "size": 87
+      }
+    ],
+    "82/fee6d8": [
+      {
+        "file": "ERR10000037.vcf.gz",
+        "size": 1832
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "81/8c72e2": [
+      {
+        "file": "ERR10000023.fa",
+        "size": 30360
+      },
+      {
+        "file": "versions.yml",
+        "size": 87
+      }
+    ],
+    "fb/8c61ec": [
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.alignment_summary_metrics",
+        "size": 4028
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.base_distribution_by_cycle.pdf",
+        "size": 16255
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.base_distribution_by_cycle_metrics",
+        "size": 20973
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.insert_size_histogram.pdf",
+        "size": 6821
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.insert_size_metrics",
+        "size": 2471
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.quality_by_cycle.pdf",
+        "size": 8656
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.quality_by_cycle_metrics",
+        "size": 6643
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.quality_distribution.pdf",
+        "size": 4761
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.quality_distribution_metrics",
+        "size": 915
+      },
+      {
+        "file": "ERR10000023.CollectMultipleMetrics.read_length_histogram.pdf",
+        "size": 6558
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "0e/23acb2": [
+      {
+        "file": "ERR10000000.ivar_trim.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "75/bce404": [
+      {
+        "file": "ERR10000000.bcftools_query.txt",
+        "size": 3141
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "36/87ef2c": [
+      {
+        "file": "ERR10000010.coverage.masked.bed",
+        "size": 1947
+      },
+      {
+        "file": "versions.yml",
+        "size": 101
+      }
+    ],
+    "fa/84b0e8": [
+      {
+        "file": "ERR10000037.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "bb/461759": [
+      {
+        "file": "ERR10000050.classified_1.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000050.classified_2.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000050.kraken2.classifiedreads.txt",
+        "size": 14459561
+      },
+      {
+        "file": "ERR10000050.kraken2.report.txt",
+        "size": 2015
+      },
+      {
+        "file": "ERR10000050.unclassified_1.fastq.gz",
+        "size": 10335615
+      },
+      {
+        "file": "ERR10000050.unclassified_2.fastq.gz",
+        "size": 10503808
+      },
+      {
+        "file": "versions.yml",
+        "size": 79
+      }
+    ],
+    "ee/85214c": [
+      {
+        "file": "ERR10000037.tsv",
+        "size": 7205
+      },
+      {
+        "file": "versions.yml",
+        "size": 72
+      }
+    ],
+    "f9/af0d77": [
+      {
+        "file": "ERR10000023_1_fastqc.html",
+        "size": 671026
+      },
+      {
+        "file": "ERR10000023_1_fastqc.zip",
+        "size": 523196
+      },
+      {
+        "file": "ERR10000023_2_fastqc.html",
+        "size": 655342
+      },
+      {
+        "file": "ERR10000023_2_fastqc.zip",
+        "size": 514351
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "e2/75b2c4": [
+      {
+        "file": "ERR10000023.snpeff.vcf.gz",
+        "size": 8722
+      },
+      {
+        "file": "versions.yml",
+        "size": 121
+      }
+    ],
+    "7b/507c8d": [
+      {
+        "file": "ERR10000050.vcf.gz",
+        "size": 1819
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "59/172b1a": [
+      {
+        "file": "ERR10000037.consensus.ACTG_density.pdf",
+        "size": 313379
+      },
+      {
+        "file": "ERR10000037.consensus.N_density.pdf",
+        "size": 77414
+      },
+      {
+        "file": "ERR10000037.consensus.N_run.tsv",
+        "size": 45
+      },
+      {
+        "file": "ERR10000037.consensus.base_counts.pdf",
+        "size": 4516
+      },
+      {
+        "file": "ERR10000037.consensus.base_counts.tsv",
+        "size": 133
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "09/62a480": [
+      {
+        "file": "ERR10000000.bcftools_stats.txt",
+        "size": 2982
+      },
+      {
+        "file": "versions.yml",
+        "size": 94
+      }
+    ],
+    "93/7243e5": [
+      {
+        "file": "ERR10000050.filtered.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "0a/e564d0": [
+      {
+        "file": "ERR10000000_1_fastqc.html",
+        "size": 675508
+      },
+      {
+        "file": "ERR10000000_1_fastqc.zip",
+        "size": 528454
+      },
+      {
+        "file": "ERR10000000_2_fastqc.html",
+        "size": 661088
+      },
+      {
+        "file": "ERR10000000_2_fastqc.zip",
+        "size": 524836
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "51/c88d21": [
+      {
+        "file": "ERR10000000.snpeff.vcf.gz",
+        "size": 7628
+      },
+      {
+        "file": "versions.yml",
+        "size": 121
+      }
+    ],
+    "3b/a29a09": [
+      {
+        "file": "ERR10000000.coverage.merged.bed",
+        "size": 39
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "57/bb8362": [
+      {
+        "file": "ERR10000037.mosdepth.global.dist.txt",
+        "size": 145808
+      },
+      {
+        "file": "ERR10000037.mosdepth.region.dist.txt",
+        "size": 10875
+      },
+      {
+        "file": "ERR10000037.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000037.per-base.bed.gz",
+        "size": 35820
+      },
+      {
+        "file": "ERR10000037.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000037.regions.bed.gz",
+        "size": 1431
+      },
+      {
+        "file": "ERR10000037.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 66
+      }
+    ],
+    "ce/9f7d3e": [
+      {
+        "file": "ERR10000000_1_fastqc.html",
+        "size": 690288
+      },
+      {
+        "file": "ERR10000000_1_fastqc.zip",
+        "size": 537903
+      },
+      {
+        "file": "ERR10000000_2_fastqc.html",
+        "size": 677378
+      },
+      {
+        "file": "ERR10000000_2_fastqc.zip",
+        "size": 530105
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "ad/fb1f3d": [
+      {
+        "file": "ERR10000050.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 88
+      }
+    ],
+    "9b/abab3f": [
+      {
+        "file": "ERR10000037.coverage.merged.bed",
+        "size": 81
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "90/3dee3c": [
+      {
+        "file": "ERR10000010.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "32/171890": [
+      {
+        "file": "ERR10000050.tsv",
+        "size": 6985
+      },
+      {
+        "file": "versions.yml",
+        "size": 72
+      }
+    ],
+    "c4/109e86": [
+      {
+        "file": "ERR10000023.ivar_trim.sorted.bam",
+        "size": 22959280
+      },
+      {
+        "file": "versions.yml",
+        "size": 112
+      }
+    ],
+    "de/b95c94": [
+      {
+        "file": "ERR10000050.bam",
+        "size": 19181211
+      },
+      {
+        "file": "ERR10000050.bowtie2.log",
+        "size": 584
+      },
+      {
+        "file": "versions.yml",
+        "size": 119
+      }
+    ],
+    "f1/4a1650": [
+      {
+        "file": "ERR10000000.ivar_trim.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "33/3956f2": [
+      {
+        "file": "ERR10000010.ivar_trim.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "c0/9b03ad": [
+      {
+        "file": "ERR10000023_1_fastqc.html",
+        "size": 692527
+      },
+      {
+        "file": "ERR10000023_1_fastqc.zip",
+        "size": 534100
+      },
+      {
+        "file": "ERR10000023_2_fastqc.html",
+        "size": 673506
+      },
+      {
+        "file": "ERR10000023_2_fastqc.zip",
+        "size": 518302
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "7f/00ea5f": [
+      {
+        "file": "ERR10000000.MN908947.3_10148_10248.pdf",
+        "size": 15600
+      },
+      {
+        "file": "ERR10000000.MN908947.3_10397_10497.pdf",
+        "size": 15846
+      },
+      {
+        "file": "ERR10000000.MN908947.3_10399_10499.pdf",
+        "size": 15547
+      },
+      {
+        "file": "ERR10000000.MN908947.3_11237_11337.pdf",
+        "size": 15477
+      },
+      {
+        "file": "ERR10000000.MN908947.3_11700_11800.pdf",
+        "size": 15471
+      },
+      {
+        "file": "ERR10000000.MN908947.3_12110_12210.pdf",
+        "size": 15821
+      },
+      {
+        "file": "ERR10000000.MN908947.3_12830_12930.pdf",
+        "size": 15652
+      },
+      {
+        "file": "ERR10000000.MN908947.3_14358_14458.pdf",
+        "size": 15432
+      },
+      {
+        "file": "ERR10000000.MN908947.3_15471_15571.pdf",
+        "size": 15874
+      },
+      {
+        "file": "ERR10000000.MN908947.3_15664_15764.pdf",
+        "size": 15707
+      },
+      {
+        "file": "ERR10000000.MN908947.3_16885_16985.pdf",
+        "size": 15541
+      },
+      {
+        "file": "ERR10000000.MN908947.3_17360_17460.pdf",
+        "size": 15701
+      },
+      {
+        "file": "ERR10000000.MN908947.3_18113_18213.pdf",
+        "size": 15698
+      },
+      {
+        "file": "ERR10000000.MN908947.3_1881_1981.pdf",
+        "size": 16175
+      },
+      {
+        "file": "ERR10000000.MN908947.3_191_291.pdf",
+        "size": 12295
+      },
+      {
+        "file": "ERR10000000.MN908947.3_20005_20105.pdf",
+        "size": 15635
+      },
+      {
+        "file": "ERR10000000.MN908947.3_21568_21668.pdf",
+        "size": 15455
+      },
+      {
+        "file": "ERR10000000.MN908947.3_21582_21682.pdf",
+        "size": 15479
+      },
+      {
+        "file": "ERR10000000.MN908947.3_21714_21814.pdf",
+        "size": 16002
+      },
+      {
+        "file": "ERR10000000.MN908947.3_21937_22037.pdf",
+        "size": 15889
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22150_22250.pdf",
+        "size": 15373
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22528_22628.pdf",
+        "size": 16008
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22624_22724.pdf",
+        "size": 15741
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22629_22729.pdf",
+        "size": 15723
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22636_22736.pdf",
+        "size": 15705
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22638_22738.pdf",
+        "size": 15926
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22725_22825.pdf",
+        "size": 15968
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22736_22836.pdf",
+        "size": 15881
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22763_22863.pdf",
+        "size": 16125
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22832_22932.pdf",
+        "size": 15613
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22867_22967.pdf",
+        "size": 16287
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22942_23042.pdf",
+        "size": 15510
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22945_23045.pdf",
+        "size": 15547
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22963_23063.pdf",
+        "size": 15833
+      },
+      {
+        "file": "ERR10000000.MN908947.3_22968_23068.pdf",
+        "size": 15884
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23005_23105.pdf",
+        "size": 15799
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23013_23113.pdf",
+        "size": 15766
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23025_23125.pdf",
+        "size": 15797
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23353_23453.pdf",
+        "size": 15667
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23475_23575.pdf",
+        "size": 15677
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23549_23649.pdf",
+        "size": 15595
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23554_23654.pdf",
+        "size": 15527
+      },
+      {
+        "file": "ERR10000000.MN908947.3_23898_23998.pdf",
+        "size": 15306
+      },
+      {
+        "file": "ERR10000000.MN908947.3_24374_24474.pdf",
+        "size": 15779
+      },
+      {
+        "file": "ERR10000000.MN908947.3_24419_24519.pdf",
+        "size": 15942
+      },
+      {
+        "file": "ERR10000000.MN908947.3_24950_25050.pdf",
+        "size": 15774
+      },
+      {
+        "file": "ERR10000000.MN908947.3_25534_25634.pdf",
+        "size": 15687
+      },
+      {
+        "file": "ERR10000000.MN908947.3_26010_26110.pdf",
+        "size": 15280
+      },
+      {
+        "file": "ERR10000000.MN908947.3_26220_26320.pdf",
+        "size": 15467
+      },
+      {
+        "file": "ERR10000000.MN908947.3_26479_26579.pdf",
+        "size": 15485
+      },
+      {
+        "file": "ERR10000000.MN908947.3_26527_26627.pdf",
+        "size": 15977
+      },
+      {
+        "file": "ERR10000000.MN908947.3_26659_26759.pdf",
+        "size": 15234
+      },
+      {
+        "file": "ERR10000000.MN908947.3_2740_2840.pdf",
+        "size": 15436
+      },
+      {
+        "file": "ERR10000000.MN908947.3_27757_27857.pdf",
+        "size": 15743
+      },
+      {
+        "file": "ERR10000000.MN908947.3_27839_27939.pdf",
+        "size": 15631
+      },
+      {
+        "file": "ERR10000000.MN908947.3_28221_28321.pdf",
+        "size": 15587
+      },
+      {
+        "file": "ERR10000000.MN908947.3_28261_28361.pdf",
+        "size": 15991
+      },
+      {
+        "file": "ERR10000000.MN908947.3_28311_28411.pdf",
+        "size": 16020
+      },
+      {
+        "file": "ERR10000000.MN908947.3_28631_28731.pdf",
+        "size": 15640
+      },
+      {
+        "file": "ERR10000000.MN908947.3_28831_28931.pdf",
+        "size": 15820
+      },
+      {
+        "file": "ERR10000000.MN908947.3_28833_28933.pdf",
+        "size": 15760
+      },
+      {
+        "file": "ERR10000000.MN908947.3_2904_3004.pdf",
+        "size": 15831
+      },
+      {
+        "file": "ERR10000000.MN908947.3_29460_29560.pdf",
+        "size": 15902
+      },
+      {
+        "file": "ERR10000000.MN908947.3_29683_29783.pdf",
+        "size": 15693
+      },
+      {
+        "file": "ERR10000000.MN908947.3_2987_3087.pdf",
+        "size": 15424
+      },
+      {
+        "file": "ERR10000000.MN908947.3_4134_4234.pdf",
+        "size": 15906
+      },
+      {
+        "file": "ERR10000000.MN908947.3_4271_4371.pdf",
+        "size": 15995
+      },
+      {
+        "file": "ERR10000000.MN908947.3_548_648.pdf",
+        "size": 15553
+      },
+      {
+        "file": "ERR10000000.MN908947.3_620_720.pdf",
+        "size": 15736
+      },
+      {
+        "file": "ERR10000000.MN908947.3_9294_9394.pdf",
+        "size": 15344
+      },
+      {
+        "file": "ERR10000000.MN908947.3_9374_9474.pdf",
+        "size": 15430
+      },
+      {
+        "file": "ERR10000000.MN908947.3_9484_9584.pdf",
+        "size": 15961
+      },
+      {
+        "file": "ERR10000000.MN908947.3_9979_10079.pdf",
+        "size": 15535
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "81/30dfce": [
+      {
+        "file": "ERR10000037.snpeff.bcftools_stats.txt",
+        "size": 3210
+      },
+      {
+        "file": "versions.yml",
+        "size": 143
+      }
+    ],
+    "a9/5f7410": [
+      {
+        "file": "ERR10000000.mosdepth.coverage.pdf",
+        "size": 6343
+      },
+      {
+        "file": "ERR10000000.mosdepth.coverage.tsv",
+        "size": 6339
+      },
+      {
+        "file": "ERR10000010.mosdepth.coverage.pdf",
+        "size": 6297
+      },
+      {
+        "file": "ERR10000010.mosdepth.coverage.tsv",
+        "size": 6361
+      },
+      {
+        "file": "ERR10000023.mosdepth.coverage.pdf",
+        "size": 6333
+      },
+      {
+        "file": "ERR10000023.mosdepth.coverage.tsv",
+        "size": 6355
+      },
+      {
+        "file": "ERR10000037.mosdepth.coverage.pdf",
+        "size": 6356
+      },
+      {
+        "file": "ERR10000037.mosdepth.coverage.tsv",
+        "size": 6356
+      },
+      {
+        "file": "ERR10000050.mosdepth.coverage.pdf",
+        "size": 6332
+      },
+      {
+        "file": "ERR10000050.mosdepth.coverage.tsv",
+        "size": 6336
+      },
+      {
+        "file": "all_samples.mosdepth.coverage.tsv",
+        "size": 31619
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "b2/527bb4": [
+      {
+        "file": "ERR10000050.bcftools_query.txt",
+        "size": 3157
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "6c/e5405d": [
+      {
+        "file": "ERR10000000.aligned.fasta",
+        "size": 29928
+      },
+      {
+        "file": "ERR10000000.auspice.json",
+        "size": 6304646
+      },
+      {
+        "file": "ERR10000000.csv",
+        "size": 3159
+      },
+      {
+        "file": "ERR10000000.errors.csv",
+        "size": 62
+      },
+      {
+        "file": "ERR10000000.insertions.csv",
+        "size": 57
+      },
+      {
+        "file": "ERR10000000.json",
+        "size": 178028
+      },
+      {
+        "file": "ERR10000000.ndjson",
+        "size": 80599
+      },
+      {
+        "file": "ERR10000000.tsv",
+        "size": 3157
+      },
+      {
+        "file": "ERR10000000_gene_E.translation.fasta",
+        "size": 101
+      },
+      {
+        "file": "ERR10000000_gene_M.translation.fasta",
+        "size": 248
+      },
+      {
+        "file": "ERR10000000_gene_N.translation.fasta",
+        "size": 445
+      },
+      {
+        "file": "ERR10000000_gene_ORF1a.translation.fasta",
+        "size": 4426
+      },
+      {
+        "file": "ERR10000000_gene_ORF1b.translation.fasta",
+        "size": 2721
+      },
+      {
+        "file": "ERR10000000_gene_ORF3a.translation.fasta",
+        "size": 301
+      },
+      {
+        "file": "ERR10000000_gene_ORF6.translation.fasta",
+        "size": 87
+      },
+      {
+        "file": "ERR10000000_gene_ORF7a.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000000_gene_ORF7b.translation.fasta",
+        "size": 69
+      },
+      {
+        "file": "ERR10000000_gene_ORF8.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000000_gene_ORF9b.translation.fasta",
+        "size": 123
+      },
+      {
+        "file": "ERR10000000_gene_S.translation.fasta",
+        "size": 1299
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "bc/c6858d": [
+      {
+        "file": "ERR10000000.mosdepth.coverage.pdf",
+        "size": 7872
+      },
+      {
+        "file": "ERR10000000.mosdepth.coverage.tsv",
+        "size": 5137
+      },
+      {
+        "file": "ERR10000010.mosdepth.coverage.pdf",
+        "size": 7873
+      },
+      {
+        "file": "ERR10000010.mosdepth.coverage.tsv",
+        "size": 5152
+      },
+      {
+        "file": "ERR10000023.mosdepth.coverage.pdf",
+        "size": 7867
+      },
+      {
+        "file": "ERR10000023.mosdepth.coverage.tsv",
+        "size": 5150
+      },
+      {
+        "file": "ERR10000037.mosdepth.coverage.pdf",
+        "size": 7874
+      },
+      {
+        "file": "ERR10000037.mosdepth.coverage.tsv",
+        "size": 5134
+      },
+      {
+        "file": "ERR10000050.mosdepth.coverage.pdf",
+        "size": 7878
+      },
+      {
+        "file": "ERR10000050.mosdepth.coverage.tsv",
+        "size": 5119
+      },
+      {
+        "file": "all_samples.mosdepth.coverage.tsv",
+        "size": 25536
+      },
+      {
+        "file": "all_samples.mosdepth.heatmap.pdf",
+        "size": 10766
+      },
+      {
+        "file": "all_samples.mosdepth.heatmap.tsv",
+        "size": 9582
+      },
+      {
+        "file": "versions.yml",
+        "size": 79
+      }
+    ],
+    "20/222a4b": [
+      {
+        "file": "ERR10000010.masked.fa",
+        "size": 30414
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "2c/2ed3da": [
+      {
+        "file": "ERR10000010.filtered.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "20/191796": [
+      {
+        "file": "ERR10000050.ivar_trim.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "b3/cca8db": [
+      {
+        "file": "ERR10000010.variant_counts.log",
+        "size": 122
+      },
+      {
+        "file": "ERR10000010.variant_counts_mqc.tsv",
+        "size": 466
+      },
+      {
+        "file": "ERR10000010.vcf",
+        "size": 9999
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "3b/034c8c": [
+      {
+        "file": "ERR10000010.fastp.html",
+        "size": 515236
+      },
+      {
+        "file": "ERR10000010.fastp.json",
+        "size": 152214
+      },
+      {
+        "file": "ERR10000010.fastp.log",
+        "size": 1549
+      },
+      {
+        "file": "ERR10000010_1.fastp.fastq.gz",
+        "size": 15118214
+      },
+      {
+        "file": "ERR10000010_2.fastp.fastq.gz",
+        "size": 15270182
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "b6/522617": [
+      {
+        "file": "ERR10000010.bam",
+        "size": 25037348
+      },
+      {
+        "file": "ERR10000010.bowtie2.log",
+        "size": 585
+      },
+      {
+        "file": "versions.yml",
+        "size": 119
+      }
+    ],
+    "95/3c9637": [
+      {
+        "file": "ERR10000000.sorted.bam",
+        "size": 16471122
+      },
+      {
+        "file": "versions.yml",
+        "size": 110
+      }
+    ],
+    "c3/53d675": [
+      {
+        "file": "ERR10000050.fastp.html",
+        "size": 514547
+      },
+      {
+        "file": "ERR10000050.fastp.json",
+        "size": 151954
+      },
+      {
+        "file": "ERR10000050.fastp.log",
+        "size": 1576
+      },
+      {
+        "file": "ERR10000050_1.fastp.fastq.gz",
+        "size": 11519830
+      },
+      {
+        "file": "ERR10000050_2.fastp.fastq.gz",
+        "size": 11659876
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "3a/26b487": [
+      {
+        "file": "ERR10000023.pangolin.csv",
+        "size": 437
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "c5/8b0c3f": [
+      {
+        "file": "ERR10000037.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "35/f1b7bf": [
+      {
+        "file": "quast",
+        "size": 544
+      },
+      {
+        "file": "report.tsv",
+        "size": 2235
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "fc/217c79": [
+      {
+        "file": "ERR10000050.consensus.ACTG_density.pdf",
+        "size": 311474
+      },
+      {
+        "file": "ERR10000050.consensus.N_density.pdf",
+        "size": 77572
+      },
+      {
+        "file": "ERR10000050.consensus.N_run.tsv",
+        "size": 85
+      },
+      {
+        "file": "ERR10000050.consensus.base_counts.pdf",
+        "size": 4519
+      },
+      {
+        "file": "ERR10000050.consensus.base_counts.tsv",
+        "size": 135
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "a1/0d8158": [
+      {
+        "file": "ERR10000050.snpeff.csv",
+        "size": 21563
+      },
+      {
+        "file": "ERR10000050.snpeff.genes.txt",
+        "size": 1105
+      },
+      {
+        "file": "ERR10000050.snpeff.summary.html",
+        "size": 229755
+      },
+      {
+        "file": "ERR10000050.snpeff.vcf",
+        "size": 63715
+      },
+      {
+        "file": "versions.yml",
+        "size": 99
+      }
+    ],
+    "a9/6bd271": [
+      {
+        "file": "ERR10000010.mosdepth.global.dist.txt",
+        "size": 180999
+      },
+      {
+        "file": "ERR10000010.mosdepth.region.dist.txt",
+        "size": 10455
+      },
+      {
+        "file": "ERR10000010.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000010.per-base.bed.gz",
+        "size": 47240
+      },
+      {
+        "file": "ERR10000010.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000010.regions.bed.gz",
+        "size": 1438
+      },
+      {
+        "file": "ERR10000010.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 66
+      }
+    ],
+    "9f/e2d709": [
+      {
+        "file": "ERR10000010.ivar_trim.sorted.bam",
+        "size": 22892170
+      },
+      {
+        "file": "versions.yml",
+        "size": 112
+      }
+    ],
+    "7f/9ed607": [
+      {
+        "file": "ERR10000037.sorted.bam.stats",
+        "size": 99429
+      },
+      {
+        "file": "versions.yml",
+        "size": 130
+      }
+    ],
+    "c8/b81b0c": [
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.alignment_summary_metrics",
+        "size": 3974
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.base_distribution_by_cycle.pdf",
+        "size": 16268
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.base_distribution_by_cycle_metrics",
+        "size": 20886
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.insert_size_histogram.pdf",
+        "size": 6418
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.insert_size_metrics",
+        "size": 2244
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.quality_by_cycle.pdf",
+        "size": 8674
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.quality_by_cycle_metrics",
+        "size": 6635
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.quality_distribution.pdf",
+        "size": 4815
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.quality_distribution_metrics",
+        "size": 915
+      },
+      {
+        "file": "ERR10000050.CollectMultipleMetrics.read_length_histogram.pdf",
+        "size": 6482
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "ab/1714b5": [
+      {
+        "file": "ERR10000010.sorted.bam.stats",
+        "size": 96441
+      },
+      {
+        "file": "versions.yml",
+        "size": 130
+      }
+    ],
+    "12/3e9bf3": [
+      {
+        "file": "multiqc_data",
+        "size": 640
+      },
+      {
+        "file": "multiqc_report.html",
+        "size": 1493684
+      },
+      {
+        "file": "summary_variants_metrics_mqc.csv",
+        "size": 794
+      },
+      {
+        "file": "versions.yml",
+        "size": 56
+      }
+    ],
+    "08/560eea": [
+      {
+        "file": "software_versions.yml",
+        "size": 1660
+      },
+      {
+        "file": "software_versions_mqc.yml",
+        "size": 8083
+      },
+      {
+        "file": "versions.yml",
+        "size": 87
+      }
+    ],
+    "6f/74be77": [
+      {
+        "file": "ERR10000037.pangolin.csv",
+        "size": 435
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "91/41e0ee": [
+      {
+        "file": "ERR10000037.masked.fa",
+        "size": 30414
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "f0/2ae45a": [
+      {
+        "file": "ERR10000023.snpsift.txt",
+        "size": 83304
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "83/ee2476": [
+      {
+        "file": "ERR10000000.snpeff.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 137
+      }
+    ],
+    "10/d6ab6a": [
+      {
+        "file": "ERR10000023.filtered.vcf.gz",
+        "size": 2007
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "64/b95e73": [
+      {
+        "file": "ERR10000037.snpsift.txt",
+        "size": 80269
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "43/2ecdf5": [
+      {
+        "file": "ERR10000050_1_fastqc.html",
+        "size": 688897
+      },
+      {
+        "file": "ERR10000050_1_fastqc.zip",
+        "size": 554938
+      },
+      {
+        "file": "ERR10000050_2_fastqc.html",
+        "size": 667903
+      },
+      {
+        "file": "ERR10000050_2_fastqc.zip",
+        "size": 539652
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "f9/16b545": [
+      {
+        "file": "ERR10000050.snpeff.bcftools_stats.txt",
+        "size": 3057
+      },
+      {
+        "file": "versions.yml",
+        "size": 143
+      }
+    ],
+    "83/e577a8": [
+      {
+        "file": "ERR10000000.classified_1.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000000.classified_2.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000000.kraken2.classifiedreads.txt",
+        "size": 14086941
+      },
+      {
+        "file": "ERR10000000.kraken2.report.txt",
+        "size": 2015
+      },
+      {
+        "file": "ERR10000000.unclassified_1.fastq.gz",
+        "size": 10021595
+      },
+      {
+        "file": "ERR10000000.unclassified_2.fastq.gz",
+        "size": 9856428
+      },
+      {
+        "file": "versions.yml",
+        "size": 79
+      }
+    ],
+    "6a/0f5985": [
+      {
+        "file": "ERR10000000.ivar_trim.sorted.bam.stats",
+        "size": 98819
+      },
+      {
+        "file": "versions.yml",
+        "size": 132
+      }
+    ],
+    "bb/916a8a": [
+      {
+        "file": "ERR10000050.pangolin.csv",
+        "size": 497
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "57/68e6c4": [
+      {
+        "file": "ERR10000023.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 88
+      }
+    ],
+    "05/682b06": [
+      {
+        "file": "ERR10000037.snpeff.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 137
+      }
+    ],
+    "c0/04692f": [
+      {
+        "file": "GCA_009858895.3_ASM985889v3_genomic.200409.gff",
+        "size": 4125
+      },
+      {
+        "file": "versions.yml",
+        "size": 73
+      }
+    ],
+    "61/d523ea": [
+      {
+        "file": "ERR10000050.ivar_trim.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "99/5ed2e8": [
+      {
+        "file": "ERR10000000.filtered.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "d6/dd8392": [
+      {
+        "file": "ERR10000037.MN908947.3_10148_10248.pdf",
+        "size": 15611
+      },
+      {
+        "file": "ERR10000037.MN908947.3_10397_10497.pdf",
+        "size": 15856
+      },
+      {
+        "file": "ERR10000037.MN908947.3_10399_10499.pdf",
+        "size": 15556
+      },
+      {
+        "file": "ERR10000037.MN908947.3_11237_11337.pdf",
+        "size": 15492
+      },
+      {
+        "file": "ERR10000037.MN908947.3_12110_12210.pdf",
+        "size": 15820
+      },
+      {
+        "file": "ERR10000037.MN908947.3_12260_12360.pdf",
+        "size": 15685
+      },
+      {
+        "file": "ERR10000037.MN908947.3_12830_12930.pdf",
+        "size": 15670
+      },
+      {
+        "file": "ERR10000037.MN908947.3_14358_14458.pdf",
+        "size": 15436
+      },
+      {
+        "file": "ERR10000037.MN908947.3_15471_15571.pdf",
+        "size": 15854
+      },
+      {
+        "file": "ERR10000037.MN908947.3_15664_15764.pdf",
+        "size": 15729
+      },
+      {
+        "file": "ERR10000037.MN908947.3_1577_1677.pdf",
+        "size": 15897
+      },
+      {
+        "file": "ERR10000037.MN908947.3_16566_16666.pdf",
+        "size": 15505
+      },
+      {
+        "file": "ERR10000037.MN908947.3_17360_17460.pdf",
+        "size": 15864
+      },
+      {
+        "file": "ERR10000037.MN908947.3_18113_18213.pdf",
+        "size": 15695
+      },
+      {
+        "file": "ERR10000037.MN908947.3_191_291.pdf",
+        "size": 9388
+      },
+      {
+        "file": "ERR10000037.MN908947.3_19905_20005.pdf",
+        "size": 15876
+      },
+      {
+        "file": "ERR10000037.MN908947.3_20005_20105.pdf",
+        "size": 15633
+      },
+      {
+        "file": "ERR10000037.MN908947.3_21568_21668.pdf",
+        "size": 15470
+      },
+      {
+        "file": "ERR10000037.MN908947.3_21582_21682.pdf",
+        "size": 15493
+      },
+      {
+        "file": "ERR10000037.MN908947.3_21714_21814.pdf",
+        "size": 16027
+      },
+      {
+        "file": "ERR10000037.MN908947.3_21937_22037.pdf",
+        "size": 15898
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22150_22250.pdf",
+        "size": 15390
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22528_22628.pdf",
+        "size": 15587
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22624_22724.pdf",
+        "size": 15312
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22629_22729.pdf",
+        "size": 15295
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22636_22736.pdf",
+        "size": 15281
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22638_22738.pdf",
+        "size": 15503
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22725_22825.pdf",
+        "size": 15988
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22736_22836.pdf",
+        "size": 15879
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22763_22863.pdf",
+        "size": 16322
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22832_22932.pdf",
+        "size": 15610
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22867_22967.pdf",
+        "size": 16261
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22942_23042.pdf",
+        "size": 15516
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22945_23045.pdf",
+        "size": 15492
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22963_23063.pdf",
+        "size": 15770
+      },
+      {
+        "file": "ERR10000037.MN908947.3_22968_23068.pdf",
+        "size": 15795
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23005_23105.pdf",
+        "size": 15765
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23013_23113.pdf",
+        "size": 15734
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23025_23125.pdf",
+        "size": 15749
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23353_23453.pdf",
+        "size": 15707
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23475_23575.pdf",
+        "size": 15682
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23549_23649.pdf",
+        "size": 15614
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23554_23654.pdf",
+        "size": 15552
+      },
+      {
+        "file": "ERR10000037.MN908947.3_23898_23998.pdf",
+        "size": 15319
+      },
+      {
+        "file": "ERR10000037.MN908947.3_24374_24474.pdf",
+        "size": 15813
+      },
+      {
+        "file": "ERR10000037.MN908947.3_24419_24519.pdf",
+        "size": 15956
+      },
+      {
+        "file": "ERR10000037.MN908947.3_24950_25050.pdf",
+        "size": 15779
+      },
+      {
+        "file": "ERR10000037.MN908947.3_25534_25634.pdf",
+        "size": 15694
+      },
+      {
+        "file": "ERR10000037.MN908947.3_26010_26110.pdf",
+        "size": 15300
+      },
+      {
+        "file": "ERR10000037.MN908947.3_26220_26320.pdf",
+        "size": 15478
+      },
+      {
+        "file": "ERR10000037.MN908947.3_26479_26579.pdf",
+        "size": 15509
+      },
+      {
+        "file": "ERR10000037.MN908947.3_26527_26627.pdf",
+        "size": 16001
+      },
+      {
+        "file": "ERR10000037.MN908947.3_26659_26759.pdf",
+        "size": 15252
+      },
+      {
+        "file": "ERR10000037.MN908947.3_26962_27062.pdf",
+        "size": 15387
+      },
+      {
+        "file": "ERR10000037.MN908947.3_27375_27475.pdf",
+        "size": 15498
+      },
+      {
+        "file": "ERR10000037.MN908947.3_27463_27563.pdf",
+        "size": 15775
+      },
+      {
+        "file": "ERR10000037.MN908947.3_27757_27857.pdf",
+        "size": 15768
+      },
+      {
+        "file": "ERR10000037.MN908947.3_27839_27939.pdf",
+        "size": 15888
+      },
+      {
+        "file": "ERR10000037.MN908947.3_28221_28321.pdf",
+        "size": 15599
+      },
+      {
+        "file": "ERR10000037.MN908947.3_28261_28361.pdf",
+        "size": 16057
+      },
+      {
+        "file": "ERR10000037.MN908947.3_28280_28380.pdf",
+        "size": 15828
+      },
+      {
+        "file": "ERR10000037.MN908947.3_28311_28411.pdf",
+        "size": 16061
+      },
+      {
+        "file": "ERR10000037.MN908947.3_28831_28931.pdf",
+        "size": 15842
+      },
+      {
+        "file": "ERR10000037.MN908947.3_28833_28933.pdf",
+        "size": 15769
+      },
+      {
+        "file": "ERR10000037.MN908947.3_29460_29560.pdf",
+        "size": 15907
+      },
+      {
+        "file": "ERR10000037.MN908947.3_29683_29783.pdf",
+        "size": 8697
+      },
+      {
+        "file": "ERR10000037.MN908947.3_2987_3087.pdf",
+        "size": 15429
+      },
+      {
+        "file": "ERR10000037.MN908947.3_4134_4234.pdf",
+        "size": 15937
+      },
+      {
+        "file": "ERR10000037.MN908947.3_4271_4371.pdf",
+        "size": 16009
+      },
+      {
+        "file": "ERR10000037.MN908947.3_620_720.pdf",
+        "size": 15776
+      },
+      {
+        "file": "ERR10000037.MN908947.3_8785_8885.pdf",
+        "size": 15619
+      },
+      {
+        "file": "ERR10000037.MN908947.3_9294_9394.pdf",
+        "size": 15361
+      },
+      {
+        "file": "ERR10000037.MN908947.3_9374_9474.pdf",
+        "size": 15433
+      },
+      {
+        "file": "ERR10000037.MN908947.3_9484_9584.pdf",
+        "size": 15976
+      },
+      {
+        "file": "ERR10000037.MN908947.3_9979_10079.pdf",
+        "size": 15473
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "d1/ac96bb": [
+      {
+        "file": "ERR10000010.snpeff.csv",
+        "size": 19273
+      },
+      {
+        "file": "ERR10000010.snpeff.genes.txt",
+        "size": 1103
+      },
+      {
+        "file": "ERR10000010.snpeff.summary.html",
+        "size": 201540
+      },
+      {
+        "file": "ERR10000010.snpeff.vcf",
+        "size": 62681
+      },
+      {
+        "file": "versions.yml",
+        "size": 99
+      }
+    ],
+    "71/10665b": [
+      {
+        "file": "ERR10000000.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 88
+      }
+    ],
+    "35/a82c09": [
+      {
+        "file": "ERR10000000.vcf.gz",
+        "size": 1809
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "79/21ac23": [
+      {
+        "file": "ERR10000050.ivar_trim.sorted.bam.stats",
+        "size": 101383
+      },
+      {
+        "file": "versions.yml",
+        "size": 132
+      }
+    ],
+    "f9/361496": [
+      {
+        "file": "ERR10000037.ivar_trim.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "e9/f67e5e": [
+      {
+        "file": "ERR10000000.snpeff.bcftools_stats.txt",
+        "size": 2996
+      },
+      {
+        "file": "versions.yml",
+        "size": 143
+      }
+    ],
+    "40/ee04f9": [
+      {
+        "file": "ERR10000037.ivar_trim.sorted.bam.stats",
+        "size": 100989
+      },
+      {
+        "file": "versions.yml",
+        "size": 132
+      }
+    ],
+    "e5/cbca0b": [
+      {
+        "file": "samplesheet.valid.csv",
+        "size": 949
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "05/363af1": [
+      {
+        "file": "ERR10000000.pangolin.csv",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "50/4d546b": [
+      {
+        "file": "ERR10000050.filtered.vcf.gz",
+        "size": 1887
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "5a/e232cc": [
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.alignment_summary_metrics",
+        "size": 4051
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.base_distribution_by_cycle.pdf",
+        "size": 16226
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.base_distribution_by_cycle_metrics",
+        "size": 21019
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.insert_size_histogram.pdf",
+        "size": 7477
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.insert_size_metrics",
+        "size": 2827
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.quality_by_cycle.pdf",
+        "size": 8637
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.quality_by_cycle_metrics",
+        "size": 6626
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.quality_distribution.pdf",
+        "size": 4762
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.quality_distribution_metrics",
+        "size": 915
+      },
+      {
+        "file": "ERR10000010.CollectMultipleMetrics.read_length_histogram.pdf",
+        "size": 6548
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "01/d60bdf": [
+      {
+        "file": "ERR10000000.consensus.fa",
+        "size": 30366
+      },
+      {
+        "file": "versions.yml",
+        "size": 82
+      }
+    ],
+    "38/4b73da": [
+      {
+        "file": "ERR10000000.consensus.ACTG_density.pdf",
+        "size": 309581
+      },
+      {
+        "file": "ERR10000000.consensus.N_density.pdf",
+        "size": 77110
+      },
+      {
+        "file": "ERR10000000.consensus.N_run.tsv",
+        "size": 27
+      },
+      {
+        "file": "ERR10000000.consensus.base_counts.pdf",
+        "size": 4515
+      },
+      {
+        "file": "ERR10000000.consensus.base_counts.tsv",
+        "size": 134
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "ea/f5a955": [
+      {
+        "file": "ERR10000023.consensus.fa",
+        "size": 30372
+      },
+      {
+        "file": "versions.yml",
+        "size": 82
+      }
+    ],
+    "86/ee0dfe": [
+      {
+        "file": "ERR10000000.fastp.html",
+        "size": 515385
+      },
+      {
+        "file": "ERR10000000.fastp.json",
+        "size": 152088
+      },
+      {
+        "file": "ERR10000000.fastp.log",
+        "size": 1580
+      },
+      {
+        "file": "ERR10000000_1.fastp.fastq.gz",
+        "size": 11145623
+      },
+      {
+        "file": "ERR10000000_2.fastp.fastq.gz",
+        "size": 10916141
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "c3/d816fc": [
+      {
+        "file": "ERR10000037.ivar_trim.sorted.bam",
+        "size": 23095624
+      },
+      {
+        "file": "versions.yml",
+        "size": 112
+      }
+    ],
+    "5d/bbc808": [
+      {
+        "file": "variants_long_table.csv",
+        "size": 44675
+      },
+      {
+        "file": "versions.yml",
+        "size": 93
+      }
+    ],
+    "2f/0f8b1b": [
+      {
+        "file": "snpeff.config",
+        "size": 49
+      },
+      {
+        "file": "snpeff_db",
+        "size": 128
+      },
+      {
+        "file": "versions.yml",
+        "size": 75
+      }
+    ],
+    "66/23c333": [
+      {
+        "file": "ERR10000050.fa",
+        "size": 30354
+      },
+      {
+        "file": "versions.yml",
+        "size": 87
+      }
+    ],
+    "46/b9dacb": [
+      {
+        "file": "nCoV-2019.primer.collapsed.bed",
+        "size": 3839
+      },
+      {
+        "file": "versions.yml",
+        "size": 80
+      }
+    ],
+    "a7/fbf517": [
+      {
+        "file": "ERR10000010.sorted.bam",
+        "size": 22726386
+      },
+      {
+        "file": "versions.yml",
+        "size": 110
+      }
+    ],
+    "59/1f1aaf": [
+      {
+        "file": "ERR10000010.tsv",
+        "size": 7171
+      },
+      {
+        "file": "versions.yml",
+        "size": 72
+      }
+    ],
+    "11/4e245a": [
+      {
+        "file": "ERR10000010.snpeff.vcf.gz",
+        "size": 7730
+      },
+      {
+        "file": "versions.yml",
+        "size": 121
+      }
+    ],
+    "47/6dc5ba": [
+      {
+        "file": "ERR10000023.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "52/31cf0e": [
+      {
+        "file": "ERR10000010.ivar_trim.sorted.bam.stats",
+        "size": 97569
+      },
+      {
+        "file": "versions.yml",
+        "size": 132
+      }
+    ],
+    "2b/3055a3": [
+      {
+        "file": "ERR10000037.variant_counts.log",
+        "size": 122
+      },
+      {
+        "file": "ERR10000037.variant_counts_mqc.tsv",
+        "size": 466
+      },
+      {
+        "file": "ERR10000037.vcf",
+        "size": 10284
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "61/f8a164": [
+      {
+        "file": "ERR10000050_1_fastqc.html",
+        "size": 706970
+      },
+      {
+        "file": "ERR10000050_1_fastqc.zip",
+        "size": 558465
+      },
+      {
+        "file": "ERR10000050_2_fastqc.html",
+        "size": 696749
+      },
+      {
+        "file": "ERR10000050_2_fastqc.zip",
+        "size": 555185
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "b3/e9cfef": [
+      {
+        "file": "ERR10000023.snpeff.csv",
+        "size": 21973
+      },
+      {
+        "file": "ERR10000023.snpeff.genes.txt",
+        "size": 1194
+      },
+      {
+        "file": "ERR10000023.snpeff.summary.html",
+        "size": 235300
+      },
+      {
+        "file": "ERR10000023.snpeff.vcf",
+        "size": 69479
+      },
+      {
+        "file": "versions.yml",
+        "size": 99
+      }
+    ],
+    "b5/b51848": [
+      {
+        "file": "ERR10000037.ivar_trim.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "b3/40b5e1": [
+      {
+        "file": "ERR10000023.ivar_trim.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "64/75f7ad": [
+      {
+        "file": "ERR10000010.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "fa/2eb54e": [
+      {
+        "file": "ERR10000010.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 88
+      }
+    ],
+    "0b/98ca61": [
+      {
+        "file": "ERR10000050.coverage.masked.bed",
+        "size": 31389
+      },
+      {
+        "file": "versions.yml",
+        "size": 101
+      }
+    ],
+    "99/ecb3cf": [
+      {
+        "file": "ERR10000050.mosdepth.global.dist.txt",
+        "size": 136677
+      },
+      {
+        "file": "ERR10000050.mosdepth.region.dist.txt",
+        "size": 11190
+      },
+      {
+        "file": "ERR10000050.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000050.per-base.bed.gz",
+        "size": 34991
+      },
+      {
+        "file": "ERR10000050.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000050.regions.bed.gz",
+        "size": 1416
+      },
+      {
+        "file": "ERR10000050.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 66
+      }
+    ],
+    "c7/1509c8": [
+      {
+        "file": "ERR10000037.ivar_trim.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "9d/04ed8e": [
+      {
+        "file": "ERR10000000.bam",
+        "size": 18111784
+      },
+      {
+        "file": "ERR10000000.bowtie2.log",
+        "size": 588
+      },
+      {
+        "file": "versions.yml",
+        "size": 119
+      }
+    ],
+    "90/3e8072": [
+      {
+        "file": "ERR10000000.mosdepth.global.dist.txt",
+        "size": 147852
+      },
+      {
+        "file": "ERR10000000.mosdepth.region.dist.txt",
+        "size": 10665
+      },
+      {
+        "file": "ERR10000000.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000000.per-base.bed.gz",
+        "size": 38687
+      },
+      {
+        "file": "ERR10000000.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000000.regions.bed.gz",
+        "size": 1414
+      },
+      {
+        "file": "ERR10000000.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 66
+      }
+    ],
+    "72/96163c": [
+      {
+        "file": "ERR10000010.aligned.fasta",
+        "size": 29928
+      },
+      {
+        "file": "ERR10000010.auspice.json",
+        "size": 6302990
+      },
+      {
+        "file": "ERR10000010.csv",
+        "size": 3069
+      },
+      {
+        "file": "ERR10000010.errors.csv",
+        "size": 62
+      },
+      {
+        "file": "ERR10000010.insertions.csv",
+        "size": 57
+      },
+      {
+        "file": "ERR10000010.json",
+        "size": 165370
+      },
+      {
+        "file": "ERR10000010.ndjson",
+        "size": 74835
+      },
+      {
+        "file": "ERR10000010.tsv",
+        "size": 3067
+      },
+      {
+        "file": "ERR10000010_gene_E.translation.fasta",
+        "size": 101
+      },
+      {
+        "file": "ERR10000010_gene_M.translation.fasta",
+        "size": 248
+      },
+      {
+        "file": "ERR10000010_gene_N.translation.fasta",
+        "size": 445
+      },
+      {
+        "file": "ERR10000010_gene_ORF1a.translation.fasta",
+        "size": 4426
+      },
+      {
+        "file": "ERR10000010_gene_ORF1b.translation.fasta",
+        "size": 2721
+      },
+      {
+        "file": "ERR10000010_gene_ORF3a.translation.fasta",
+        "size": 301
+      },
+      {
+        "file": "ERR10000010_gene_ORF6.translation.fasta",
+        "size": 87
+      },
+      {
+        "file": "ERR10000010_gene_ORF7a.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000010_gene_ORF7b.translation.fasta",
+        "size": 69
+      },
+      {
+        "file": "ERR10000010_gene_ORF8.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000010_gene_ORF9b.translation.fasta",
+        "size": 123
+      },
+      {
+        "file": "ERR10000010_gene_S.translation.fasta",
+        "size": 1299
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "ef/1520bb": [
+      {
+        "file": "ERR10000023.filtered.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "ad/ed2883": [
+      {
+        "file": "ERR10000010.snpeff.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 137
+      }
+    ],
+    "74/73c243": [
+      {
+        "file": "ERR10000023.bam",
+        "size": 25103176
+      },
+      {
+        "file": "ERR10000023.bowtie2.log",
+        "size": 588
+      },
+      {
+        "file": "versions.yml",
+        "size": 119
+      }
+    ],
+    "b8/b08315": [
+      {
+        "file": "ERR10000023.consensus.ACTG_density.pdf",
+        "size": 311297
+      },
+      {
+        "file": "ERR10000023.consensus.N_density.pdf",
+        "size": 77486
+      },
+      {
+        "file": "ERR10000023.consensus.N_run.tsv",
+        "size": 27
+      },
+      {
+        "file": "ERR10000023.consensus.base_counts.pdf",
+        "size": 4518
+      },
+      {
+        "file": "ERR10000023.consensus.base_counts.tsv",
+        "size": 131
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "66/61379a": [
+      {
+        "file": "ERR10000037.aligned.fasta",
+        "size": 29928
+      },
+      {
+        "file": "ERR10000037.auspice.json",
+        "size": 6304223
+      },
+      {
+        "file": "ERR10000037.csv",
+        "size": 3243
+      },
+      {
+        "file": "ERR10000037.errors.csv",
+        "size": 62
+      },
+      {
+        "file": "ERR10000037.insertions.csv",
+        "size": 57
+      },
+      {
+        "file": "ERR10000037.json",
+        "size": 178438
+      },
+      {
+        "file": "ERR10000037.ndjson",
+        "size": 80794
+      },
+      {
+        "file": "ERR10000037.tsv",
+        "size": 3241
+      },
+      {
+        "file": "ERR10000037_gene_E.translation.fasta",
+        "size": 101
+      },
+      {
+        "file": "ERR10000037_gene_M.translation.fasta",
+        "size": 248
+      },
+      {
+        "file": "ERR10000037_gene_N.translation.fasta",
+        "size": 445
+      },
+      {
+        "file": "ERR10000037_gene_ORF1a.translation.fasta",
+        "size": 4426
+      },
+      {
+        "file": "ERR10000037_gene_ORF1b.translation.fasta",
+        "size": 2721
+      },
+      {
+        "file": "ERR10000037_gene_ORF3a.translation.fasta",
+        "size": 301
+      },
+      {
+        "file": "ERR10000037_gene_ORF6.translation.fasta",
+        "size": 87
+      },
+      {
+        "file": "ERR10000037_gene_ORF7a.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000037_gene_ORF7b.translation.fasta",
+        "size": 69
+      },
+      {
+        "file": "ERR10000037_gene_ORF8.translation.fasta",
+        "size": 147
+      },
+      {
+        "file": "ERR10000037_gene_ORF9b.translation.fasta",
+        "size": 123
+      },
+      {
+        "file": "ERR10000037_gene_S.translation.fasta",
+        "size": 1299
+      },
+      {
+        "file": "versions.yml",
+        "size": 98
+      }
+    ],
+    "05/c0af50": [
+      {
+        "file": "ERR10000010_1_fastqc.html",
+        "size": 670355
+      },
+      {
+        "file": "ERR10000010_1_fastqc.zip",
+        "size": 518503
+      },
+      {
+        "file": "ERR10000010_2_fastqc.html",
+        "size": 654186
+      },
+      {
+        "file": "ERR10000010_2_fastqc.zip",
+        "size": 512033
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "2c/13338e": [
+      {
+        "file": "ERR10000050.snpeff.vcf.gz",
+        "size": 7591
+      },
+      {
+        "file": "versions.yml",
+        "size": 121
+      }
+    ],
+    "60/65b220": [
+      {
+        "file": "ERR10000010.bcftools_query.txt",
+        "size": 3137
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "ab/583994": [
+      {
+        "file": "ERR10000000.tsv",
+        "size": 6892
+      },
+      {
+        "file": "versions.yml",
+        "size": 72
+      }
+    ],
+    "e3/8c9634": [
+      {
+        "file": "ERR10000037.coverage.masked.bed",
+        "size": 11922
+      },
+      {
+        "file": "versions.yml",
+        "size": 101
+      }
+    ],
+    "30/f81940": [
+      {
+        "file": "ERR10000037.sorted.bam",
+        "size": 22952501
+      },
+      {
+        "file": "versions.yml",
+        "size": 110
+      }
+    ],
+    "51/19665e": [
+      {
+        "file": "ERR10000023.ivar_trim.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "13/c79fcb": [
+      {
+        "file": "ERR10000050.bcftools_stats.txt",
+        "size": 3043
+      },
+      {
+        "file": "versions.yml",
+        "size": 94
+      }
+    ],
+    "59/12fe51": [
+      {
+        "file": "ERR10000037_1_fastqc.html",
+        "size": 692661
+      },
+      {
+        "file": "ERR10000037_1_fastqc.zip",
+        "size": 561706
+      },
+      {
+        "file": "ERR10000037_2_fastqc.html",
+        "size": 659493
+      },
+      {
+        "file": "ERR10000037_2_fastqc.zip",
+        "size": 524339
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "fa/dafdca": [
+      {
+        "file": "kraken2_human",
+        "size": 160
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "fc/bdb9e6": [
+      {
+        "file": "ERR10000037_1_fastqc.html",
+        "size": 710925
+      },
+      {
+        "file": "ERR10000037_1_fastqc.zip",
+        "size": 568233
+      },
+      {
+        "file": "ERR10000037_2_fastqc.html",
+        "size": 691743
+      },
+      {
+        "file": "ERR10000037_2_fastqc.zip",
+        "size": 548938
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "e4/c796be": [
+      {
+        "file": "ERR10000000.ivar_trim.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "bc/fc36db": [
+      {
+        "file": "ERR10000010.ivar_trim.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "1b/85cf31": [
+      {
+        "file": "ERR10000050.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "ff/605122": [
+      {
+        "file": "ERR10000037.bcftools_stats.txt",
+        "size": 3196
+      },
+      {
+        "file": "versions.yml",
+        "size": 94
+      }
+    ],
+    "7c/590683": [
+      {
+        "file": "ERR10000037.vcf.gz.tbi",
+        "size": 126
+      },
+      {
+        "file": "versions.yml",
+        "size": 88
+      }
+    ],
+    "db/4c014e": [
+      {
+        "file": "ERR10000010.classified_1.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000010.classified_2.fastq.gz",
+        "size": 51
+      },
+      {
+        "file": "ERR10000010.kraken2.classifiedreads.txt",
+        "size": 19236298
+      },
+      {
+        "file": "ERR10000010.kraken2.report.txt",
+        "size": 2015
+      },
+      {
+        "file": "ERR10000010.unclassified_1.fastq.gz",
+        "size": 13600286
+      },
+      {
+        "file": "ERR10000010.unclassified_2.fastq.gz",
+        "size": 13798994
+      },
+      {
+        "file": "versions.yml",
+        "size": 79
+      }
+    ],
+    "2c/8c4854": [
+      {
+        "file": "ERR10000000.masked.fa",
+        "size": 30414
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "2d/61a671": [
+      {
+        "file": "ERR10000023.MN908947.3_10148_10248.pdf",
+        "size": 15614
+      },
+      {
+        "file": "ERR10000023.MN908947.3_10397_10497.pdf",
+        "size": 15834
+      },
+      {
+        "file": "ERR10000023.MN908947.3_10399_10499.pdf",
+        "size": 15555
+      },
+      {
+        "file": "ERR10000023.MN908947.3_11237_11337.pdf",
+        "size": 15487
+      },
+      {
+        "file": "ERR10000023.MN908947.3_12830_12930.pdf",
+        "size": 15658
+      },
+      {
+        "file": "ERR10000023.MN908947.3_14358_14458.pdf",
+        "size": 15445
+      },
+      {
+        "file": "ERR10000023.MN908947.3_15471_15571.pdf",
+        "size": 15895
+      },
+      {
+        "file": "ERR10000023.MN908947.3_15664_15764.pdf",
+        "size": 15720
+      },
+      {
+        "file": "ERR10000023.MN908947.3_1678_1778.pdf",
+        "size": 15662
+      },
+      {
+        "file": "ERR10000023.MN908947.3_17360_17460.pdf",
+        "size": 15711
+      },
+      {
+        "file": "ERR10000023.MN908947.3_17668_17768.pdf",
+        "size": 15845
+      },
+      {
+        "file": "ERR10000023.MN908947.3_18113_18213.pdf",
+        "size": 15702
+      },
+      {
+        "file": "ERR10000023.MN908947.3_191_291.pdf",
+        "size": 13405
+      },
+      {
+        "file": "ERR10000023.MN908947.3_19905_20005.pdf",
+        "size": 15872
+      },
+      {
+        "file": "ERR10000023.MN908947.3_20005_20105.pdf",
+        "size": 15677
+      },
+      {
+        "file": "ERR10000023.MN908947.3_20559_20659.pdf",
+        "size": 15992
+      },
+      {
+        "file": "ERR10000023.MN908947.3_20684_20784.pdf",
+        "size": 15413
+      },
+      {
+        "file": "ERR10000023.MN908947.3_21568_21668.pdf",
+        "size": 15464
+      },
+      {
+        "file": "ERR10000023.MN908947.3_21582_21682.pdf",
+        "size": 15486
+      },
+      {
+        "file": "ERR10000023.MN908947.3_21715_21815.pdf",
+        "size": 15867
+      },
+      {
+        "file": "ERR10000023.MN908947.3_21937_22037.pdf",
+        "size": 15896
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22150_22250.pdf",
+        "size": 15380
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22528_22628.pdf",
+        "size": 16041
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22624_22724.pdf",
+        "size": 15750
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22629_22729.pdf",
+        "size": 15733
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22636_22736.pdf",
+        "size": 15714
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22638_22738.pdf",
+        "size": 15936
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22725_22825.pdf",
+        "size": 15970
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22736_22836.pdf",
+        "size": 15896
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22763_22863.pdf",
+        "size": 16138
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22832_22932.pdf",
+        "size": 15587
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22942_23042.pdf",
+        "size": 15551
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22945_23045.pdf",
+        "size": 15582
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22963_23063.pdf",
+        "size": 15842
+      },
+      {
+        "file": "ERR10000023.MN908947.3_22990_23090.pdf",
+        "size": 15877
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23005_23105.pdf",
+        "size": 15826
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23013_23113.pdf",
+        "size": 15804
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23025_23125.pdf",
+        "size": 15836
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23353_23453.pdf",
+        "size": 15730
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23475_23575.pdf",
+        "size": 15670
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23549_23649.pdf",
+        "size": 15607
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23554_23654.pdf",
+        "size": 15537
+      },
+      {
+        "file": "ERR10000023.MN908947.3_23898_23998.pdf",
+        "size": 15312
+      },
+      {
+        "file": "ERR10000023.MN908947.3_24333_24433.pdf",
+        "size": 15797
+      },
+      {
+        "file": "ERR10000023.MN908947.3_24374_24474.pdf",
+        "size": 16035
+      },
+      {
+        "file": "ERR10000023.MN908947.3_24419_24519.pdf",
+        "size": 15947
+      },
+      {
+        "file": "ERR10000023.MN908947.3_24950_25050.pdf",
+        "size": 15762
+      },
+      {
+        "file": "ERR10000023.MN908947.3_25534_25634.pdf",
+        "size": 15721
+      },
+      {
+        "file": "ERR10000023.MN908947.3_25556_25656.pdf",
+        "size": 15767
+      },
+      {
+        "file": "ERR10000023.MN908947.3_26010_26110.pdf",
+        "size": 15291
+      },
+      {
+        "file": "ERR10000023.MN908947.3_26220_26320.pdf",
+        "size": 15475
+      },
+      {
+        "file": "ERR10000023.MN908947.3_26527_26627.pdf",
+        "size": 15728
+      },
+      {
+        "file": "ERR10000023.MN908947.3_26659_26759.pdf",
+        "size": 15242
+      },
+      {
+        "file": "ERR10000023.MN908947.3_26808_26908.pdf",
+        "size": 16021
+      },
+      {
+        "file": "ERR10000023.MN908947.3_27209_27309.pdf",
+        "size": 15835
+      },
+      {
+        "file": "ERR10000023.MN908947.3_27332_27432.pdf",
+        "size": 15570
+      },
+      {
+        "file": "ERR10000023.MN908947.3_2740_2840.pdf",
+        "size": 15438
+      },
+      {
+        "file": "ERR10000023.MN908947.3_27482_27582.pdf",
+        "size": 15948
+      },
+      {
+        "file": "ERR10000023.MN908947.3_27757_27857.pdf",
+        "size": 15761
+      },
+      {
+        "file": "ERR10000023.MN908947.3_27895_27995.pdf",
+        "size": 15521
+      },
+      {
+        "file": "ERR10000023.MN908947.3_28221_28321.pdf",
+        "size": 15577
+      },
+      {
+        "file": "ERR10000023.MN908947.3_28261_28361.pdf",
+        "size": 16008
+      },
+      {
+        "file": "ERR10000023.MN908947.3_28311_28411.pdf",
+        "size": 16022
+      },
+      {
+        "file": "ERR10000023.MN908947.3_28831_28931.pdf",
+        "size": 15835
+      },
+      {
+        "file": "ERR10000023.MN908947.3_28833_28933.pdf",
+        "size": 15772
+      },
+      {
+        "file": "ERR10000023.MN908947.3_2892_2992.pdf",
+        "size": 16151
+      },
+      {
+        "file": "ERR10000023.MN908947.3_29297_29397.pdf",
+        "size": 16032
+      },
+      {
+        "file": "ERR10000023.MN908947.3_29460_29560.pdf",
+        "size": 15911
+      },
+      {
+        "file": "ERR10000023.MN908947.3_29683_29783.pdf",
+        "size": 15701
+      },
+      {
+        "file": "ERR10000023.MN908947.3_2987_3087.pdf",
+        "size": 15447
+      },
+      {
+        "file": "ERR10000023.MN908947.3_3905_4005.pdf",
+        "size": 15432
+      },
+      {
+        "file": "ERR10000023.MN908947.3_4134_4234.pdf",
+        "size": 15926
+      },
+      {
+        "file": "ERR10000023.MN908947.3_4271_4371.pdf",
+        "size": 16003
+      },
+      {
+        "file": "ERR10000023.MN908947.3_620_720.pdf",
+        "size": 15733
+      },
+      {
+        "file": "ERR10000023.MN908947.3_9294_9394.pdf",
+        "size": 15354
+      },
+      {
+        "file": "ERR10000023.MN908947.3_9374_9474.pdf",
+        "size": 15408
+      },
+      {
+        "file": "ERR10000023.MN908947.3_9484_9584.pdf",
+        "size": 15964
+      },
+      {
+        "file": "ERR10000023.MN908947.3_9816_9916.pdf",
+        "size": 15850
+      },
+      {
+        "file": "ERR10000023.MN908947.3_9979_10079.pdf",
+        "size": 15527
+      },
+      {
+        "file": "versions.yml",
+        "size": 113
+      }
+    ],
+    "41/d5fa29": [
+      {
+        "file": "ERR10000023.tsv",
+        "size": 7743
+      },
+      {
+        "file": "versions.yml",
+        "size": 72
+      }
+    ],
+    "52/a5191f": [
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.alignment_summary_metrics",
+        "size": 3996
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.base_distribution_by_cycle.pdf",
+        "size": 16267
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.base_distribution_by_cycle_metrics",
+        "size": 21014
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.insert_size_histogram.pdf",
+        "size": 6687
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.insert_size_metrics",
+        "size": 2390
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.quality_by_cycle.pdf",
+        "size": 8677
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.quality_by_cycle_metrics",
+        "size": 6633
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.quality_distribution.pdf",
+        "size": 4762
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.quality_distribution_metrics",
+        "size": 915
+      },
+      {
+        "file": "ERR10000037.CollectMultipleMetrics.read_length_histogram.pdf",
+        "size": 6526
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "d4/2cc7aa": [
+      {
+        "file": "ERR10000000.snpsift.txt",
+        "size": 75590
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "30/c0c9f3": [
+      {
+        "file": "ERR10000037.filtered.vcf.gz.tbi",
+        "size": 125
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "2a/b15682": [
+      {
+        "file": "ERR10000037.fastp.html",
+        "size": 515425
+      },
+      {
+        "file": "ERR10000037.fastp.json",
+        "size": 152853
+      },
+      {
+        "file": "ERR10000037.fastp.log",
+        "size": 1581
+      },
+      {
+        "file": "ERR10000037_1.fastp.fastq.gz",
+        "size": 15958564
+      },
+      {
+        "file": "ERR10000037_2.fastp.fastq.gz",
+        "size": 15430248
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ],
+    "0d/de97e3": [
+      {
+        "file": "ERR10000037.filtered.vcf.gz",
+        "size": 1925
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "a0/204508": [
+      {
+        "file": "ERR10000010.pangolin.csv",
+        "size": 431
+      },
+      {
+        "file": "versions.yml",
+        "size": 89
+      }
+    ],
+    "fa/fb73ac": [
+      {
+        "file": "ERR10000023.bcftools_query.txt",
+        "size": 3408
+      },
+      {
+        "file": "versions.yml",
+        "size": 84
+      }
+    ],
+    "de/c34ef2": [
+      {
+        "file": "ERR10000010.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "80/4d074c": [
+      {
+        "file": "ERR10000023.coverage.merged.bed",
+        "size": 39
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "34/15a933": [
+      {
+        "file": "ERR10000050.ivar_trim.sorted.bam.flagstat",
+        "size": 501
+      },
+      {
+        "file": "versions.yml",
+        "size": 135
+      }
+    ],
+    "1f/09b7bd": [
+      {
+        "file": "ERR10000000.sorted.bam.bai",
+        "size": 152
+      },
+      {
+        "file": "versions.yml",
+        "size": 111
+      }
+    ],
+    "4f/b1169e": [
+      {
+        "file": "ERR10000037.bam",
+        "size": 25193424
+      },
+      {
+        "file": "ERR10000037.bowtie2.log",
+        "size": 587
+      },
+      {
+        "file": "versions.yml",
+        "size": 119
+      }
+    ],
+    "4f/c44d93": [
+      {
+        "file": "ERR10000023.mosdepth.global.dist.txt",
+        "size": 171476
+      },
+      {
+        "file": "ERR10000023.mosdepth.region.dist.txt",
+        "size": 171437
+      },
+      {
+        "file": "ERR10000023.mosdepth.summary.txt",
+        "size": 208
+      },
+      {
+        "file": "ERR10000023.per-base.bed.gz",
+        "size": 44030
+      },
+      {
+        "file": "ERR10000023.per-base.bed.gz.csi",
+        "size": 113
+      },
+      {
+        "file": "ERR10000023.regions.bed.gz",
+        "size": 1296
+      },
+      {
+        "file": "ERR10000023.regions.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "ERR10000023.thresholds.bed.gz",
+        "size": 1520
+      },
+      {
+        "file": "ERR10000023.thresholds.bed.gz.csi",
+        "size": 112
+      },
+      {
+        "file": "versions.yml",
+        "size": 68
+      }
+    ],
+    "14/589dac": [
+      {
+        "file": "ERR10000010.coverage.merged.bed",
+        "size": 39
+      },
+      {
+        "file": "versions.yml",
+        "size": 85
+      }
+    ],
+    "76/360d25": [
+      {
+        "file": "ERR10000000.ivar_trim.sorted.bam",
+        "size": 16585527
+      },
+      {
+        "file": "versions.yml",
+        "size": 112
+      }
+    ],
+    "a3/e2da22": [
+      {
+        "file": "ERR10000010.vcf.gz",
+        "size": 1859
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "ba/c40074": [
+      {
+        "file": "ERR10000000.sorted.bam.idxstats",
+        "size": 34
+      },
+      {
+        "file": "versions.yml",
+        "size": 133
+      }
+    ],
+    "66/daebec": [
+      {
+        "file": "ERR10000000.snpeff.csv",
+        "size": 21013
+      },
+      {
+        "file": "ERR10000000.snpeff.genes.txt",
+        "size": 1105
+      },
+      {
+        "file": "ERR10000000.snpeff.summary.html",
+        "size": 223087
+      },
+      {
+        "file": "ERR10000000.snpeff.vcf",
+        "size": 63451
+      },
+      {
+        "file": "versions.yml",
+        "size": 99
+      }
+    ],
+    "df/3d260d": [
+      {
+        "file": "ERR10000023.vcf.gz",
+        "size": 1939
+      },
+      {
+        "file": "versions.yml",
+        "size": 77
+      }
+    ],
+    "0d/86e7d2": [
+      {
+        "file": "ERR10000037.snpeff.vcf.gz",
+        "size": 8136
+      },
+      {
+        "file": "versions.yml",
+        "size": 121
+      }
+    ],
+    "f6/dfe7df": [
+      {
+        "file": "ERR10000023.sorted.bam.stats",
+        "size": 96703
+      },
+      {
+        "file": "versions.yml",
+        "size": 130
+      }
+    ],
+    "d8/b2bf07": [
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.alignment_summary_metrics",
+        "size": 3998
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.base_distribution_by_cycle.pdf",
+        "size": 16209
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.base_distribution_by_cycle_metrics",
+        "size": 20959
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.insert_size_histogram.pdf",
+        "size": 6754
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.insert_size_metrics",
+        "size": 2397
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.quality_by_cycle.pdf",
+        "size": 8668
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.quality_by_cycle_metrics",
+        "size": 6639
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.quality_distribution.pdf",
+        "size": 4808
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.quality_distribution_metrics",
+        "size": 915
+      },
+      {
+        "file": "ERR10000000.CollectMultipleMetrics.read_length_histogram.pdf",
+        "size": 6541
+      },
+      {
+        "file": "versions.yml",
+        "size": 78
+      }
+    ]
   }
 }

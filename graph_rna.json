@@ -5469,5 +5469,1905 @@
     "d4/c05ec6": [
       "SRR10441036_cox4d.clip.reverse.bedGraph"
     ]
+  },
+  "output_details": {
+    "be/658482": [
+      {
+        "file": "SRR10441036_cox4d.featureCounts.tsv",
+        "size": 146130
+      },
+      {
+        "file": "SRR10441036_cox4d.featureCounts.tsv.summary",
+        "size": 392
+      }
+    ],
+    "1c/e02e27": [
+      {
+        "file": "SRR10440987_wt.junctionSaturation_plot.pdf",
+        "size": 8439
+      },
+      {
+        "file": "SRR10440987_wt.junctionSaturation_plot.r",
+        "size": 730
+      }
+    ],
+    "00/e4520a": [
+      {
+        "file": "SRR10440988_wt.sorted.bam.flagstat",
+        "size": 518
+      }
+    ],
+    "4b/8222b5": [
+      {
+        "file": "SRR10441036_cox4d.markdup.sorted.bam.idxstats",
+        "size": 333
+      }
+    ],
+    "77/bab1be": [
+      {
+        "file": "SRR10440987_wt.markdup.sorted.bam.flagstat",
+        "size": 530
+      }
+    ],
+    "70/3f4eee": [
+      {
+        "file": "SRR10441036_cox4d.bigWig",
+        "size": 9394303
+      }
+    ],
+    "86/969749": [
+      {
+        "file": "SRR10441036_cox4d.reverse.bedGraph",
+        "size": 20115447
+      }
+    ],
+    "4e/6823e8": [
+      {
+        "file": "SRR10441036_cox4d.clip.bedGraph",
+        "size": 39824824
+      }
+    ],
+    "bc/bc6b8e": [
+      {
+        "file": "SRR10441037_cox4d_raw_1_fastqc.html",
+        "size": 611331
+      },
+      {
+        "file": "SRR10441037_cox4d_raw_1_fastqc.zip",
+        "size": 332143
+      },
+      {
+        "file": "SRR10441037_cox4d_raw_2_fastqc.html",
+        "size": 614434
+      },
+      {
+        "file": "SRR10441037_cox4d_raw_2_fastqc.zip",
+        "size": 343909
+      }
+    ],
+    "a6/21580b": [
+      {
+        "file": "SRR10440987_wt",
+        "size": 224
+      }
+    ],
+    "6c/d7751a": [
+      {
+        "file": "SRR10440988_wt.reverse.bedGraph",
+        "size": 16362942
+      }
+    ],
+    "31/49ca3c": [
+      {
+        "file": "SRR10440988_wt.inner_distance.txt",
+        "size": 44470338
+      },
+      {
+        "file": "SRR10440988_wt.inner_distance_freq.txt",
+        "size": 1228
+      },
+      {
+        "file": "SRR10440988_wt.inner_distance_mean.txt",
+        "size": 76
+      },
+      {
+        "file": "SRR10440988_wt.inner_distance_plot.pdf",
+        "size": 8374
+      },
+      {
+        "file": "SRR10440988_wt.inner_distance_plot.r",
+        "size": 1555
+      }
+    ],
+    "94/edba1e": [
+      {
+        "file": "SRR10441036_cox4d.read_distribution.txt",
+        "size": 1125
+      }
+    ],
+    "8b/86d093": [
+      {
+        "file": "SRR10441036_cox4d.sorted.bam.flagstat",
+        "size": 518
+      }
+    ],
+    "68/49f8e8": [
+      {
+        "file": "SRR10441036_cox4d.forward.bigWig",
+        "size": 5030782
+      }
+    ],
+    "02/5d90d1": [
+      {
+        "file": "SRR10440988_wt.junction.Interact.bed",
+        "size": 144315
+      },
+      {
+        "file": "SRR10440988_wt.junction.bed",
+        "size": 66579
+      },
+      {
+        "file": "SRR10440988_wt.junction.xls",
+        "size": 32565
+      },
+      {
+        "file": "SRR10440988_wt.junction_annotation.log",
+        "size": 538
+      },
+      {
+        "file": "SRR10440988_wt.junction_plot.r",
+        "size": 567
+      },
+      {
+        "file": "SRR10440988_wt.splice_events.pdf",
+        "size": 13330
+      },
+      {
+        "file": "SRR10440988_wt.splice_junction.pdf",
+        "size": 12679
+      }
+    ],
+    "93/64f568": [
+      {
+        "file": "SRR10440988_wt.sorted.bam",
+        "size": 153058363
+      }
+    ],
+    "8c/0d51f3": [
+      {
+        "file": "SRR10441037_cox4d.sorted.bam.stats",
+        "size": 112721
+      }
+    ],
+    "05/2baf34": [
+      {
+        "file": "SRR10441037_cox4d.subsampled_R1.fastq.gz",
+        "size": 68161075
+      },
+      {
+        "file": "SRR10441037_cox4d.subsampled_R2.fastq.gz",
+        "size": 78493875
+      }
+    ],
+    "e3/f15817": [
+      {
+        "file": "SRR10440988_wt.forward.bigWig",
+        "size": 4263750
+      }
+    ],
+    "01/cc06db": [
+      {
+        "file": "SRR10441036_cox4d_trimmed_1.fastq.gz_trimming_report.txt",
+        "size": 2904
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_1_val_1.fq.gz",
+        "size": 231020359
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_1_val_1_fastqc.html",
+        "size": 282209
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_1_val_1_fastqc.zip",
+        "size": 347377
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_2.fastq.gz_trimming_report.txt",
+        "size": 3802
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_2_val_2.fq.gz",
+        "size": 263548177
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_2_val_2_fastqc.html",
+        "size": 283417
+      },
+      {
+        "file": "SRR10441036_cox4d_trimmed_2_val_2_fastqc.zip",
+        "size": 350154
+      }
+    ],
+    "30/1e825f": [
+      {
+        "file": "SRR10441037_cox4d.infer_experiment.txt",
+        "size": 183
+      }
+    ],
+    "ec/dd9ad9": [
+      {
+        "file": "SRR10440987_wt.sorted.bam.idxstats",
+        "size": 333
+      }
+    ],
+    "3b/841620": [
+      {
+        "file": "SRR10441036_cox4d.sorted.bam.bai",
+        "size": 61128
+      }
+    ],
+    "17/48d9f8": [
+      {
+        "file": "SRR10440988_wt.biotype_counts_mqc.tsv",
+        "size": 526
+      },
+      {
+        "file": "SRR10440988_wt.biotype_counts_rrna_mqc.tsv",
+        "size": 315
+      },
+      {
+        "file": "versions.yml",
+        "size": 86
+      }
+    ],
+    "7d/b47581": [
+      {
+        "file": "SRR10440988_wt",
+        "size": 256
+      },
+      {
+        "file": "SRR10440988_wt_meta_info.json",
+        "size": 1274
+      }
+    ],
+    "60/e3a867": [
+      {
+        "file": "SRR10441037_cox4d.markdup.sorted.bam.flagstat",
+        "size": 528
+      }
+    ],
+    "1b/a3c900": [
+      {
+        "file": "SRR10440987_wt.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "69/50d10b": [
+      {
+        "file": "SRR10441036_cox4d.ballgown",
+        "size": 224
+      },
+      {
+        "file": "SRR10441036_cox4d.coverage.gtf",
+        "size": 1082818
+      },
+      {
+        "file": "SRR10441036_cox4d.gene.abundance.txt",
+        "size": 448025
+      },
+      {
+        "file": "SRR10441036_cox4d.transcripts.gtf",
+        "size": 2096269
+      }
+    ],
+    "ed/1fc828": [
+      {
+        "file": "SRR10441037_cox4d.Aligned.out.bam",
+        "size": 306578749
+      },
+      {
+        "file": "SRR10441037_cox4d.Aligned.toTranscriptome.out.bam",
+        "size": 201622489
+      },
+      {
+        "file": "SRR10441037_cox4d.Log.final.out",
+        "size": 2006
+      },
+      {
+        "file": "SRR10441037_cox4d.Log.out",
+        "size": 10185
+      },
+      {
+        "file": "SRR10441037_cox4d.Log.progress.out",
+        "size": 683
+      },
+      {
+        "file": "SRR10441037_cox4d.SJ.out.tab",
+        "size": 23582
+      }
+    ],
+    "27/94eb6d": [
+      {
+        "file": "SRR10441037_cox4d.junction.Interact.bed",
+        "size": 157790
+      },
+      {
+        "file": "SRR10441037_cox4d.junction.bed",
+        "size": 72714
+      },
+      {
+        "file": "SRR10441037_cox4d.junction.xls",
+        "size": 35648
+      },
+      {
+        "file": "SRR10441037_cox4d.junction_annotation.log",
+        "size": 540
+      },
+      {
+        "file": "SRR10441037_cox4d.junction_plot.r",
+        "size": 575
+      },
+      {
+        "file": "SRR10441037_cox4d.splice_events.pdf",
+        "size": 13344
+      },
+      {
+        "file": "SRR10441037_cox4d.splice_junction.pdf",
+        "size": 12574
+      }
+    ],
+    "98/b40a44": [
+      {
+        "file": "SRR10440988_wt.namesorted.bam",
+        "size": 242414176
+      }
+    ],
+    "d4/7af988": [
+      {
+        "file": "SRR10441037_cox4d.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "f1/5a5c02": [
+      {
+        "file": "SRR10440987_wt.ballgown",
+        "size": 224
+      },
+      {
+        "file": "SRR10440987_wt.coverage.gtf",
+        "size": 1106539
+      },
+      {
+        "file": "SRR10440987_wt.gene.abundance.txt",
+        "size": 448452
+      },
+      {
+        "file": "SRR10440987_wt.transcripts.gtf",
+        "size": 2089195
+      }
+    ],
+    "bb/61b6d1": [
+      {
+        "file": "SRR10441036_cox4d",
+        "size": 224
+      },
+      {
+        "file": "SRR10441036_cox4d_lib_format_counts.json",
+        "size": 603
+      },
+      {
+        "file": "SRR10441036_cox4d_meta_info.json",
+        "size": 1834
+      }
+    ],
+    "3c/b5348d": [
+      {
+        "file": "SRR10440987_wt.sorted.bam.bai",
+        "size": 72248
+      }
+    ],
+    "c3/d189f7": [
+      {
+        "file": "SRR10441037_cox4d.R_sessionInfo.log",
+        "size": 873
+      },
+      {
+        "file": "SRR10441037_cox4d_dupMatrix.txt",
+        "size": 819374
+      },
+      {
+        "file": "SRR10441037_cox4d_dup_intercept_mqc.txt",
+        "size": 309
+      },
+      {
+        "file": "SRR10441037_cox4d_duprateExpBoxplot.pdf",
+        "size": 15010
+      },
+      {
+        "file": "SRR10441037_cox4d_duprateExpDens.pdf",
+        "size": 389940
+      },
+      {
+        "file": "SRR10441037_cox4d_duprateExpDensCurve_mqc.txt",
+        "size": 21485
+      },
+      {
+        "file": "SRR10441037_cox4d_expressionHist.pdf",
+        "size": 5381
+      },
+      {
+        "file": "SRR10441037_cox4d_intercept_slope.txt",
+        "size": 169
+      },
+      {
+        "file": "versions.yml",
+        "size": 81
+      }
+    ],
+    "57/25a8a2": [
+      {
+        "file": "SRR10441036_cox4d.subsampled_R1.fastq.gz",
+        "size": 67524350
+      },
+      {
+        "file": "SRR10441036_cox4d.subsampled_R2.fastq.gz",
+        "size": 78303932
+      }
+    ],
+    "a3/f76cf6": [
+      {
+        "file": "SRR10440988_wt.markdup.sorted.bam.idxstats",
+        "size": 332
+      }
+    ],
+    "6e/1a96ad": [
+      {
+        "file": "SRR10441036_cox4d.markdup.sorted.bam.bai",
+        "size": 61080
+      }
+    ],
+    "fe/947ea4": [
+      {
+        "file": "SRR10440987_wt.R_sessionInfo.log",
+        "size": 873
+      },
+      {
+        "file": "SRR10440987_wt_dupMatrix.txt",
+        "size": 837338
+      },
+      {
+        "file": "SRR10440987_wt_dup_intercept_mqc.txt",
+        "size": 306
+      },
+      {
+        "file": "SRR10440987_wt_duprateExpBoxplot.pdf",
+        "size": 13087
+      },
+      {
+        "file": "SRR10440987_wt_duprateExpDens.pdf",
+        "size": 397868
+      },
+      {
+        "file": "SRR10440987_wt_duprateExpDensCurve_mqc.txt",
+        "size": 21725
+      },
+      {
+        "file": "SRR10440987_wt_expressionHist.pdf",
+        "size": 5505
+      },
+      {
+        "file": "SRR10440987_wt_intercept_slope.txt",
+        "size": 163
+      },
+      {
+        "file": "versions.yml",
+        "size": 81
+      }
+    ],
+    "20/2d7ced": [
+      {
+        "file": "SRR10441037_cox4d.sorted.bam.idxstats",
+        "size": 333
+      }
+    ],
+    "f3/aed1a8": [
+      {
+        "file": "SRR10440988_wt.sorted.bam.stats",
+        "size": 111677
+      }
+    ],
+    "e9/95068f": [
+      {
+        "file": "SRR10441036_cox4d.sorted.bam",
+        "size": 210128469
+      }
+    ],
+    "fc/3a662d": [
+      {
+        "file": "salmon",
+        "size": 544
+      }
+    ],
+    "74/e07b6a": [
+      {
+        "file": "SRR10440987_wt.sorted.bam.flagstat",
+        "size": 518
+      }
+    ],
+    "66/47e623": [
+      {
+        "file": "SRR10441037_cox4d.clip.bedGraph",
+        "size": 35081276
+      }
+    ],
+    "fd/ca2c04": [
+      {
+        "file": "SRR10441037_cox4d.markdup.sorted.bam.idxstats",
+        "size": 333
+      }
+    ],
+    "f5/9b6dbf": [
+      {
+        "file": "SRR10441037_cox4d.sorted.bam",
+        "size": 182167255
+      }
+    ],
+    "19/d4d47d": [
+      {
+        "file": "SRR10440987_wt_trimmed_1.fastq.gz_trimming_report.txt",
+        "size": 2778
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_1_val_1.fq.gz",
+        "size": 279903470
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_1_val_1_fastqc.html",
+        "size": 280231
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_1_val_1_fastqc.zip",
+        "size": 343322
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_2.fastq.gz_trimming_report.txt",
+        "size": 3870
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_2_val_2.fq.gz",
+        "size": 317392131
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_2_val_2_fastqc.html",
+        "size": 286116
+      },
+      {
+        "file": "SRR10440987_wt_trimmed_2_val_2_fastqc.zip",
+        "size": 353695
+      }
+    ],
+    "0c/d33e1f": [
+      {
+        "file": "SRR10440987_wt.markdup.sorted.bam.bai",
+        "size": 72552
+      }
+    ],
+    "53/60b7e9": [
+      {
+        "file": "SRR10440988_wt.Aligned.out.bam",
+        "size": 254515979
+      },
+      {
+        "file": "SRR10440988_wt.Aligned.toTranscriptome.out.bam",
+        "size": 165233096
+      },
+      {
+        "file": "SRR10440988_wt.Log.final.out",
+        "size": 2007
+      },
+      {
+        "file": "SRR10440988_wt.Log.out",
+        "size": 10071
+      },
+      {
+        "file": "SRR10440988_wt.Log.progress.out",
+        "size": 565
+      },
+      {
+        "file": "SRR10440988_wt.SJ.out.tab",
+        "size": 19042
+      }
+    ],
+    "66/9ff31b": [
+      {
+        "file": "SRR10441037_cox4d.biotype_counts_mqc.tsv",
+        "size": 529
+      },
+      {
+        "file": "SRR10441037_cox4d.biotype_counts_rrna_mqc.tsv",
+        "size": 317
+      },
+      {
+        "file": "versions.yml",
+        "size": 86
+      }
+    ],
+    "54/c208b9": [
+      {
+        "file": "SRR10440988_wt.R_sessionInfo.log",
+        "size": 873
+      },
+      {
+        "file": "SRR10440988_wt_dupMatrix.txt",
+        "size": 813939
+      },
+      {
+        "file": "SRR10440988_wt_dup_intercept_mqc.txt",
+        "size": 306
+      },
+      {
+        "file": "SRR10440988_wt_duprateExpBoxplot.pdf",
+        "size": 14415
+      },
+      {
+        "file": "SRR10440988_wt_duprateExpDens.pdf",
+        "size": 387279
+      },
+      {
+        "file": "SRR10440988_wt_duprateExpDensCurve_mqc.txt",
+        "size": 21321
+      },
+      {
+        "file": "SRR10440988_wt_expressionHist.pdf",
+        "size": 5462
+      },
+      {
+        "file": "SRR10440988_wt_intercept_slope.txt",
+        "size": 164
+      },
+      {
+        "file": "versions.yml",
+        "size": 81
+      }
+    ],
+    "1b/bf78ea": [
+      {
+        "file": "SRR10440987_wt.featureCounts.tsv",
+        "size": 146121
+      },
+      {
+        "file": "SRR10440987_wt.featureCounts.tsv.summary",
+        "size": 389
+      }
+    ],
+    "93/e593d0": [
+      {
+        "file": "SRR10441036_cox4d.sorted.bam.stats",
+        "size": 113310
+      }
+    ],
+    "d9/7ca7c9": [
+      {
+        "file": "SRR10440988_wt.bam_stat.txt",
+        "size": 831
+      }
+    ],
+    "22/995d75": [
+      {
+        "file": "SRR10440988_wt.bedGraph",
+        "size": 32729900
+      }
+    ],
+    "d6/eed1c9": [
+      {
+        "file": "SRR10441037_cox4d.bam_stat.txt",
+        "size": 836
+      }
+    ],
+    "23/2f4ab5": [
+      {
+        "file": "SRR10440988_wt_raw_1_fastqc.html",
+        "size": 611226
+      },
+      {
+        "file": "SRR10440988_wt_raw_1_fastqc.zip",
+        "size": 331396
+      },
+      {
+        "file": "SRR10440988_wt_raw_2_fastqc.html",
+        "size": 615730
+      },
+      {
+        "file": "SRR10440988_wt_raw_2_fastqc.zip",
+        "size": 348940
+      }
+    ],
+    "50/2ba3c7": [
+      {
+        "file": "SRR10440988_wt.markdup.sorted.bam.bai",
+        "size": 54424
+      }
+    ],
+    "19/978efe": [
+      {
+        "file": "SRR10440987_wt.sorted.bam.stats",
+        "size": 114856
+      }
+    ],
+    "0c/f42957": [
+      {
+        "file": "SRR10441037_cox4d.sorted.bam.bai",
+        "size": 58176
+      }
+    ],
+    "f2/cefd0f": [
+      {
+        "file": "SRR10441036_cox4d.Aligned.out.bam",
+        "size": 362317930
+      },
+      {
+        "file": "SRR10441036_cox4d.Aligned.toTranscriptome.out.bam",
+        "size": 236831394
+      },
+      {
+        "file": "SRR10441036_cox4d.Log.final.out",
+        "size": 2007
+      },
+      {
+        "file": "SRR10441036_cox4d.Log.out",
+        "size": 10185
+      },
+      {
+        "file": "SRR10441036_cox4d.Log.progress.out",
+        "size": 683
+      },
+      {
+        "file": "SRR10441036_cox4d.SJ.out.tab",
+        "size": 21610
+      }
+    ],
+    "d7/693856": [
+      {
+        "file": "SRR10441037_cox4d.inner_distance.txt",
+        "size": 45685821
+      },
+      {
+        "file": "SRR10441037_cox4d.inner_distance_freq.txt",
+        "size": 1234
+      },
+      {
+        "file": "SRR10441037_cox4d.inner_distance_mean.txt",
+        "size": 79
+      },
+      {
+        "file": "SRR10441037_cox4d.inner_distance_plot.pdf",
+        "size": 8398
+      },
+      {
+        "file": "SRR10441037_cox4d.inner_distance_plot.r",
+        "size": 1567
+      }
+    ],
+    "52/ff0bd5": [
+      {
+        "file": "SRR10441037_cox4d.junctionSaturation_plot.pdf",
+        "size": 8456
+      },
+      {
+        "file": "SRR10441037_cox4d.junctionSaturation_plot.r",
+        "size": 722
+      }
+    ],
+    "8d/b44e31": [
+      {
+        "file": "SRR10441037_cox4d",
+        "size": 224
+      }
+    ],
+    "4d/a531e0": [
+      {
+        "file": "SRR10440988_wt.ballgown",
+        "size": 224
+      },
+      {
+        "file": "SRR10440988_wt.coverage.gtf",
+        "size": 1048578
+      },
+      {
+        "file": "SRR10440988_wt.gene.abundance.txt",
+        "size": 447587
+      },
+      {
+        "file": "SRR10440988_wt.transcripts.gtf",
+        "size": 2068597
+      }
+    ],
+    "8b/fea9e7": [
+      {
+        "file": "SRR10441036_cox4d.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "4a/88cfe1": [
+      {
+        "file": "SRR10441037_cox4d.read_distribution.txt",
+        "size": 1125
+      }
+    ],
+    "4a/15acdd": [
+      {
+        "file": "SRR10441037_cox4d.markdup.sorted.bam.stats",
+        "size": 112741
+      }
+    ],
+    "69/b731a2": [
+      {
+        "file": "SRR10440987_wt.subsampled_R1.fastq.gz",
+        "size": 68906711
+      },
+      {
+        "file": "SRR10440987_wt.subsampled_R2.fastq.gz",
+        "size": 79396326
+      }
+    ],
+    "1f/02823c": [
+      {
+        "file": "SRR10441037_cox4d.markdup.sorted.bam",
+        "size": 193226481
+      },
+      {
+        "file": "SRR10441037_cox4d.markdup.sorted.metrics.txt",
+        "size": 3789
+      }
+    ],
+    "97/a18d0e": [
+      {
+        "file": "SRR10441036_cox4d.namesorted.bam",
+        "size": 344974045
+      }
+    ],
+    "a1/10af2c": [
+      {
+        "file": "genome.fa.fai",
+        "size": 412
+      },
+      {
+        "file": "genome.fa.sizes",
+        "size": 179
+      }
+    ],
+    "87/bc5495": [
+      {
+        "file": "SRR10440988_wt",
+        "size": 224
+      },
+      {
+        "file": "SRR10440988_wt_lib_format_counts.json",
+        "size": 596
+      },
+      {
+        "file": "SRR10440988_wt_meta_info.json",
+        "size": 1832
+      }
+    ],
+    "50/09cf75": [
+      {
+        "file": "SRR10440988_wt.read_distribution.txt",
+        "size": 1125
+      }
+    ],
+    "8e/b5be55": [
+      {
+        "file": "salmon.merged.gene_counts.tsv",
+        "size": 192935
+      },
+      {
+        "file": "salmon.merged.gene_counts_length_scaled.tsv",
+        "size": 505662
+      },
+      {
+        "file": "salmon.merged.gene_counts_scaled.tsv",
+        "size": 505647
+      },
+      {
+        "file": "salmon.merged.gene_lengths.tsv",
+        "size": 346446
+      },
+      {
+        "file": "salmon.merged.gene_tpm.tsv",
+        "size": 344537
+      },
+      {
+        "file": "salmon.merged.transcript_counts.tsv",
+        "size": 207014
+      },
+      {
+        "file": "salmon.merged.transcript_lengths.tsv",
+        "size": 350434
+      },
+      {
+        "file": "salmon.merged.transcript_tpm.tsv",
+        "size": 358616
+      },
+      {
+        "file": "salmon.merged.tx2gene_augmented.tsv",
+        "size": 161275
+      },
+      {
+        "file": "versions.yml",
+        "size": 130
+      }
+    ],
+    "4a/f1c81e": [
+      {
+        "file": "SRR10441036_cox4d.junctionSaturation_plot.pdf",
+        "size": 8361
+      },
+      {
+        "file": "SRR10441036_cox4d.junctionSaturation_plot.r",
+        "size": 721
+      }
+    ],
+    "81/c6fc7b": [
+      {
+        "file": "SRR10441037_cox4d.reverse.bedGraph",
+        "size": 17624022
+      }
+    ],
+    "5d/3383f1": [
+      {
+        "file": "SRR10440988_wt.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "45/6899ee": [
+      {
+        "file": "SRR10440988_wt.clip.forward.bedGraph",
+        "size": 16362942
+      }
+    ],
+    "80/38fc4b": [
+      {
+        "file": "SRR10440987_wt.bam_stat.txt",
+        "size": 837
+      }
+    ],
+    "b7/5f9328": [
+      {
+        "file": "SRR10440988_wt.clip.reverse.bedGraph",
+        "size": 16429621
+      }
+    ],
+    "a5/9d586d": [
+      {
+        "file": "SRR10441037_cox4d_trimmed_1.fastq.gz_trimming_report.txt",
+        "size": 2865
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_1_val_1.fq.gz",
+        "size": 195708972
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_1_val_1_fastqc.html",
+        "size": 277661
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_1_val_1_fastqc.zip",
+        "size": 340192
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_2.fastq.gz_trimming_report.txt",
+        "size": 3676
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_2_val_2.fq.gz",
+        "size": 221624408
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_2_val_2_fastqc.html",
+        "size": 280173
+      },
+      {
+        "file": "SRR10441037_cox4d_trimmed_2_val_2_fastqc.zip",
+        "size": 344724
+      }
+    ],
+    "e0/a69d5e": [
+      {
+        "file": "SRR10441037_cox4d.DupRate_plot.pdf",
+        "size": 23367
+      },
+      {
+        "file": "SRR10441037_cox4d.DupRate_plot.r",
+        "size": 4334
+      },
+      {
+        "file": "SRR10441037_cox4d.pos.DupRate.xls",
+        "size": 1908
+      },
+      {
+        "file": "SRR10441037_cox4d.seq.DupRate.xls",
+        "size": 1617
+      }
+    ],
+    "6d/e20902": [
+      {
+        "file": "SRR10441036_cox4d",
+        "size": 224
+      }
+    ],
+    "55/1c7425": [
+      {
+        "file": "SRR10440987_wt.sorted.bam",
+        "size": 249111450
+      }
+    ],
+    "c9/9a30ba": [
+      {
+        "file": "salmon.merged.tx2gene.tsv",
+        "size": 161275
+      },
+      {
+        "file": "versions.yml",
+        "size": 110
+      }
+    ],
+    "2e/39da8e": [
+      {
+        "file": "SRR10441037_cox4d.forward.bigWig",
+        "size": 4507114
+      }
+    ],
+    "3d/de4cac": [
+      {
+        "file": "SRR10441037_cox4d.bigWig",
+        "size": 8415586
+      }
+    ],
+    "15/406406": [
+      {
+        "file": "SRR10440988_wt.junctionSaturation_plot.pdf",
+        "size": 8393
+      },
+      {
+        "file": "SRR10440988_wt.junctionSaturation_plot.r",
+        "size": 716
+      }
+    ],
+    "fd/6d8c48": [
+      {
+        "file": "SRR10440987_wt.forward.bedGraph",
+        "size": 22099617
+      }
+    ],
+    "cd/83e39a": [
+      {
+        "file": "SRR10440988_wt.bigWig",
+        "size": 7978357
+      }
+    ],
+    "89/111aaa": [
+      {
+        "file": "SRR10440988_wt.markdup.sorted.bam",
+        "size": 162138188
+      },
+      {
+        "file": "SRR10440988_wt.markdup.sorted.metrics.txt",
+        "size": 3772
+      }
+    ],
+    "19/cd5bd2": [
+      {
+        "file": "SRR10440987_wt.clip.forward.bedGraph",
+        "size": 22104965
+      }
+    ],
+    "ee/ce74df": [
+      {
+        "file": "SRR10440987_wt.junction.Interact.bed",
+        "size": 218075
+      },
+      {
+        "file": "SRR10440987_wt.junction.bed",
+        "size": 101428
+      },
+      {
+        "file": "SRR10440987_wt.junction.xls",
+        "size": 49610
+      },
+      {
+        "file": "SRR10440987_wt.junction_annotation.log",
+        "size": 541
+      },
+      {
+        "file": "SRR10440987_wt.junction_plot.r",
+        "size": 569
+      },
+      {
+        "file": "SRR10440987_wt.splice_events.pdf",
+        "size": 13354
+      },
+      {
+        "file": "SRR10440987_wt.splice_junction.pdf",
+        "size": 12629
+      }
+    ],
+    "a5/dd00e1": [
+      {
+        "file": "SRR10440987_wt.infer_experiment.txt",
+        "size": 183
+      }
+    ],
+    "1b/c8e756": [
+      {
+        "file": "SRR10440988_wt.subsampled_R1.fastq.gz",
+        "size": 67427973
+      },
+      {
+        "file": "SRR10440988_wt.subsampled_R2.fastq.gz",
+        "size": 77966825
+      }
+    ],
+    "0c/f437e6": [
+      {
+        "file": "SRR10441036_cox4d.clip.forward.bedGraph",
+        "size": 20115447
+      }
+    ],
+    "19/f13017": [
+      {
+        "file": "SRR10440987_wt",
+        "size": 256
+      },
+      {
+        "file": "SRR10440987_wt_meta_info.json",
+        "size": 1276
+      }
+    ],
+    "b8/333e2a": [
+      {
+        "file": "SRR10441036_cox4d.markdup.sorted.bam",
+        "size": 223214709
+      },
+      {
+        "file": "SRR10441036_cox4d.markdup.sorted.metrics.txt",
+        "size": 3805
+      }
+    ],
+    "37/0bdc93": [
+      {
+        "file": "SRR10440987_wt.bigWig",
+        "size": 13655828
+      }
+    ],
+    "db/de20c0": [
+      {
+        "file": "SRR10440987_wt.reverse.bedGraph",
+        "size": 22104965
+      }
+    ],
+    "35/7730ad": [
+      {
+        "file": "SRR10440987_wt.bedGraph",
+        "size": 43932946
+      }
+    ],
+    "69/94fd99": [
+      {
+        "file": "SRR10440988_wt.sorted.bam.bai",
+        "size": 53712
+      }
+    ],
+    "74/b2e8a7": [
+      {
+        "file": "SRR10441037_cox4d.featureCounts.tsv",
+        "size": 146132
+      },
+      {
+        "file": "SRR10441037_cox4d.featureCounts.tsv.summary",
+        "size": 391
+      }
+    ],
+    "0c/8143cf": [
+      {
+        "file": "SRR10441036_cox4d",
+        "size": 256
+      },
+      {
+        "file": "SRR10441036_cox4d_meta_info.json",
+        "size": 1276
+      }
+    ],
+    "84/e57678": [
+      {
+        "file": "SRR10441037_cox4d.sorted.bam.flagstat",
+        "size": 518
+      }
+    ],
+    "85/6264e3": [
+      {
+        "file": "SRR10440988_wt.markdup.sorted.bam.flagstat",
+        "size": 528
+      }
+    ],
+    "04/1421c5": [
+      {
+        "file": "SRR10441037_cox4d.reverse.bigWig",
+        "size": 4511832
+      }
+    ],
+    "64/c4f742": [
+      {
+        "file": "R_sessionInfo.log",
+        "size": 2135
+      },
+      {
+        "file": "deseq2.dds.RData",
+        "size": 180635
+      },
+      {
+        "file": "deseq2.pca.vals.txt",
+        "size": 265
+      },
+      {
+        "file": "deseq2.plots.pdf",
+        "size": 13493
+      },
+      {
+        "file": "deseq2.sample.dists.txt",
+        "size": 349
+      },
+      {
+        "file": "size_factors",
+        "size": 224
+      },
+      {
+        "file": "star_salmon.pca.vals_mqc.tsv",
+        "size": 975
+      },
+      {
+        "file": "star_salmon.sample.dists_mqc.tsv",
+        "size": 1146
+      }
+    ],
+    "4f/1965a1": [
+      {
+        "file": "SRR10440987_wt.forward.bigWig",
+        "size": 5494519
+      }
+    ],
+    "67/232758": [
+      {
+        "file": "SRR10441037_cox4d",
+        "size": 224
+      },
+      {
+        "file": "SRR10441037_cox4d_lib_format_counts.json",
+        "size": 603
+      },
+      {
+        "file": "SRR10441037_cox4d_meta_info.json",
+        "size": 1835
+      }
+    ],
+    "67/e37334": [
+      {
+        "file": "SRR10440988_wt.forward.bedGraph",
+        "size": 16429621
+      }
+    ],
+    "2d/680bb4": [
+      {
+        "file": "SRR10440987_wt",
+        "size": 224
+      },
+      {
+        "file": "SRR10440987_wt_lib_format_counts.json",
+        "size": 597
+      },
+      {
+        "file": "SRR10440987_wt_meta_info.json",
+        "size": 1835
+      }
+    ],
+    "2d/1be3fd": [
+      {
+        "file": "genes.filtered.gtf",
+        "size": 12037571
+      },
+      {
+        "file": "versions.yml",
+        "size": 63
+      }
+    ],
+    "8d/8211a8": [
+      {
+        "file": "SRR10441037_cox4d.namesorted.bam",
+        "size": 291977092
+      }
+    ],
+    "bd/e10853": [
+      {
+        "file": "SRR10441036_cox4d.infer_experiment.txt",
+        "size": 183
+      }
+    ],
+    "3e/4a8fbf": [
+      {
+        "file": "SRR10441037_cox4d.forward.bedGraph",
+        "size": 17643895
+      }
+    ],
+    "a1/8902cc": [
+      {
+        "file": "SRR10441037_cox4d.ballgown",
+        "size": 224
+      },
+      {
+        "file": "SRR10441037_cox4d.coverage.gtf",
+        "size": 1063983
+      },
+      {
+        "file": "SRR10441037_cox4d.gene.abundance.txt",
+        "size": 446993
+      },
+      {
+        "file": "SRR10441037_cox4d.transcripts.gtf",
+        "size": 2062786
+      }
+    ],
+    "80/a95459": [
+      {
+        "file": "SRR10441036_cox4d.sorted.bam.idxstats",
+        "size": 333
+      }
+    ],
+    "82/b81112": [
+      {
+        "file": "SRR10440988_wt.DupRate_plot.pdf",
+        "size": 19205
+      },
+      {
+        "file": "SRR10440988_wt.DupRate_plot.r",
+        "size": 3512
+      },
+      {
+        "file": "SRR10440988_wt.pos.DupRate.xls",
+        "size": 1483
+      },
+      {
+        "file": "SRR10440988_wt.seq.DupRate.xls",
+        "size": 1223
+      }
+    ],
+    "17/2eae37": [
+      {
+        "file": "SRR10440987_wt.namesorted.bam",
+        "size": 410792865
+      }
+    ],
+    "ff/831dc0": [
+      {
+        "file": "SRR10440987_wt.DupRate_plot.pdf",
+        "size": 26798
+      },
+      {
+        "file": "SRR10440987_wt.DupRate_plot.r",
+        "size": 5031
+      },
+      {
+        "file": "SRR10440987_wt.pos.DupRate.xls",
+        "size": 2272
+      },
+      {
+        "file": "SRR10440987_wt.seq.DupRate.xls",
+        "size": 1953
+      }
+    ],
+    "ef/6d72f6": [
+      {
+        "file": "SRR10441037_cox4d",
+        "size": 256
+      },
+      {
+        "file": "SRR10441037_cox4d_meta_info.json",
+        "size": 1275
+      }
+    ],
+    "cc/cbf754": [
+      {
+        "file": "SRR10440987_wt.inner_distance.txt",
+        "size": 45720601
+      },
+      {
+        "file": "SRR10440987_wt.inner_distance_freq.txt",
+        "size": 1232
+      },
+      {
+        "file": "SRR10440987_wt.inner_distance_mean.txt",
+        "size": 76
+      },
+      {
+        "file": "SRR10440987_wt.inner_distance_plot.pdf",
+        "size": 8395
+      },
+      {
+        "file": "SRR10440987_wt.inner_distance_plot.r",
+        "size": 1559
+      }
+    ],
+    "76/d20e81": [
+      {
+        "file": "SRR10441036_cox4d.markdup.sorted.bam.flagstat",
+        "size": 528
+      }
+    ],
+    "5a/2a7f2e": [
+      {
+        "file": "SRR10440988_wt",
+        "size": 224
+      }
+    ],
+    "99/029a1a": [
+      {
+        "file": "SRR10441036_cox4d.reverse.bigWig",
+        "size": 4998637
+      }
+    ],
+    "f1/5c9da9": [
+      {
+        "file": "SRR10440987_wt.Aligned.out.bam",
+        "size": 430545763
+      },
+      {
+        "file": "SRR10440987_wt.Aligned.toTranscriptome.out.bam",
+        "size": 275929730
+      },
+      {
+        "file": "SRR10440987_wt.Log.final.out",
+        "size": 2010
+      },
+      {
+        "file": "SRR10440987_wt.Log.out",
+        "size": 10071
+      },
+      {
+        "file": "SRR10440987_wt.Log.progress.out",
+        "size": 683
+      },
+      {
+        "file": "SRR10440987_wt.SJ.out.tab",
+        "size": 26197
+      }
+    ],
+    "e0/f896b0": [
+      {
+        "file": "SRR10441036_cox4d.bam_stat.txt",
+        "size": 836
+      }
+    ],
+    "2a/141f45": [
+      {
+        "file": "SRR10441036_cox4d.inner_distance.txt",
+        "size": 45453361
+      },
+      {
+        "file": "SRR10441036_cox4d.inner_distance_freq.txt",
+        "size": 1229
+      },
+      {
+        "file": "SRR10441036_cox4d.inner_distance_mean.txt",
+        "size": 79
+      },
+      {
+        "file": "SRR10441036_cox4d.inner_distance_plot.pdf",
+        "size": 8400
+      },
+      {
+        "file": "SRR10441036_cox4d.inner_distance_plot.r",
+        "size": 1562
+      }
+    ],
+    "0d/ba0c2e": [
+      {
+        "file": "multiqc_report.html",
+        "size": 3358955
+      },
+      {
+        "file": "multiqc_report_data",
+        "size": 2816
+      },
+      {
+        "file": "multiqc_report_plots",
+        "size": 160
+      }
+    ],
+    "36/1b203e": [
+      {
+        "file": "SRR10441036_cox4d.forward.bedGraph",
+        "size": 19964234
+      }
+    ],
+    "95/49e866": [
+      {
+        "file": "SRR10440987_wt.markdup.sorted.bam",
+        "size": 264437112
+      },
+      {
+        "file": "SRR10440987_wt.markdup.sorted.metrics.txt",
+        "size": 3747
+      }
+    ],
+    "31/82f20d": [
+      {
+        "file": "SRR10440987_wt.biotype_counts_mqc.tsv",
+        "size": 527
+      },
+      {
+        "file": "SRR10440987_wt.biotype_counts_rrna_mqc.tsv",
+        "size": 313
+      },
+      {
+        "file": "versions.yml",
+        "size": 86
+      }
+    ],
+    "30/470b21": [
+      {
+        "file": "SRR10441037_cox4d.bedGraph",
+        "size": 35081276
+      }
+    ],
+    "10/ff8614": [
+      {
+        "file": "star",
+        "size": 640
+      }
+    ],
+    "90/e3ad71": [
+      {
+        "file": "SRR10441036_cox4d.DupRate_plot.pdf",
+        "size": 25410
+      },
+      {
+        "file": "SRR10441036_cox4d.DupRate_plot.r",
+        "size": 4754
+      },
+      {
+        "file": "SRR10441036_cox4d.pos.DupRate.xls",
+        "size": 2118
+      },
+      {
+        "file": "SRR10441036_cox4d.seq.DupRate.xls",
+        "size": 1827
+      }
+    ],
+    "1a/e3a29b": [
+      {
+        "file": "SRR10441036_cox4d.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "d2/15f56d": [
+      {
+        "file": "SRR10440988_wt.sorted.bam.idxstats",
+        "size": 332
+      }
+    ],
+    "c5/2c7145": [
+      {
+        "file": "SRR10440988_wt.clip.bedGraph",
+        "size": 32729900
+      }
+    ],
+    "9a/7b5cdd": [
+      {
+        "file": "SRR10441036_cox4d.bedGraph",
+        "size": 39824824
+      }
+    ],
+    "9c/11bfae": [
+      {
+        "file": "SRR10440988_wt.markdup.sorted.bam.stats",
+        "size": 111697
+      }
+    ],
+    "2f/80b67a": [
+      {
+        "file": "SRR10441036_cox4d_raw_1_fastqc.html",
+        "size": 614063
+      },
+      {
+        "file": "SRR10441036_cox4d_raw_1_fastqc.zip",
+        "size": 336391
+      },
+      {
+        "file": "SRR10441036_cox4d_raw_2_fastqc.html",
+        "size": 620552
+      },
+      {
+        "file": "SRR10441036_cox4d_raw_2_fastqc.zip",
+        "size": 352895
+      }
+    ],
+    "df/ec5d98": [
+      {
+        "file": "salmon.merged.transcript.R_sessionInfo.log",
+        "size": 2157
+      },
+      {
+        "file": "salmon.merged.transcript.SummarizedExperiment.rds",
+        "size": 450867
+      },
+      {
+        "file": "versions.yml",
+        "size": 148
+      }
+    ],
+    "52/6292ab": [
+      {
+        "file": "SRR10441037_cox4d.markdup.sorted.bam.bai",
+        "size": 58928
+      }
+    ],
+    "6f/092f61": [
+      {
+        "file": "SRR10440987_wt.read_distribution.txt",
+        "size": 1125
+      }
+    ],
+    "48/b72302": [
+      {
+        "file": "SRR10441036_cox4d.biotype_counts_mqc.tsv",
+        "size": 527
+      },
+      {
+        "file": "SRR10441036_cox4d.biotype_counts_rrna_mqc.tsv",
+        "size": 318
+      },
+      {
+        "file": "versions.yml",
+        "size": 86
+      }
+    ],
+    "35/41434e": [
+      {
+        "file": "SRR10440987_wt_raw_1_fastqc.html",
+        "size": 614821
+      },
+      {
+        "file": "SRR10440987_wt_raw_1_fastqc.zip",
+        "size": 337360
+      },
+      {
+        "file": "SRR10440987_wt_raw_2_fastqc.html",
+        "size": 613871
+      },
+      {
+        "file": "SRR10440987_wt_raw_2_fastqc.zip",
+        "size": 348991
+      }
+    ],
+    "d1/eafa23": [
+      {
+        "file": "SRR10441036_cox4d.junction.Interact.bed",
+        "size": 159849
+      },
+      {
+        "file": "SRR10441036_cox4d.junction.bed",
+        "size": 73855
+      },
+      {
+        "file": "SRR10441036_cox4d.junction.xls",
+        "size": 36167
+      },
+      {
+        "file": "SRR10441036_cox4d.junction_annotation.log",
+        "size": 540
+      },
+      {
+        "file": "SRR10441036_cox4d.junction_plot.r",
+        "size": 573
+      },
+      {
+        "file": "SRR10441036_cox4d.splice_events.pdf",
+        "size": 13358
+      },
+      {
+        "file": "SRR10441036_cox4d.splice_junction.pdf",
+        "size": 12526
+      }
+    ],
+    "76/e863f6": [
+      {
+        "file": "SRR10441036_cox4d.R_sessionInfo.log",
+        "size": 873
+      },
+      {
+        "file": "SRR10441036_cox4d_dupMatrix.txt",
+        "size": 829774
+      },
+      {
+        "file": "SRR10441036_cox4d_dup_intercept_mqc.txt",
+        "size": 309
+      },
+      {
+        "file": "SRR10441036_cox4d_duprateExpBoxplot.pdf",
+        "size": 13528
+      },
+      {
+        "file": "SRR10441036_cox4d_duprateExpDens.pdf",
+        "size": 393401
+      },
+      {
+        "file": "SRR10441036_cox4d_duprateExpDensCurve_mqc.txt",
+        "size": 21516
+      },
+      {
+        "file": "SRR10441036_cox4d_expressionHist.pdf",
+        "size": 5453
+      },
+      {
+        "file": "SRR10441036_cox4d_intercept_slope.txt",
+        "size": 170
+      },
+      {
+        "file": "versions.yml",
+        "size": 81
+      }
+    ],
+    "a3/825a81": [
+      {
+        "file": "SRR10440988_wt.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "2e/6f0818": [
+      {
+        "file": "SRR10440987_wt.clip.bedGraph",
+        "size": 43932946
+      }
+    ],
+    "81/6713fd": [
+      {
+        "file": "SRR10441037_cox4d.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "4a/e54f81": [
+      {
+        "file": "SRR10440987_wt.reverse.bigWig",
+        "size": 5488626
+      }
+    ],
+    "f0/78da82": [
+      {
+        "file": "SRR10440987_wt.markdup.sorted.bam.stats",
+        "size": 114877
+      }
+    ],
+    "7f/2bc282": [
+      {
+        "file": "SRR10441036_cox4d.markdup.sorted.bam.stats",
+        "size": 113331
+      }
+    ],
+    "99/cf536b": [
+      {
+        "file": "SRR10441037_cox4d.clip.reverse.bedGraph",
+        "size": 17643895
+      }
+    ],
+    "8f/cf4afb": [
+      {
+        "file": "SRR10440987_wt.clip.reverse.bedGraph",
+        "size": 22099617
+      }
+    ],
+    "43/67b5d6": [
+      {
+        "file": "salmon.merged.gene.R_sessionInfo.log",
+        "size": 2157
+      },
+      {
+        "file": "salmon.merged.gene.SummarizedExperiment.rds",
+        "size": 855883
+      },
+      {
+        "file": "versions.yml",
+        "size": 142
+      }
+    ],
+    "8f/09ecdc": [
+      {
+        "file": "SRR10440987_wt.markdup.sorted.bam.idxstats",
+        "size": 333
+      }
+    ],
+    "d6/d7c86d": [
+      {
+        "file": "SRR10440987_wt.fq_lint.txt",
+        "size": 1441
+      }
+    ],
+    "8c/e219ca": [
+      {
+        "file": "SRR10440988_wt.infer_experiment.txt",
+        "size": 183
+      }
+    ],
+    "1c/1439e8": [
+      {
+        "file": "SRR10440988_wt.featureCounts.tsv",
+        "size": 146120
+      },
+      {
+        "file": "SRR10440988_wt.featureCounts.tsv.summary",
+        "size": 388
+      }
+    ],
+    "10/5db88c": [
+      {
+        "file": "SRR10440988_wt.reverse.bigWig",
+        "size": 4271890
+      }
+    ],
+    "82/7fc8e2": [
+      {
+        "file": "SRR10440988_wt_trimmed_1.fastq.gz_trimming_report.txt",
+        "size": 2787
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_1_val_1.fq.gz",
+        "size": 166106151
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_1_val_1_fastqc.html",
+        "size": 280491
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_1_val_1_fastqc.zip",
+        "size": 343557
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_2.fastq.gz_trimming_report.txt",
+        "size": 3667
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_2_val_2.fq.gz",
+        "size": 188754698
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_2_val_2_fastqc.html",
+        "size": 282791
+      },
+      {
+        "file": "SRR10440988_wt_trimmed_2_val_2_fastqc.zip",
+        "size": 348683
+      }
+    ],
+    "5f/8d072e": [
+      {
+        "file": "genome.transcripts.fa",
+        "size": 9226681
+      },
+      {
+        "file": "rsem",
+        "size": 320
+      }
+    ],
+    "d5/032fe5": [
+      {
+        "file": "SRR10441037_cox4d.clip.forward.bedGraph",
+        "size": 17624022
+      }
+    ],
+    "d4/c05ec6": [
+      {
+        "file": "SRR10441036_cox4d.clip.reverse.bedGraph",
+        "size": 19964234
+      }
+    ]
   }
 }

@@ -24,20 +24,33 @@ def run_blast(*extra):
 
 @unittest.skipUnless((ROOT / "graph_vr.json").exists(), "viralrecon graph not present")
 class TestMode(unittest.TestCase):
-    def actions(self, *extra):
+    def plan(self, *extra):
         out = run_blast(*extra, "--json", "-").stdout
-        return json.loads(out[out.index("{"):])["actions"]
+        return json.loads(out[out.index("{"):])["plan"]
 
-    def test_withdrawal_destroys_exclusive(self):
-        self.assertEqual(self.actions("--donor", "ERR10000000"),
-                         {"DESTROY": 41, "REGENERATE": 5})
+    # NOTE these assert the exclusive/terminal FACTS, not the final actions.
+    # Actions also depend on storage — live disk state — so pinning them
+    # made the suite fail the day work/ was (correctly) cleaned up. The
+    # facts→action table itself is pinned hermetically in test_contribution.
 
-    def test_contamination_destroys_nothing(self):
+    def test_withdrawal_marks_exclusive(self):
+        plan = self.plan("--donor", "ERR10000000")
+        exclusive = [i for i in plan if i["exclusive"]]
+        self.assertEqual(len(exclusive), 41)
+        self.assertEqual(len(plan), 46)
+        # Exclusive artifacts must never resolve to a rebuild: they either
+        # get destroyed, are already gone, or are quarantined unwritable.
+        for i in exclusive:
+            self.assertIn(i["action"], ("DESTROY", "ALREADY_GONE", "QUARANTINE"))
+
+    def test_contamination_marks_nothing_exclusive(self):
         # Same specimen, same radius — but the data is wrong, not withdrawn,
-        # so every artifact survives as a rebuild target.
-        self.assertEqual(self.actions("--donor", "ERR10000000",
-                                      "--mode", "distrust"),
-                         {"REGENERATE": 46})
+        # so nothing is owned-and-destroyable.
+        plan = self.plan("--donor", "ERR10000000", "--mode", "distrust")
+        self.assertEqual(len(plan), 46)
+        self.assertEqual([i for i in plan if i["exclusive"]], [])
+        for i in plan:
+            self.assertNotEqual(i["action"], "DESTROY")
 
     def test_remove_refused_for_input_selector(self):
         result = run_blast("--input", "nCoV-2019.primer.bed", "--mode", "remove")

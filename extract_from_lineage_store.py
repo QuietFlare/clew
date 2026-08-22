@@ -188,11 +188,18 @@ def task_outputs(store, task_hash):
 def extract(store, run_hash):
     """
     Build the graph for one run, in the exact schema extract_lineage.py
-    emits: {"tasks": {...}, "edges": [...], "outputs": {...}}.
+    emits: {"tasks": {...}, "edges": [...], "outputs": {...}} — plus
+    "output_details", which only this adapter can provide: per-output size
+    (and recorded checksum) from the FileOutput records. That is what lets
+    a remediation plan name the PUBLISHED copies of an artifact, not just
+    its workdir path. Note the store's checksums are Nextflow's "standard"
+    mode (path+mtime, not content), so they cannot identify a copy — size
+    plus basename is the honest join key, with ambiguity reported.
     """
     tasks = {}
     edges = []
     outputs = {}
+    output_details = {}
 
     for full_hash, spec in iter_task_records(store):
         if spec.get("workflowRun", "").removeprefix(LID_PREFIX) != run_hash:
@@ -219,8 +226,13 @@ def extract(store, run_hash):
         }
         edges.extend(task_edges(full_hash, spec))
         outputs[abbrev] = sorted(task_files)
+        output_details[abbrev] = [
+            {"file": rel, "size": task_files[rel].get("size")}
+            for rel in sorted(task_files)
+        ]
 
-    return {"tasks": tasks, "edges": edges, "outputs": outputs}
+    return {"tasks": tasks, "edges": edges, "outputs": outputs,
+            "output_details": output_details}
 
 
 def main():
