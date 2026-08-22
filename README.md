@@ -29,6 +29,37 @@ contribution class:
 Anything unknown fails closed to `IRREDUCIBLE`. Telling someone their data is
 clean when it is not is the one error that ends up in front of a regulator.
 
+## The headline, first
+
+One withdrawal, two pipelines. A yeast sample was withdrawn; its rnaseq run
+had published a count matrix; a separate differentialabundance run consumed
+it. Clew stitches the two runs' graphs at that published file and answers
+across the boundary:
+
+```
+TRIGGER: withdrawal of SRR10441036_cox4d
+AFFECTED: 57 of 183 tasks        (46 in the rnaseq run, 11 in the DE run)
+
+da:29/ae3d99  DESEQ2_DIFFERENTIAL   REGENERABLE  shared
+    via rna:f2/cefd0f[STAR_ALIGN] -> rna:0c/8143cf[SALMON_QUANT]
+     -> rna:c9/9a30ba[CUSTOM_TX2GENE] -> rna:8e/b5be55[TXIMETA_TXIMPORT]
+     -> da:e8/91c345[VALIDATOR] -> da:29/ae3d99[DESEQ2_DIFFERENTIAL]
+```
+
+The evidence chain starts at the sample's alignment in one Nextflow launch
+and ends inside another, crossing at a checkable published path. Engine
+lineage sees each run in isolation; this graph is the part nobody else has.
+
+```bash
+python3 stitch_graphs.py --graph rna=graph_rna.json --results rna=<rnaseq results dir> \
+    --graph da=graph_da.json --out graph_chain.json
+```
+
+```bash
+python3 blast.py --pipeline rnaseq --graph graph_chain.json \
+    --samplesheet samplesheets/rnaseq_yeast.csv --donor SRR10441036_cox4d
+```
+
 ## See it in two minutes
 
 No dependencies beyond Python 3.11. The repo ships a real graph extracted

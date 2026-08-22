@@ -109,7 +109,38 @@ def main():
   claim, it does not certify it.
 """)
 
+    # ------------------------------------------------------------------ act 4
+    chain = ROOT / "graph_chain.json"
+    sheet = ROOT / "samplesheets" / "rnaseq_yeast.csv"
+    if chain.exists() and sheet.exists():
+        from domains import rnaseq
+
+        print()
+        print("=" * 70)
+        print("4. THE CHAIN — one withdrawal, two pipelines")
+        print("=" * 70)
+        g2 = core.load_graph(chain)
+        entry2 = rnaseq.subject_entry_nodes(g2, rnaseq.load_subjects(sheet))
+        radius2 = core.blast_radius(g2, entry2)
+        r2 = radius2["SRR10441036_cox4d"]
+        da = sorted(h for h in r2["affected"] if h.startswith("da:"))
+        print(f"\n  A real yeast rnaseq run (171 tasks) published a count matrix;")
+        print(f"  a separate differentialabundance run (12 tasks) consumed it.")
+        print(f"  Withdrawing one sample: {len(r2['affected'])} of "
+              f"{len(g2['tasks'])} tasks affected, {len(da)} of them in the")
+        print(f"  OTHER pipeline — DESeq2 results, plots, the report bundle.\n")
+        forward2 = core.forward_index(g2["edges"])
+        target = next(h for h in da
+                      if g2["tasks"][h]["process"].endswith("DESEQ2_DIFFERENTIAL"))
+        for path in core.paths_to(entry2["SRR10441036_cox4d"], target,
+                                  forward2, limit=1):
+            hops = " -> ".join(f"{h}[{rnaseq.describe(g2, h)}]" for h in path)
+            print(f"  evidence, crossing the run boundary:\n    {hops}\n")
+        print("  Engine-level lineage sees each launch in isolation. The")
+        print("  crossing is the part only the stitched graph can answer.")
+
     # ------------------------------------------------------------------ close
+    print()
     print("=" * 70)
     print("Same engine, three triggers — only the entry-node selection differed.")
     print("Not shown here yet: append-only event log, policy versioning, signed")
