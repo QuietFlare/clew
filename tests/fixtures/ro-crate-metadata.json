@@ -1,0 +1,456 @@
+{
+    "@context": "https://w3id.org/ro/crate/1.1/context",
+    "@graph": [
+        {
+            "@id": "ro-crate-metadata.json",
+            "@type": "CreativeWork",
+            "about": {
+                "@id": "./"
+            },
+            "conformsTo": [
+                {
+                    "@id": "https://w3id.org/ro/crate/1.1"
+                },
+                {
+                    "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"
+                }
+            ]
+        },
+        {
+            "@id": "./",
+            "@type": "Dataset",
+            "datePublished": "2026-08-22",
+            "conformsTo": [
+                {
+                    "@id": "https://w3id.org/ro/wfrun/process/0.1"
+                },
+                {
+                    "@id": "https://w3id.org/ro/wfrun/workflow/0.1"
+                },
+                {
+                    "@id": "https://w3id.org/ro/wfrun/provenance/0.1"
+                },
+                {
+                    "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0"
+                }
+            ],
+            "name": "Workflow run of main.nf",
+            "hasPart": [
+                {
+                    "@id": "main.nf"
+                },
+                {
+                    "@id": "nextflow.config"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/ref.fa"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/sample_alpha.fq"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/sample_beta.fq"
+                }
+            ],
+            "mainEntity": {
+                "@id": "main.nf"
+            },
+            "mentions": [
+                {
+                    "@id": "#541b064f-6e05-4c9c-b36e-7d8fd10053e2"
+                },
+                {
+                    "@id": "#task/0d93e29a162759559ecd6a25136749ef"
+                },
+                {
+                    "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3"
+                },
+                {
+                    "@id": "#task/02a54313500389ad9197c5416b36aa52"
+                },
+                {
+                    "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c"
+                },
+                {
+                    "@id": "#task/123b54b6887f9f623609f780a0e076d4"
+                },
+                {
+                    "@id": "#task/0d93e29a162759559ecd6a25136749ef/sample_beta.bam"
+                },
+                {
+                    "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3/sample_alpha.bam"
+                },
+                {
+                    "@id": "#task/02a54313500389ad9197c5416b36aa52/sample_alpha.stats"
+                },
+                {
+                    "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c/sample_beta.stats"
+                },
+                {
+                    "@id": "#task/123b54b6887f9f623609f780a0e076d4/report.txt"
+                }
+            ]
+        },
+        {
+            "@id": "https://w3id.org/ro/wfrun/process/0.1",
+            "@type": "CreativeWork",
+            "name": "Process Run Crate",
+            "version": "0.1"
+        },
+        {
+            "@id": "https://w3id.org/ro/wfrun/workflow/0.1",
+            "@type": "CreativeWork",
+            "name": "Workflow Run Crate",
+            "version": "0.1"
+        },
+        {
+            "@id": "https://w3id.org/ro/wfrun/provenance/0.1",
+            "@type": "CreativeWork",
+            "name": "Provenance Run Crate",
+            "version": "0.1"
+        },
+        {
+            "@id": "https://w3id.org/workflowhub/workflow-ro-crate/1.0",
+            "@type": "CreativeWork",
+            "name": "Workflow RO-Crate",
+            "version": "1.0"
+        },
+        {
+            "@id": "main.nf",
+            "@type": [
+                "File",
+                "SoftwareSourceCode",
+                "ComputationalWorkflow",
+                "HowTo"
+            ],
+            "conformsTo": {
+                "@id": "https://bioschemas.org/profiles/ComputationalWorkflow/1.0-RELEASE"
+            },
+            "name": "main.nf",
+            "programmingLanguage": {
+                "@id": "https://w3id.org/workflowhub/workflow-ro-crate#nextflow"
+            },
+            "encodingFormat": "application/nextflow",
+            "runtimePlatform": "Nextflow 26.04.3",
+            "hasPart": [
+                {
+                    "@id": "#module/ALIGN"
+                },
+                {
+                    "@id": "#module/STATS"
+                },
+                {
+                    "@id": "#module/MERGE_REPORT"
+                }
+            ],
+            "input": [
+                
+            ],
+            "output": [
+                
+            ],
+            "step": [
+                {
+                    "@id": "#process-step/ALIGN"
+                },
+                {
+                    "@id": "#process-step/STATS"
+                },
+                {
+                    "@id": "#process-step/MERGE_REPORT"
+                }
+            ]
+        },
+        {
+            "@id": "https://w3id.org/workflowhub/workflow-ro-crate#nextflow",
+            "@type": "ComputerLanguage",
+            "name": "Nextflow",
+            "identifier": "https://www.nextflow.io/",
+            "url": "https://www.nextflow.io/",
+            "version": "26.04.3"
+        },
+        {
+            "@id": "main.nf#software-application",
+            "@type": "SoftwareApplication",
+            "name": "Nextflow 26.04.3"
+        },
+        {
+            "@id": "#module/ALIGN",
+            "@type": "SoftwareApplication",
+            "name": "ALIGN",
+            "url": "file:///home/pipelines/provtest/main.nf"
+        },
+        {
+            "@id": "#module/STATS",
+            "@type": "SoftwareApplication",
+            "name": "STATS",
+            "url": "file:///home/pipelines/provtest/main.nf"
+        },
+        {
+            "@id": "#module/MERGE_REPORT",
+            "@type": "SoftwareApplication",
+            "name": "MERGE_REPORT",
+            "url": "file:///home/pipelines/provtest/main.nf"
+        },
+        {
+            "@id": "#process-step/ALIGN",
+            "@type": "HowToStep",
+            "workExample": null,
+            "position": 1
+        },
+        {
+            "@id": "#process-step/STATS",
+            "@type": "HowToStep",
+            "workExample": null,
+            "position": 2
+        },
+        {
+            "@id": "#process-step/MERGE_REPORT",
+            "@type": "HowToStep",
+            "workExample": null,
+            "position": 3
+        },
+        {
+            "@id": "main.nf#organize",
+            "@type": "OrganizeAction",
+            "agent": null,
+            "instrument": {
+                "@id": "main.nf#software-application"
+            },
+            "name": "Run of Nextflow 26.04.3",
+            "object": [
+                {
+                    "@id": "#process-control/ALIGN"
+                },
+                {
+                    "@id": "#process-control/STATS"
+                },
+                {
+                    "@id": "#process-control/MERGE_REPORT"
+                }
+            ],
+            "result": {
+                "@id": "#541b064f-6e05-4c9c-b36e-7d8fd10053e2"
+            },
+            "startTime": "2026-08-22T11:59:28.879129+02:00",
+            "endTime": "2026-08-22T11:59:29.843527+02:00"
+        },
+        {
+            "@id": "#541b064f-6e05-4c9c-b36e-7d8fd10053e2",
+            "@type": "CreateAction",
+            "agent": null,
+            "name": "Nextflow workflow run 541b064f-6e05-4c9c-b36e-7d8fd10053e2",
+            "startTime": "2026-08-22T11:59:28.879129+02:00",
+            "endTime": "2026-08-22T11:59:29.843527+02:00",
+            "instrument": {
+                "@id": "main.nf"
+            },
+            "object": [
+                {
+                    "@id": "file:///home/pipelines/provtest/data/ref.fa"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/sample_alpha.fq"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/sample_beta.fq"
+                }
+            ],
+            "result": [
+                
+            ]
+        },
+        {
+            "@id": "nextflow.config",
+            "@type": "File",
+            "name": "Resolved Nextflow configuration",
+            "description": "The resolved Nextflow configuration for the workflow run.",
+            "encodingFormat": "text/plain"
+        },
+        {
+            "@id": "#process-control/ALIGN",
+            "@type": "ControlAction",
+            "instrument": {
+                "@id": "#process-step/ALIGN"
+            },
+            "name": "Orchestrate process ALIGN",
+            "object": [
+                {
+                    "@id": "#task/0d93e29a162759559ecd6a25136749ef"
+                },
+                {
+                    "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3"
+                }
+            ]
+        },
+        {
+            "@id": "#process-control/STATS",
+            "@type": "ControlAction",
+            "instrument": {
+                "@id": "#process-step/STATS"
+            },
+            "name": "Orchestrate process STATS",
+            "object": [
+                {
+                    "@id": "#task/02a54313500389ad9197c5416b36aa52"
+                },
+                {
+                    "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c"
+                }
+            ]
+        },
+        {
+            "@id": "#process-control/MERGE_REPORT",
+            "@type": "ControlAction",
+            "instrument": {
+                "@id": "#process-step/MERGE_REPORT"
+            },
+            "name": "Orchestrate process MERGE_REPORT",
+            "object": [
+                {
+                    "@id": "#task/123b54b6887f9f623609f780a0e076d4"
+                }
+            ]
+        },
+        {
+            "@id": "#task/0d93e29a162759559ecd6a25136749ef",
+            "@type": "CreateAction",
+            "name": "ALIGN (sample_beta)",
+            "instrument": null,
+            "agent": null,
+            "object": [
+                {
+                    "@id": "file:///home/pipelines/provtest/data/ref.fa"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/sample_beta.fq"
+                }
+            ],
+            "result": [
+                {
+                    "@id": "#task/0d93e29a162759559ecd6a25136749ef/sample_beta.bam"
+                }
+            ],
+            "actionStatus": "http://schema.org/CompletedActionStatus"
+        },
+        {
+            "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3",
+            "@type": "CreateAction",
+            "name": "ALIGN (sample_alpha)",
+            "instrument": null,
+            "agent": null,
+            "object": [
+                {
+                    "@id": "file:///home/pipelines/provtest/data/ref.fa"
+                },
+                {
+                    "@id": "file:///home/pipelines/provtest/data/sample_alpha.fq"
+                }
+            ],
+            "result": [
+                {
+                    "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3/sample_alpha.bam"
+                }
+            ],
+            "actionStatus": "http://schema.org/CompletedActionStatus"
+        },
+        {
+            "@id": "#task/02a54313500389ad9197c5416b36aa52",
+            "@type": "CreateAction",
+            "name": "STATS (sample_alpha)",
+            "instrument": null,
+            "agent": null,
+            "object": [
+                {
+                    "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3/sample_alpha.bam"
+                }
+            ],
+            "result": [
+                {
+                    "@id": "#task/02a54313500389ad9197c5416b36aa52/sample_alpha.stats"
+                }
+            ],
+            "actionStatus": "http://schema.org/CompletedActionStatus"
+        },
+        {
+            "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c",
+            "@type": "CreateAction",
+            "name": "STATS (sample_beta)",
+            "instrument": null,
+            "agent": null,
+            "object": [
+                {
+                    "@id": "#task/0d93e29a162759559ecd6a25136749ef/sample_beta.bam"
+                }
+            ],
+            "result": [
+                {
+                    "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c/sample_beta.stats"
+                }
+            ],
+            "actionStatus": "http://schema.org/CompletedActionStatus"
+        },
+        {
+            "@id": "#task/123b54b6887f9f623609f780a0e076d4",
+            "@type": "CreateAction",
+            "name": "MERGE_REPORT",
+            "instrument": null,
+            "agent": null,
+            "object": [
+                {
+                    "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c/sample_beta.stats"
+                },
+                {
+                    "@id": "#task/02a54313500389ad9197c5416b36aa52/sample_alpha.stats"
+                }
+            ],
+            "result": [
+                {
+                    "@id": "#task/123b54b6887f9f623609f780a0e076d4/report.txt"
+                }
+            ],
+            "actionStatus": "http://schema.org/CompletedActionStatus"
+        },
+        {
+            "@id": "#task/0d93e29a162759559ecd6a25136749ef/sample_beta.bam",
+            "@type": "CreativeWork",
+            "name": "sample_beta.bam"
+        },
+        {
+            "@id": "#task/fc5d7b13b2e2dc1778935ef1a288a7f3/sample_alpha.bam",
+            "@type": "CreativeWork",
+            "name": "sample_alpha.bam"
+        },
+        {
+            "@id": "#task/02a54313500389ad9197c5416b36aa52/sample_alpha.stats",
+            "@type": "CreativeWork",
+            "name": "sample_alpha.stats"
+        },
+        {
+            "@id": "#task/ed0e8a5e5009194e9c114b057cc0022c/sample_beta.stats",
+            "@type": "CreativeWork",
+            "name": "sample_beta.stats"
+        },
+        {
+            "@id": "#task/123b54b6887f9f623609f780a0e076d4/report.txt",
+            "@type": "CreativeWork",
+            "name": "report.txt",
+            "encodingFormat": "text/plain"
+        },
+        {
+            "@id": "file:///home/pipelines/provtest/data/ref.fa",
+            "@type": "File",
+            "name": "ref.fa"
+        },
+        {
+            "@id": "file:///home/pipelines/provtest/data/sample_alpha.fq",
+            "@type": "File",
+            "name": "sample_alpha.fq"
+        },
+        {
+            "@id": "file:///home/pipelines/provtest/data/sample_beta.fq",
+            "@type": "File",
+            "name": "sample_beta.fq"
+        }
+    ]
+}

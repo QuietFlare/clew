@@ -105,6 +105,20 @@ The engine is the best witness of what it ran: inputs are typed, external
 files carry checksums, and every task names its run, so sharing one store
 across many runs is safe by construction.
 
+**Also supported: Workflow Run RO-Crate**, as written by the
+[nf-prov](https://github.com/nextflow-io/nf-prov) plugin. Labs that already
+publish crates for journals or archives have lineage on disk without
+knowing it:
+
+```bash
+python3 extract_from_rocrate.py --crate ro-crate-metadata.json --json-out graph.json
+```
+
+A crate records what ran, not how to re-run it: no script, no workdir. So
+tasks from a crate classify as `IRREDUCIBLE` and their storage reads
+`DESTROYED` unless published copies are mapped — fail-closed, by design.
+Prefer the lineage store when both exist.
+
 **Fallback: the `work/` symlink extractor**, for runs that already happened
 without lineage enabled. Nextflow stages inputs as symlinks to save disk,
 and those symlinks accidentally record the entire history of the run. No
@@ -120,9 +134,8 @@ python3 extract_lineage.py \
 Do this during or right after the run. `nextflow clean` removes the
 symlinks, and lineage that was never captured cannot be reconstructed.
 
-On the same sarek pipeline the two extractors produce identical impact
-numbers, and the test suite enforces that equivalence. A third input,
-reading nf-prov's Workflow Run RO-Crate output, is planned.
+On the same sarek pipeline the store and symlink extractors produce
+identical impact numbers, and the test suite enforces that equivalence.
 
 Capture and computation stay separate on purpose. The engines are getting
 good at recording what happened. Clew's job starts where they stop: whether a
@@ -272,6 +285,13 @@ publication assertions, mixed verdicts from a single traversal.
 Not built yet: append-only event log, policy versioning, signed evidence
 bundles, CI gate. That is the roadmap, in that order.
 
+## Contributing
+
+Issues and pull requests are welcome — especially from people who run
+pipelines for a living and can say where the model is wrong. See
+[CONTRIBUTING.md](CONTRIBUTING.md); a first pull request needs the CLA
+agreement described there, an issue needs nothing at all.
+
 ## License
 
-AGPL-3.0.
+[AGPL-3.0](LICENSE).
