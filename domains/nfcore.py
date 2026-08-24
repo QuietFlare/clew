@@ -153,22 +153,52 @@ def describe(graph, task_hash):
     return (task.get("process", "") or "?").split(":")[-1]
 
 
-def storage_state(workdir):
-    """WRITABLE if the task directory still exists, DESTROYED if not."""
-    if not workdir:
-        return "DESTROYED"
-    return "WRITABLE" if Path(workdir).is_dir() else "DESTROYED"
+def storage_state(workdir, work_root=None):
+    """
+    Whether the task's artifacts are still on disk — or None for "not checked".
+
+    NONE IS NOT A THIRD OUTCOME, IT IS THE ABSENCE OF ONE. Storage is a live
+    property of the world, and the person asking Clew a question is often not
+    standing where the pipeline ran: a different host, a CI runner, a laptop
+    reading a graph someone emailed them. Guessing there is not conservative
+    in either direction, so this refuses.
+
+    In particular DESTROYED is now only ever returned after actually looking
+    and not finding. It used to be returned whenever `is_dir()` was false,
+    which fired identically when the path was never recorded, when the volume
+    was not mounted, when the graph came from another machine, and when the
+    fixtures were anonymised for publication. All of those became
+    ALREADY_GONE — "no longer exists; nothing to do" — which is the one error
+    direction this project exists not to make. A false negative that silences
+    an obligation is worth more care than a false positive that wastes work.
+
+    `work_root` is the caller saying where to look. The recorded path is from
+    whichever machine ran the pipeline, so only its last two components — the
+    two-character prefix and the full task hash, which is how the engine lays
+    out a work directory — are joined onto the root given here. That makes a
+    graph portable between hosts without pretending the recorded absolute
+    path means anything locally.
+    """
+    if not workdir or not work_root:
+        return None
+    parts = Path(workdir).parts
+    if len(parts) < 2:
+        return None
+    local = Path(work_root, *parts[-2:])
+    return "WRITABLE" if local.is_dir() else "DESTROYED"
 
 
-def classify(graph, task_hash, exclusive, published=None):
+def classify(graph, task_hash, exclusive, published=None, work_root=None):
     """
     Contribution class and storage for one affected task, from pipeline
     evidence alone: a task whose script and container were recorded can be
     re-executed (REGENERABLE); one without fails closed to IRREDUCIBLE.
     Publication arrives as an external assertion and sets `terminal`.
+
+    `storage` is None unless `work_root` says where to look. See storage_state.
     """
     task = graph["tasks"].get(task_hash, {})
-    storage = storage_state(task.get("workdir", ""))
+    storage = storage_state(task.get("workdir", ""), work_root)
 
     reproducible = bool(task.get("script")) and bool(task.get("container"))
     klass = "REGENERABLE" if reproducible else "IRREDUCIBLE"
@@ -183,6 +213,9 @@ def classify(graph, task_hash, exclusive, published=None):
         reason = "script and container recorded; task can be re-executed"
     else:
         reason = "script or container missing; task cannot be reproduced"
+
+    if storage is None:
+        reason += "; storage not checked (no --work-root given)"
 
     return {
         "contribution": klass,

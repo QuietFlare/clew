@@ -133,13 +133,47 @@ class TestClassification(unittest.TestCase):
             facts = sarek.classify(graph, "aa/000001", exclusive=False)
         self.assertEqual(facts["contribution"], "REGENERABLE")
 
-    def test_missing_workdir_is_destroyed(self):
+    def test_storage_is_unverified_until_told_where_to_look(self):
+        # This used to assert DESTROYED, which was the bug. A path that does
+        # not resolve here means the artifacts were not checked — the caller
+        # may be on another host entirely — and reporting that as destroyed
+        # produced ALREADY_GONE, i.e. "nothing to do", for work that may well
+        # still exist and still carry an obligation.
         graph = graph_with_tasks({
             "aa/000001": {"name": "A", "process": "A", "container": "img",
                           "script": "run", "workdir": "/nonexistent/path"},
         })
         facts = sarek.classify(graph, "aa/000001", exclusive=False)
+        self.assertIsNone(facts["storage"])
+        self.assertIn("not checked", facts["reason"])
+
+    def test_destroyed_is_returned_only_after_actually_looking(self):
+        graph = graph_with_tasks({
+            "aa/000001": {"name": "A", "process": "A", "container": "img",
+                          "script": "run",
+                          "workdir": "/somewhere/work/aa/000001deadbeef"},
+        })
+        with tempfile.TemporaryDirectory() as work_root:
+            facts = sarek.classify(graph, "aa/000001", exclusive=False,
+                                   work_root=work_root)
         self.assertEqual(facts["storage"], "DESTROYED")
+
+    def test_a_graph_from_another_host_still_probes(self):
+        # The recorded path belongs to whichever machine ran the pipeline.
+        # Only the two-character prefix and task hash are portable, so those
+        # are what get joined onto the root the caller supplies.
+        with tempfile.TemporaryDirectory() as work_root:
+            live = Path(work_root, "aa", "000001deadbeef")
+            live.mkdir(parents=True)
+            graph = graph_with_tasks({
+                "aa/000001": {
+                    "name": "A", "process": "A", "container": "img",
+                    "script": "run",
+                    "workdir": "/on/some/other/host/work/aa/000001deadbeef"},
+            })
+            facts = sarek.classify(graph, "aa/000001", exclusive=False,
+                                   work_root=work_root)
+        self.assertEqual(facts["storage"], "WRITABLE")
 
 
 if __name__ == "__main__":

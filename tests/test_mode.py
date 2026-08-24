@@ -31,7 +31,16 @@ class TestMode(unittest.TestCase):
     # NOTE these assert the exclusive/terminal FACTS, not the final actions.
     # Actions also depend on storage — live disk state — so pinning them
     # made the suite fail the day work/ was (correctly) cleaned up. The
-    # facts→action table itself is pinned hermetically in test_contribution.
+    # facts→action table itself is pinned hermetically in test_policy.
+    #
+    # These runs pass no --work-root, so storage is unverified and most items
+    # come back with action None and a `possible` set instead. That is the
+    # point of the design, so the assertions below check the whole set of
+    # outcomes still in play rather than one settled verdict.
+
+    def outcomes(self, item):
+        """Every action this item could still resolve to."""
+        return [item["action"]] if item["action"] else list(item["possible"])
 
     def test_withdrawal_marks_exclusive(self):
         plan = self.plan("--donor", "ERR10000000")
@@ -40,8 +49,12 @@ class TestMode(unittest.TestCase):
         self.assertEqual(len(plan), 46)
         # Exclusive artifacts must never resolve to a rebuild: they either
         # get destroyed, are already gone, or are quarantined unwritable.
+        # True whether or not storage has been checked — an unverified item
+        # must not have a rebuild among its possibilities either.
         for i in exclusive:
-            self.assertIn(i["action"], ("DESTROY", "ALREADY_GONE", "QUARANTINE"))
+            for outcome in self.outcomes(i):
+                self.assertIn(outcome,
+                              ("DESTROY", "ALREADY_GONE", "QUARANTINE"), i["task"])
 
     def test_contamination_marks_nothing_exclusive(self):
         # Same specimen, same radius — but the data is wrong, not withdrawn,
@@ -50,7 +63,7 @@ class TestMode(unittest.TestCase):
         self.assertEqual(len(plan), 46)
         self.assertEqual([i for i in plan if i["exclusive"]], [])
         for i in plan:
-            self.assertNotEqual(i["action"], "DESTROY")
+            self.assertNotIn("DESTROY", self.outcomes(i), i["task"])
 
     def test_remove_refused_for_input_selector(self):
         result = run_blast("--input", "nCoV-2019.primer.bed", "--mode", "remove")

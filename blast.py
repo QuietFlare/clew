@@ -50,6 +50,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from core import blast_radius as core
 from core import contribution
+from core import policy
+from core.policy import UNDETERMINED
 from domains import rnaseq, sarek, viralrecon
 
 # Which adapter translates between this pipeline's vocabulary and core's.
@@ -58,44 +60,71 @@ DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
 
 
 def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
-               published, results_index=None):
+               published, results_index=None, active_policy=None,
+               work_root=None):
     """Classify every affected task and print the remediation plan."""
     forward = core.forward_index(graph["edges"])
+    active_policy = active_policy or policy.DEFAULT
+    stamp = policy.identify(active_policy)
 
     print(f"TRIGGER: {subject}")
     print(f"entry points: {len(entry_nodes)} tasks")
-    print(f"AFFECTED: {len(affected)} of {len(graph['tasks'])} tasks\n")
+    print(f"AFFECTED: {len(affected)} of {len(graph['tasks'])} tasks")
+    # Named up front, not in a footer: every verdict below is a verdict UNDER
+    # this table. A reader who cannot see which table was used cannot check
+    # any of them.
+    print(f"POLICY: {stamp['policy_version']}  {stamp['policy_hash'][:16]}\n")
 
     plan = []
     for task_hash in sorted(affected):
         facts = domain.classify(
-            graph, task_hash, task_hash in exclusive_set, published=published
+            graph, task_hash, task_hash in exclusive_set, published=published,
+            work_root=work_root,
         )
         # The domain's storage check only sees the workdir. If the scratch
         # copy is gone but published copies are known to exist, the artifact
         # is NOT already gone — those copies are precisely what remediation
         # must reach. Scratch cleanup must never launder an obligation.
-        if (facts["storage"] == contribution.DESTROYED
+        # A published copy IS a verified sighting, whether the scratch copy
+        # was checked and gone or never checked at all. Those copies are
+        # precisely what remediation must reach, so finding one settles the
+        # storage question on its own.
+        if (facts["storage"] in (contribution.DESTROYED, None)
                 and published_copies(graph, task_hash, results_index)):
+            was = facts["storage"]
             facts["storage"] = contribution.WRITABLE
-            facts["reason"] += "; workdir removed but published copies exist"
-        action = contribution.remediate(
+            facts["reason"] += ("; workdir removed but published copies exist"
+                                if was == contribution.DESTROYED
+                                else "; published copies found on disk")
+        decision = policy.decide(
             facts["contribution"],
             storage=facts["storage"],
             exclusive=facts["exclusive"],
             terminal=facts["terminal"],
+            policy=active_policy,
         )
-        plan.append((task_hash, facts, action))
+        plan.append((task_hash, facts, decision))
 
     by_action = defaultdict(list)
-    for task_hash, facts, action in plan:
-        by_action[action].append((task_hash, facts))
+    for task_hash, facts, decision in plan:
+        # UNDETERMINED sorts last on purpose: it is not a verdict, and burying
+        # it among the verdicts would let a reader skim past the part Clew is
+        # telling them it could not answer.
+        by_action[decision["action"] or UNDETERMINED].append(
+            (task_hash, facts, decision))
 
     print("REMEDIATION PLAN")
     for action in sorted(by_action):
         rows = by_action[action]
-        print(f"\n  {action}  ({len(rows)})  — {contribution.explain(action)}")
-        for task_hash, facts in rows:
+        if action == UNDETERMINED:
+            print(f"\n  {action}  ({len(rows)})  — no verdict; see below")
+            print(f"    {rows[0][2]['because']}")
+        else:
+            print(f"\n  {action}  ({len(rows)})  — {contribution.explain(action)}")
+            # One rule decided this whole group; print it once with its
+            # rationale rather than repeating an id against every task.
+            print(f"    rule {rows[0][2]['rule']}: {rows[0][2]['because']}")
+        for task_hash, facts, _ in rows:
             scope = "exclusive" if facts["exclusive"] else "shared"
             print(f"    {task_hash}  {domain.describe(graph, task_hash):<26} "
                   f"{facts['contribution']:<12} {scope}")
@@ -116,6 +145,10 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
                     )
                     print(f"        via {hops}")
     return plan
+
+
+def count_undetermined(plan):
+    return sum(1 for _, _, decision in plan if decision["action"] is None)
 
 
 def index_results(results_dir):
@@ -156,7 +189,8 @@ def published_copies(graph, task_hash, results_index):
     return matches
 
 
-def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None):
+def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
+                 active_policy=None):
     """
     The remediation plan as data, for scripts and CI rather than eyes.
 
@@ -164,16 +198,27 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None):
     output, because "re-run it and get the same answer" is the whole basis
     of Clew's evidence claim. Whoever stores this can wrap it with a
     timestamp; Clew itself only states what follows from the inputs.
+
+    Carries the policy version AND its hash. The version alone is a label
+    anyone can print; the hash is what makes two parties able to prove they
+    were reading the same table.
     """
     forward = core.forward_index(graph["edges"])
+    active_policy = active_policy or policy.DEFAULT
     items = []
-    for task_hash, facts, action in plan:
+    for task_hash, facts, decision in plan:
         task = graph["tasks"].get(task_hash, {})
+        action = decision["action"]
         item = {
             "task": task_hash,
             "process": domain.describe(graph, task_hash),
             "name": task.get("name", ""),
+            # None when undetermined. A consumer treating a falsy action as
+            # "nothing to do" is the exact failure this guards against, so
+            # `possible` is present precisely when `action` is not.
             "action": action,
+            "rule": decision["rule"],
+            "because": decision["because"],
             "contribution": facts["contribution"],
             "storage": facts["storage"],
             "exclusive": facts["exclusive"],
@@ -189,17 +234,20 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None):
             paths = core.paths_to(entry_nodes, task_hash, forward, limit=1)
             if paths:
                 item["evidence_path"] = paths[0]
+        if decision.get("possible"):
+            item["possible"] = decision["possible"]
         copies = published_copies(graph, task_hash, results_index)
         if copies:
             item["published_copies"] = copies
         items.append(item)
 
     counts = defaultdict(int)
-    for _, _, action in plan:
-        counts[action] += 1
+    for _, _, decision in plan:
+        counts[decision["action"] or UNDETERMINED] += 1
 
     return {
         "clew_plan_version": 1,
+        **policy.identify(active_policy),
         "trigger": subject,
         "entry_tasks": sorted(entry_nodes),
         "tasks_total": len(graph["tasks"]),
@@ -209,6 +257,10 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None):
         "caveats": [
             "classes assigned from pipeline evidence only "
             "(script + container recorded, artifact present on disk)",
+            "verdicts hold under the cited policy version only; replay an "
+            "older plan under the policy it names, not under this one",
+            "UNDETERMINED items are not clean; they are unanswered. Re-run "
+            "with --work-root where the artifacts live to settle them",
             "publication status is an external assertion, not verified by Clew",
             "MTA transfers and physical destruction are not modelled",
             "uninstrumented systems are unknown, never clean",
@@ -235,9 +287,20 @@ def main():
                              "quarantine). Defaults: remove for --donor, "
                              "distrust for --container/--input.")
     parser.add_argument("--assertions", help="JSON file of externally-asserted facts")
+    parser.add_argument("--policy", metavar="VERSION|PATH",
+                        help="a shipped policy version (v1, v2) or a policy "
+                             "JSON file. Defaults to the current table. Pin "
+                             "this to replay a historical plan under the "
+                             "table that was in force when it was computed.")
     parser.add_argument("--files", action="store_true", help="list affected output files")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
                         help="also write the plan as JSON ('-' for stdout)")
+    parser.add_argument("--work-root", metavar="DIR",
+                        help="the run's work directory, so Clew can check "
+                             "whether each task's artifacts still exist. "
+                             "Without it no storage claim is made, and any "
+                             "verdict that depends on storage is reported "
+                             "UNDETERMINED rather than guessed.")
     parser.add_argument("--results", metavar="DIR",
                         help="the run's published results directory; plan items "
                              "then name the published copies of each artifact "
@@ -245,6 +308,12 @@ def main():
     args = parser.parse_args()
 
     domain = DOMAINS[args.pipeline]
+    try:
+        active_policy = (policy.resolve_or_load(args.policy)
+                         if args.policy else policy.DEFAULT)
+    except policy.InvalidPolicy as bad:
+        # Refuse to compute rather than compute under a table nobody vetted.
+        raise SystemExit(f"policy rejected: {bad}")
     graph = core.load_graph(args.graph)
     results_index = index_results(args.results) if args.results else None
     if args.results and not graph.get("output_details"):
@@ -278,12 +347,15 @@ def main():
         # Doubt, not removal: every artifact is still wanted. See header.
         plan = print_plan(domain, graph, subject, entry_nodes, affected,
                           exclusive_set=set(), published=published,
-                          results_index=results_index)
-        print_caveats(bool(published))
+                          results_index=results_index,
+                          active_policy=active_policy,
+                          work_root=args.work_root)
+        print_caveats(bool(published), active_policy,
+                      undetermined=count_undetermined(plan))
         # Last on stdout on purpose: with --json -, a consumer can split at
         # the final '{' and parse cleanly.
         write_json(args.json_out, domain, graph, subject, entry_nodes, plan,
-                   results_index)
+                   results_index, active_policy)
         return
 
     # --- withdrawal: exclusive/shared computed against the other donors ------
@@ -318,7 +390,8 @@ def main():
         exclusive = set()
     plan = print_plan(domain, graph, label, entry[args.donor],
                       result["affected"], exclusive, published,
-                      results_index=results_index)
+                      results_index=results_index, active_policy=active_policy,
+                      work_root=args.work_root)
 
     if args.files:
         exclusive_files = domain.outputs_for(graph, result["exclusive"])
@@ -334,19 +407,21 @@ def main():
         if len(shared_files) > 20:
             print(f"    ... {len(shared_files) - 20} more")
 
-    print_caveats(bool(published))
+    print_caveats(bool(published), active_policy,
+                  undetermined=count_undetermined(plan))
     # Last on stdout on purpose: with --json -, a consumer can split at the
     # final '{' and parse cleanly.
     write_json(args.json_out, domain, graph, label, entry[args.donor], plan,
-               results_index)
+               results_index, active_policy)
 
 
 def write_json(json_out, domain, graph, subject, entry_nodes, plan,
-               results_index=None):
+               results_index=None, active_policy=None):
     if not json_out:
         return
     payload = json.dumps(
-        plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index),
+        plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index,
+                     active_policy),
         indent=2)
     if json_out == "-":
         print(payload)
@@ -355,8 +430,11 @@ def write_json(json_out, domain, graph, subject, entry_nodes, plan,
         print(f"\nwrote {json_out}")
 
 
-def print_caveats(have_assertions):
+def print_caveats(have_assertions, active_policy=None, undetermined=0):
+    stamp = policy.identify(active_policy or policy.DEFAULT)
     print("\n" + "-" * 60)
+    print(f"Computed under policy {stamp['policy_version']}, "
+          f"sha256 {stamp['policy_hash']}.")
     print("Classes assigned from pipeline evidence only (script + container "
           "recorded, artifact present on disk).")
     if have_assertions:
@@ -366,6 +444,10 @@ def print_caveats(have_assertions):
         print("No assertions file given: publication status unknown, all "
               "artifacts treated as unpublished.")
     print("MTA transfers and physical destruction are not modelled here.")
+    if undetermined:
+        print(f"{undetermined} items are UNDETERMINED: not clean, unanswered. "
+              "Storage was not\nchecked. Re-run with --work-root pointing at "
+              "the work directory to settle them.")
 
 
 if __name__ == "__main__":

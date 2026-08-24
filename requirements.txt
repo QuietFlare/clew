@@ -1,0 +1,8 @@
+# Clew's only runtime dependency, and only for the event log.
+#
+# The lineage extractors, blast.py and demo.py are stdlib-only and stay that
+# way — someone evaluating the argument should not have to install anything.
+# The log is different: it lives on Postgres because role grants are the only
+# way to make the store unwritable by the application that writes to it, and
+# reaching Postgres from Python needs a driver.
+psycopg[binary]>=3.1

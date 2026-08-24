@@ -30,6 +30,18 @@ SEPARABLE while the artifact is physically unwritable. Whether a remediation
 is POSSIBLE and whether it is EXECUTABLE are different questions, and the
 answer is the join of the two.
 
+WHAT LIVES HERE, AND WHAT DOES NOT
+----------------------------------
+This file owns the VOCABULARY: the classes, the storage states, the actions,
+and the fail-closed normalisation. It does not decide anything.
+
+Deciding — which combination of dimensions yields which action — lives in
+core/policy.py, as a versioned table with a content hash. The split is not
+tidiness. The words have to be stable for Clew to mean anything, while the
+table has to be versioned so a plan from March can be replayed under the
+table that was in force in March. Stable and versioned are different
+requirements, so they are different files.
+
 FAIL CLOSED
 -----------
 Unknown class becomes IRREDUCIBLE. The two error directions are not symmetric:
@@ -67,43 +79,6 @@ ALREADY_GONE = "ALREADY_GONE"      # nothing left to remediate
 def normalise(contribution):
     """Unknown or unrecognised class fails closed to IRREDUCIBLE."""
     return contribution if contribution in CLASSES else IRREDUCIBLE
-
-
-def remediate(contribution, storage=WRITABLE, exclusive=False, terminal=False):
-    """
-    Resolve one affected artifact to exactly one action.
-
-    Every combination must produce a single action. If a combination feels
-    ambiguous, one of the two dimensions is modelled wrong.
-
-    `exclusive`  the artifact exists only because of the withdrawn subject.
-                 Nothing else needs it, so it goes entirely.
-    `terminal`   immutable history - published, or already outside the trust
-                 boundary. Terminates remediation, not notification.
-    """
-    contribution = normalise(contribution)
-
-    # Order matters. Each guard answers a question that makes the later ones
-    # irrelevant, so they read top-down as "is there anything left to do?"
-    if storage == DESTROYED:
-        return ALREADY_GONE
-
-    if terminal:
-        return NOTIFY_ONLY
-
-    if exclusive:
-        # No other subject depends on it. Nothing to preserve.
-        return DESTROY if storage == WRITABLE else QUARANTINE
-
-    if contribution == SEPARABLE:
-        # Logically removable - but only if the bytes can actually be changed.
-        return PURGE if storage == WRITABLE else REGENERATE
-
-    if contribution == REGENERABLE:
-        # Rewriting in place is not required; a fresh artifact is produced.
-        return REGENERATE
-
-    return QUARANTINE  # IRREDUCIBLE
 
 
 def explain(action):

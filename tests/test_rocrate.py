@@ -70,7 +70,11 @@ class TestRoCrateAdapter(unittest.TestCase):
         task_hash = next(iter(self.graph["tasks"]))
         facts = viralrecon.classify(self.graph, task_hash, exclusive=False)
         self.assertEqual(facts["contribution"], "IRREDUCIBLE")
-        self.assertEqual(facts["storage"], "DESTROYED")
+        # But NOT destroyed. A crate records no workdir at all, so there is
+        # nothing to look at — which is unverified, not gone. The previous
+        # behaviour reported every crate-derived task as ALREADY_GONE, so a
+        # whole extractor silently produced empty remediation plans.
+        self.assertIsNone(facts["storage"])
 
     def test_external_inputs_recognised(self):
         external = {Path(e["filename"]).name for e in self.graph["edges"]

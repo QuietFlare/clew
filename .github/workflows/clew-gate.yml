@@ -1,0 +1,86 @@
+# Clew — compliance as a build check.
+#
+# Runs BEFORE the pipeline. If any input is something you are not permitted
+# to use, the build stops here, where stopping is cheap — rather than in a
+# remediation exercise two years later, where it is not.
+#
+# Copy this into your pipeline repository and edit the three marked lines.
+
+name: clew gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Clew
+        run: |
+          git clone --depth 1 https://github.com/YOUR-ORG/clew.git .clew
+          pip install -r .clew/requirements.txt
+
+      - name: Check the inputs against the log
+        env:
+          # READ-ONLY credentials. The gate asks questions; it has no reason
+          # to hold a role that can write facts, and CI is the last place to
+          # put one that can.
+          CLEW_DSN: ${{ secrets.CLEW_AUDIT_DSN }}
+        run: |
+          python3 .clew/gate.py \
+            --pipeline sarek \
+            --samplesheet samplesheet.csv \
+            --gate-policy .clew/gate-policy.example.json \
+            --out clew-evidence/
+
+      # always(): the evidence of a REFUSAL matters at least as much as the
+      # evidence of a pass. A gate whose artifact only survives on green
+      # builds documents the days nothing was wrong.
+      - name: Publish the evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clew-evidence
+          path: clew-evidence/
+          if-no-files-found: warn
+
+      # Optional. Needs a WRITING role, so it is a separate step with
+      # separate credentials — and it is worth asking whether CI should hold
+      # them at all. Recording that a check happened is a fact about your
+      # process; a build robot is a defensible author of it, but that is a
+      # decision to make deliberately rather than by copying this file.
+      #
+      # - name: Record the check in the log
+      #   if: always()
+      #   env:
+      #     CLEW_DSN: ${{ secrets.CLEW_WRITER_DSN }}
+      #   run: |
+      #     python3 .clew/gate.py --pipeline sarek \
+      #       --samplesheet samplesheet.csv \
+      #       --gate-policy .clew/gate-policy.example.json \
+      #       --out clew-evidence/ --seal-into-log \
+      #       --actor "github-actions@${{ github.repository }}"
+
+  # Everything above gates the INPUTS. This gates nothing and produces the
+  # after-the-fact answer: given a run that happened, what would have to
+  # happen now. Run it after the pipeline, not instead of the gate.
+  #
+  # blast:
+  #   needs: gate
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: |
+  #         python3 .clew/blast.py --pipeline sarek --graph graph.json \
+  #           --samplesheet samplesheet.csv --donor "$SUBJECT" \
+  #           --work-root work/ --json plan.json
+  #         python3 .clew/evidence.py build --out clew-evidence/ \
+  #           --plan plan.json --input graph.json --input samplesheet.csv

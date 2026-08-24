@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from core import blast_radius as core
 from core import contribution as c
+from core import policy
 
 
 def graph_from(edges, tasks=None):
@@ -83,7 +84,7 @@ class TestMixedVerdictsFromOneNode(unittest.TestCase):
 
         verdicts = {}
         for node in affected:
-            verdicts[node] = c.remediate(
+            verdicts[node] = policy.remediate(
                 c.REGENERABLE,
                 exclusive=node in exclusive,
                 terminal=node in published,

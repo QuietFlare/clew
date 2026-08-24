@@ -1,0 +1,17 @@
+{
+  "version": "example-not-truth",
+  "_comment": [
+    "A TEMPLATE, not a recommendation. Clew ships no opinion about what your",
+    "event types mean or which of them should stop work — that is yours to",
+    "author and yours to defend. The names below are illustrative.",
+    "",
+    "blocking: a fact of this type, in effect, stops the build.",
+    "clearing: a fact of this type releases it. For each subject the LATEST",
+    "fact in effect decides, so a reinstatement after a withdrawal wins.",
+    "",
+    "A type in neither list is inert here. That is fine and often right — a",
+    "log holds many facts that are not gate decisions."
+  ],
+  "blocking": ["ConsentWithdrawn", "SampleContaminated", "QCFailed"],
+  "clearing": ["ConsentReinstated", "QCPassed"]
+}

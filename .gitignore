@@ -6,3 +6,7 @@ graph_ls.json
 
 CLAUDE.md
 graph.json
+
+# bundles and gate results written by the examples
+clew-evidence/
+bundle/

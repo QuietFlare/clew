@@ -51,4 +51,4 @@ def _owner_of(tag, label_to_donor):
 
 def contribution_storage(workdir, work_root=None):
     """Kept for compatibility; the logic lives in nfcore.storage_state."""
-    return nfcore.storage_state(workdir)
+    return nfcore.storage_state(workdir, work_root)

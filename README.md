@@ -62,14 +62,17 @@ python3 blast.py --pipeline rnaseq --graph graph_chain.json \
 
 ## See it in two minutes
 
-No dependencies beyond Python 3.11. The repo ships a real graph extracted
-from an nf-core/sarek run with 5 synthetic donors, 81 tasks, 344 edges.
+No dependencies beyond Python 3.11 — the demo, the extractors and
+`blast.py` are stdlib-only and stay that way. The repo ships a real graph
+extracted from an nf-core/sarek run with 5 synthetic donors, 81 tasks,
+344 edges.
 
 ```bash
 python3 demo.py
 ```
 
-The demo answers three questions, one per audience, all from the same engine.
+It answers three questions, one per audience, then crosses a run boundary —
+all from the same engine.
 
 ## Use it on your own run
 
@@ -196,7 +199,7 @@ event, not a plugin.
 ### Pipeline engineer: "We bumped the reference genome. What must be re-run?"
 
 ```bash
-python3 blast.py --graph graph.json --samplesheet samplesheet.csv --input genome.fasta
+python3 blast.py --graph graph5.json --samplesheet donors.csv --input genome.fasta
 ```
 
 On the sample run: genome.fasta was consumed directly by 41 tasks, and 72 of
@@ -206,7 +209,7 @@ with the derivation chain printed as evidence for every claim.
 ### QA: "A defect was reported in a GATK4 container. What did it produce?"
 
 ```bash
-python3 blast.py --graph graph.json --samplesheet samplesheet.csv --container gatk4
+python3 blast.py --graph graph5.json --samplesheet donors.csv --container gatk4
 ```
 
 On the sample run: 16 tasks ran the container, 68 of 81 tasks are suspect.
@@ -216,15 +219,19 @@ source, so artifacts are rebuilt rather than deleted.
 ### Compliance: "A donor withdrew consent. What happens now?"
 
 ```bash
-python3 blast.py --graph graph.json --samplesheet samplesheet.csv \
+python3 blast.py --graph graph5.json --samplesheet donors.csv \
     --donor donor_003 --assertions assertions.json
 ```
 
 On the sample run: 16 of 81 tasks are affected. The 15 that exist only
-because of this donor are destroyed. The cohort report that also serves the
-other donors, and was cited in a publication, resolves to `NOTIFY_ONLY`
-instead: you cannot unpublish, so the answer there is disclosure, not
-deletion. One traversal, two verdicts, which is the whole point.
+because of this donor are destroyed, where the artifacts are still on disk.
+Add `--work-root` pointing at the run's work directory to get those verdicts;
+without it the storage-dependent ones come back `UNDETERMINED`, which is the
+honest answer rather than a guess.
+The cohort report that also serves the other donors, and was cited in a
+publication, resolves to `NOTIFY_ONLY` instead: you cannot unpublish, so the
+answer there is disclosure, not deletion. One traversal, two verdicts, which
+is the whole point.
 
 Publication is an external assertion, not something Clew infers. The
 assertions file records who claimed it and when:
@@ -242,6 +249,443 @@ assertions file records who claimed it and when:
   ]
 }
 ```
+
+## Storage is checked, never assumed
+
+Every verdict above depends on two different kinds of fact, and they are not
+the same kind at all:
+
+- **Lineage** — what was derived from what. Permanently true, and it is what
+  the graph holds.
+- **Storage** — whether the bytes are still there. True only at the instant
+  you look, and not in the graph at all.
+
+Whoever asks Clew a question is often not standing where the pipeline ran: a
+different host, a CI runner, a laptop reading a graph someone emailed over.
+So Clew does not check unless you tell it where to look:
+
+```bash
+python3 blast.py --graph graph.json --samplesheet samplesheet.csv \
+    --donor donor_003 --work-root /path/to/work
+```
+
+Without `--work-root`, storage is unverified and any verdict that *depends*
+on it is reported `UNDETERMINED` rather than guessed. Verdicts that hold
+whatever the disk says are still returned — under v2 a published artifact is
+`NOTIFY_ONLY` either way, and that is an answer, not a guess:
+
+```
+  UNDETERMINED  (57)  — no verdict; see below
+    storage state not verified, and the verdict depends on it. Verifying
+    would decide between ALREADY_GONE, DESTROY or QUARANTINE. Refusing to
+    guess: assuming the artifact survives over-claims work, and assuming it
+    is gone reports an obligation as already discharged.
+```
+
+With it, Clew looks and says what it found — on the cross-run graph, 46 tasks
+whose scratch really was cleaned, and 11 whose artifacts are still there:
+
+```
+AFFECTED: 57 of 183 tasks
+  ALREADY_GONE  (46)  — no longer exists; nothing to do
+  REGENERATE    (11)  — recompute from the remaining sources
+```
+
+**`ALREADY_GONE` is now only ever reached by looking and not finding.** It
+used to be returned whenever the recorded path failed to resolve — which
+fired identically when the volume was not mounted, when the graph came from
+another machine, when the extractor never recorded a workdir at all (every
+RO-Crate task), and when the published fixtures had their paths anonymised.
+All of those produced *"no longer exists; nothing to do"*, silencing exactly
+the artifacts that carry obligations. A false negative that discharges an
+obligation is worth far more care than a false positive that wastes work.
+
+Recorded paths belong to whichever machine ran the pipeline, so only the
+two-character prefix and task hash are joined onto the root you supply. A
+graph stays portable between hosts without pretending its absolute paths mean
+anything locally.
+
+An undetermined item is **not clean, it is unanswered** — it carries the set
+of verdicts still in play, so a CI gate can fail on it and a reader can see
+exactly what checking the disk would settle.
+
+## The event log
+
+Everything above is a computation over facts. If the facts can be edited
+afterwards, none of it is worth anything — so the facts get their own store,
+on Postgres, whose only job is to make revision impossible for the
+application and detectable for everyone else.
+
+```bash
+pip install 'psycopg[binary]'
+```
+
+```bash
+python3 logbook.py --dsn "$CLEW_ADMIN_DSN" init \
+    --writer-password "$W" --auditor-password "$A"
+```
+
+```bash
+python3 logbook.py --dsn "$CLEW_DSN" append --type ContainerDefectReported \
+    --subject "gatk4:4.2.1" --actor qa.lead@example.org \
+    --effective-from 2026-08-10T00:00:00+00:00 \
+    --body '{"defect":"BQSR miscalibration","reference":"JIRA QA-4471"}'
+```
+
+**Two clocks, deliberately.** `effective_from` is when the fact became true;
+`recorded_at` is when we learned it. A defect discovered in August was true
+in March, and the release made in between was made in good faith and still
+has to be disclosed. One timestamp cannot say that, and adding the second
+later means re-interpreting every historical row.
+
+The log has a clock; the computation does not. A plan stays a pure function
+of the facts and byte-identical on replay. Learning is dated, deciding is not.
+
+**Three layers, each stopping what the next cannot.** They are not redundant:
+
+| Layer | Stops | How it fails |
+|---|---|---|
+| Role grants | the application | `permission denied for table events` |
+| Triggers | the owner's mistake | `clew: the event log is append-only` |
+| Hash chain | whoever defeats both | `verify` exits 1 and names the entry |
+
+The writer role holds `SELECT` and `INSERT` and was never granted `UPDATE`,
+`DELETE` or `TRUNCATE`; a role cannot grant itself a privilege it does not
+hold. This is why the log is on a server rather than in a file — whoever
+holds a file holds every privilege over it. `TRUNCATE` has its own
+statement-level trigger because it fires no row triggers at all and would
+otherwise empty the log in one statement.
+
+Verification needs no database and no driver:
+
+```bash
+python3 logbook.py --dsn "$CLEW_AUDIT_DSN" verify
+```
+
+```
+FAILED at seq 2
+  content does not match its own hash: this entry was edited after it was written
+  1 entries verified before the break
+```
+
+**What it does not prove.** The chain detects editing. It does not detect a
+truncated tail — a shorter chain is still self-consistent — nor a full
+rewrite by someone holding the owner's credentials. No hash chain closes
+that alone; anchoring the head hash outside the database does, which is what
+the evidence bundle is for. Owner and application must be different
+identities and the owner's credentials must stay out of CI. Clew cannot
+enforce that from inside, and says so rather than implying otherwise. Both
+limits are asserted as passing tests, so nobody reads `ok` as "nothing was
+lost".
+
+## Policy versioning
+
+Every verdict above is a verdict *under a table*. If that table is an
+if-ladder in Python, editing it silently re-interprets every plan ever
+produced: a plan from March says `QUARANTINE`, the code says `QUARANTINE`
+today, and nobody can tell whether it said `QUARANTINE` in March. The history
+is unfalsifiable, which is the same as worthless.
+
+So the table is data, with a version and a content hash:
+
+```bash
+python3 rulebook.py show
+```
+
+```
+  R3   exclusive=True, storage=WRITABLE                     -> DESTROY
+       Exists only because of this subject and the bytes can be changed.
+       Nothing else needs it, so it goes entirely.
+```
+
+Every plan names the policy in its header and every line cites the rule that
+decided it, so "policy v1, rule R5, these hashes, re-run and get the same
+answer" is a checkable sentence.
+
+**Rule order is semantics** — first match wins, and an omitted dimension is a
+wildcard. That is not a detail: it is the entire difference between the two
+shipped versions.
+
+```bash
+python3 rulebook.py diff v1 v2
+```
+
+```
+order  v1: R1 R2 R3 R4 R5 R6 R7 R8
+       v2: R2 R1 R3 R4 R5 R6 R7 R8
+
+  R2  position 2 -> 1
+      - Immutable history — published, or already past a trust boundary.
+        Terminates remediation, not notification: you cannot unpublish...
+      + Immutable history — published, or already past a trust boundary.
+        Asked first, before existence: destroying our copy does not reach
+        the published or transferred one, so the obligation to disclose
+        survives the bytes.
+```
+
+v1 asked "does it still exist?" before "was it published?", so a published
+artifact whose working copy had been deleted came back `ALREADY_GONE` —
+*nothing to do*. Deleting your copy of something does not un-publish it.
+
+The practical consequence was sharper than it first looks. `R1` is the only
+rule that can yield `ALREADY_GONE`, so putting it first made **every** verdict
+depend on the storage state — under v1, nothing at all is decidable without a
+disk check. Under v2 a published artifact resolves without one, because the
+answer genuinely does not depend on it:
+
+```bash
+python3 blast.py --graph graph5.json --samplesheet donors.csv \
+    --donor donor_003 --assertions assertions.json --policy v1
+```
+
+```
+POLICY: v1  dbb59de6d85fc0f8       POLICY: v2  e6ba60ffe6763949
+  UNDETERMINED  (16)                 NOTIFY_ONLY   (1)   c9/023b13  MULTIQC
+    c9/023b13  MULTIQC               UNDETERMINED (15)
+```
+
+**v1 is still here, byte for byte.** `--policy v1` resolves it, and a plan
+computed in January replays under the table that produced it rather than
+under today's. A semantic change is a new version, never an edit — the
+shipped hashes are frozen as literals in the test suite, so editing one fails
+the build and says to add a version instead.
+
+**Adoption is a logged fact.** `rulebook.py register` writes a
+`PolicyAdopted` event carrying the whole table, not a pointer to it — a
+pointer to code is worthless six months and four releases later:
+
+```bash
+python3 rulebook.py register --dsn "$CLEW_DSN" --actor qa.lead@example.org
+```
+
+**Validation refuses, it does not warn.** A policy naming an unknown action,
+an impossible value, a duplicate rule id, or a rule with no rationale is
+rejected at load. The one that matters most is a mistyped dimension, which
+would otherwise load cleanly and silently never match — and a rule that never
+matches is indistinguishable from a deleted one, except that the file still
+shows it and everyone believes it applies.
+
+Two guards sit outside the rule list where no policy can reach them: an
+unrecognised contribution class becomes `IRREDUCIBLE` before matching, and
+falling off the end of the rules yields `QUARANTINE` rather than an error or
+a pass.
+
+**Be precise about what that guarantees.** It fixes the facts, not the
+verdict. A policy mapping `IRREDUCIBLE` to `PURGE` is expressible, would be
+wrong, and Clew will run it. That is not a hole — it is the reason the table
+is data. Wrong logic in an if-ladder is invisible in a code review nobody
+does; wrong logic in a hashed, versioned, rationale-carrying file sits in the
+open with a rule id on it.
+
+**This is the core table, not the customer's policy.** It defines what the
+classes *mean*, so changing it changes the semantics of every historical
+plan — which is exactly why it is versioned. Which of a customer's events map
+to which class, what counts as published, what a given withdrawal tier may
+reach: that is a separate object, it lives in `domains/`, and it is not this
+file.
+
+## Evidence bundles
+
+A plan on someone's terminal is a claim. A bundle is the artifact that lets a
+third party check it without trusting you, without your database, and without
+your code being the thing that says so.
+
+```bash
+python3 evidence.py build --out bundle/ --plan plan.json --dsn "$CLEW_DSN" \
+    --input graph.json --input samplesheet.csv --seal-into-log \
+    --actor qa.lead@example.org
+```
+
+```bash
+python3 evidence.py verify bundle/
+```
+
+`verify` reads a directory. **No database, no network, no credentials, no
+driver installed** — an assessor who does not trust the party that produced a
+bundle must be able to check it anyway, and any step routing through the
+producer's infrastructure defeats that.
+
+```
+  ok   files      6 files, all hashes match
+  ok   log        2 entries re-chain to the recorded head (seq 2)
+  ok   policy     v2 matches the hash the plan cites
+  ok   replay     all 57 verdicts recompute identically from the bundled facts and policy
+  ok   signature  sealed by qa.lead@example.org
+```
+
+**`replay` is the one that matters.** A folder of documents proves only that
+somebody assembled a folder. Replay re-derives *every* verdict from the
+bundled facts and the bundled table, offline. Rebuild the manifest so all the
+hashes match again and change only the conclusion, and it still fails:
+
+```
+  ok   files      6 files, all hashes match
+  FAIL replay     1 of 57 verdicts do not reproduce:
+                  da:06/31c01f: recorded ALREADY_GONE, recomputes to REGENERATE
+```
+
+**Bundles are clock-free.** The same inputs produce the same bundle hash,
+which is testable and tested. A timestamp inside would change the hash on
+every build and quietly destroy the reproducibility claim; time lives in the
+log, which is the thing with clocks, and sealing is itself a logged event.
+
+### This is what closes the log's open gap
+
+A hash chain detects editing but not truncation — lopping entries off the end
+leaves a shorter, self-consistent chain. Nothing inside the database can fix
+that. The fix has to be a witness its owner does not control.
+
+The bundle records the log head it covered, and `--seal-into-log` records the
+bundle hash back into the log. Neither can be rolled back without
+contradicting the other:
+
+```bash
+python3 evidence.py witness bundle/ --dsn "$CLEW_DSN"
+```
+
+```
+$ logbook.py verify              # the log alone, after entries 2-3 were deleted
+OK  1 entries, chain intact      # a short chain is a valid chain
+
+$ evidence.py witness bundle/
+FAIL witness   the log has no entry at seq 2, but this bundle recorded one.
+               Entries have been removed from the end since this bundle was issued.
+```
+
+To make a truncation stick, someone would now have to collect every copy of
+every bundle ever issued. `witness` is a separate command from `verify` on
+purpose: verifying needs no credentials and must stay that way.
+
+### Signing is delegated, not invented
+
+Clew **seals** — a SHA-256 manifest over every file, plus a bundle hash over
+the manifest. Standard library only, so anyone can check it.
+
+Clew does **not** implement signing. A signature checkable only by someone
+holding the signing key is not a signature in the sense an assessor means,
+and inventing crypto here would be indefensible. Countersigning is detached
+and uses `ssh-keygen -Y`, which ships with OpenSSH and whose keys your
+organisation already manages:
+
+```bash
+python3 evidence.py sign bundle/ --key ~/.ssh/id_ed25519
+python3 evidence.py verify bundle/ --allowed-signers allowed_signers
+```
+
+A signature from a key not in `allowed_signers` fails as *"by someone this
+reader has no reason to trust"*. The seal is Clew's; who sealed it belongs to
+your key infrastructure.
+
+The bundle is also a valid **RO-Crate** — adopted rather than invented, so it
+survives being handed to tooling that has never heard of Clew.
+
+## The CI gate
+
+Everything above answers *after the fact*. The gate asks the opposite
+question, before anything runs: is any of this material something we are not
+allowed to use?
+
+```bash
+python3 gate.py --pipeline sarek --samplesheet samplesheet.csv \
+    --dsn "$CLEW_DSN" --gate-policy gate-policy.json --out clew-evidence/
+```
+
+```
+CLEW GATE  donors.csv
+  blocking on     ConsentWithdrawn, QCFailed, SampleContaminated
+  cleared by      ConsentReinstated, QCPassed
+  log head        seq 5  0a9f436b2c7dca66
+
+  BLOCKED  1
+      donor_003    ConsentWithdrawn effective 2026-03-01, asserted by registry@example.org
+          log seq 1, entry 01fd6803a761d58a
+  UNKNOWN  2
+      donor_002    the log holds no decisive fact about this subject
+  CLEARED  2
+      donor_001    QCPassed effective 2026-05-20, asserted by lab.qa@example.org
+
+STOP  1 blocked, 2 unknown, 2 cleared
+```
+
+Exit 1 stops the build. Compliance as a build check, at the point where
+stopping is cheap.
+
+### Three outcomes, not two
+
+`BLOCKED`, `CLEARED`, and **`UNKNOWN`** — the log has nothing to say about
+this subject at all. A gate that reports unknown as "not blocked" passes
+everything it failed to check, and goes green the day someone mistypes an
+identifier or points it at the wrong log. So unknown stops the build unless
+`--allow-unknown` says somebody decided otherwise, and even then it is still
+counted and reported as unknown rather than relabelled clean.
+
+The report also says so outright when the log had never heard of *any*
+subject in the samplesheet — which almost always means the identifiers do not
+match between the two, not that everything is permitted.
+
+### Every way of failing to check exits non-zero
+
+| | |
+|---|---|
+| the log is unreachable | stop — an unreachable log is not a clean one |
+| no blocking types given | stop — that is not a lenient gate, it is no gate |
+| a subject is `UNKNOWN` | stop, unless explicitly allowed |
+| a subject is `BLOCKED` | stop |
+
+A green build must mean *checked and permitted*. If it can also mean *could
+not check*, the gate is decorative — and a decorative compliance gate is
+worse than none, because it manufactures a record of diligence that did not
+happen.
+
+### Decisions get reversed, and dates matter
+
+For each subject the **latest fact in effect** decides, ordered by
+`effective_from` — when the decision was made in the world, not when it was
+entered. A subject withdrawn in March and reinstated in June is usable in
+July. Same-day facts are broken by log order, the only tiebreak nobody can
+back-date.
+
+Which makes "was this run permitted *when we ran it*?" answerable:
+
+```bash
+python3 gate.py ... --as-of 2026-05-01
+```
+
+```
+as of 2026-05-01          as of today
+  BLOCKED  3                BLOCKED  1
+  CLEARED  0                CLEARED  2
+```
+
+Facts effective *after* the date asked about are ignored, so a historical
+gate result stays reproducible instead of changing every time someone records
+something new. This is what the log's two clocks were for.
+
+### It emits its own evidence
+
+`--out` seals the result into a bundle, and `evidence.py verify` re-derives
+the gate decision from the bundled facts and the bundled gate policy — the
+same discipline as replaying a remediation plan:
+
+```
+  ok   files      6 files, all hashes match
+  ok   log        5 entries re-chain to the recorded head (seq 5)
+  ok   gate       passed=False; all 5 subject outcomes recompute identically
+```
+
+The shipped workflow at
+[.github/workflows/clew-gate.yml](.github/workflows/clew-gate.yml) uploads
+that bundle with `if: always()`, because the evidence of a *refusal* matters
+at least as much as the evidence of a pass — an artifact that only survives
+on green builds documents the days nothing was wrong.
+
+The gate runs with **read-only credentials**. It asks questions; it has no
+reason to hold a role that can write facts, and CI is the last place to put
+one that can.
+
+Clew ships [gate-policy.example.json](gate-policy.example.json) as a
+template, not a recommendation. Which of your event types should stop work is
+yours to author and yours to defend.
 
 ## What Clew claims, and what it does not
 
@@ -263,27 +707,47 @@ Honest edges, reported rather than hidden:
 ## Architecture
 
 ```
-core/       traversal, contribution classes, remediation. Zero domain vocabulary.
+core/       traversal, contribution vocabulary, versioned policy, event log,
+            evidence bundles, the gate. Zero domain vocabulary.
 domains/    the layer allowed to know about sarek, samplesheets, donors.
-tests/      46 tests, stdlib unittest, no dependencies.
+tests/      241 tests, stdlib unittest.
 ```
 
 The boundary is enforced by a grep: `core/` must never mention a sample, a
-donor, a consent, or a workflow engine. Adding a new domain (say, AI training
-data with opt-out semantics) means adding a directory, not editing core.
+donor, a consent, or a workflow engine, and must import nothing from
+`domains/`. Adding a new domain (say, AI training data with opt-out
+semantics) means adding a directory, not editing core. That grep is
+[tests/test_core_boundary.py](tests/test_core_boundary.py) — an unenforced
+rule stays true right up until it doesn't.
 
 ```bash
 python3 -m unittest discover -s tests
 ```
 
+216 of the tests need nothing installed. The other 25 exercise the log's
+storage behaviour — the role grants, the triggers, concurrent appends — and
+skip unless you point them at a database you own:
+
+```bash
+CLEW_TEST_DSN=postgresql://user:pw@localhost:5432/clew python3 -m unittest discover -s tests
+```
+
+The log's arithmetic is deliberately on the other side of that line. Hashing
+and chain verification are pure functions on plain dicts, so an auditor
+checking an exported bundle needs a JSON file and an interpreter — not a
+database driver and a server. "Anyone can check this without us" has to be a
+fact rather than a slogan.
+
 ## Status
 
 Working: lineage extraction from real runs, blast radius for three trigger
 types, contribution classes with fail-closed defaults, remediation plans,
-publication assertions, mixed verdicts from a single traversal.
+publication assertions, mixed verdicts from a single traversal, the
+append-only event log, the versioned remediation policy, sealed evidence
+bundles that replay offline, and the CI gate.
 
-Not built yet: append-only event log, policy versioning, signed evidence
-bundles, CI gate. That is the roadmap, in that order.
+Not built: a donor-facing transparency log, and any domain beyond nf-core
+pipelines.
 
 ## Contributing
 

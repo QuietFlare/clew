@@ -9,6 +9,7 @@ live from graph5.json — a real nf-core/sarek run (5 synthetic donors,
 work/ directory with no pipeline modification.
 """
 
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -17,9 +18,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from core import blast_radius as core
 from core import contribution
+from core import policy
 from domains import sarek
 
 ROOT = Path(__file__).resolve().parent
+
+
+# Where this run's artifacts live, if anywhere. Set CLEW_WORK_ROOT to the
+# work directory to have the demo check the disk; without it Clew reports the
+# storage question as open rather than answering it, which is the honest
+# answer and the one most readers will see — the sarek run's scratch was
+# cleaned long ago, as pipeline scratch always is.
+WORK_ROOT = os.environ.get("CLEW_WORK_ROOT")
 
 
 def plan_for(graph, entry_nodes, affected, exclusive_set, published):
@@ -27,11 +37,11 @@ def plan_for(graph, entry_nodes, affected, exclusive_set, published):
     plan = {}
     for task_hash in sorted(affected):
         facts = sarek.classify(graph, task_hash, task_hash in exclusive_set,
-                               published=published)
-        action = contribution.remediate(
+                               published=published, work_root=WORK_ROOT)
+        action = policy.remediate(
             facts["contribution"], storage=facts["storage"],
             exclusive=facts["exclusive"], terminal=facts["terminal"],
-        )
+        ) or policy.UNDETERMINED
         plan.setdefault(action, []).append((task_hash, facts))
     return plan
 
@@ -39,7 +49,10 @@ def plan_for(graph, entry_nodes, affected, exclusive_set, published):
 def show(plan, graph, sample_rows=3):
     for action in sorted(plan):
         rows = plan[action]
-        print(f"    {action:<12} {len(rows):>3}  — {contribution.explain(action)}")
+        explanation = ("no verdict — storage was not checked; set CLEW_WORK_ROOT"
+                       if action == policy.UNDETERMINED
+                       else contribution.explain(action))
+        print(f"    {action:<12} {len(rows):>3}  — {explanation}")
         for task_hash, facts in rows[:sample_rows]:
             print(f"        {task_hash}  {sarek.describe(graph, task_hash)}")
             if facts["terminal"]:
@@ -142,10 +155,17 @@ def main():
     # ------------------------------------------------------------------ close
     print()
     print("=" * 70)
+    stamp = policy.identify()
     print("Same engine, three triggers — only the entry-node selection differed.")
-    print("Not shown here yet: append-only event log, policy versioning, signed")
-    print("evidence bundles. Honest caveats: publication/MTA/destruction are")
-    print("asserted from outside; uninstrumented systems are unknown, not clean.")
+    print(f"Every verdict above is under policy {stamp['policy_version']}, "
+          f"sha256 {stamp['policy_hash'][:16]};")
+    print("`python3 rulebook.py show` prints the table and the rationale for")
+    print("each rule; `rulebook.py diff v1 v2` shows what the last change to")
+    print("it was, and why. `evidence.py build` seals any of the above into")
+    print("a bundle that replays offline, and `gate.py` stops a run whose")
+    print("inputs are not permitted before the pipeline starts.")
+    print("Honest caveats: publication/MTA/destruction are asserted from")
+    print("outside; uninstrumented systems are unknown, not clean.")
 
 
 if __name__ == "__main__":
