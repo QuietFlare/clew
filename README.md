@@ -687,6 +687,101 @@ Clew ships [gate-policy.example.json](gate-policy.example.json) as a
 template, not a recommendation. Which of your event types should stop work is
 yours to author and yours to defend.
 
+## For auditors: a dashboard and a chat interface
+
+Everything above produces evidence. These two read it, and both go through
+the same `core/query.py` — two surfaces answering the same questions two
+different ways would eventually disagree, and on the day they did nobody
+could say which was wrong.
+
+### A page you can open from a USB stick
+
+```bash
+python3 dashboard.py --bundles /path/to/bundles --out evidence.html
+```
+
+One self-contained HTML file. No server, no network, no scripts, prints
+legibly. **It carries no timestamp**, so regenerating it from unchanged
+bundles produces an identical file — two auditors comparing pages should be
+comparing evidence, not diffing dates.
+
+*What is not known* sits above *Findings*, deliberately. A compliance
+dashboard that renders its gaps in small grey text below the fold is worse
+than no dashboard: it manufactures the impression of a clean bill of health
+out of an incomplete record. Withheld verdicts and subjects unknown to the
+log get counters of their own.
+
+The page says outright that it is **not the record** — the bundles are — and
+every panel names the bundle hash it was drawn from.
+
+### An MCP server, so an auditor can just ask
+
+```bash
+python3 mcp_server.py --bundles /path/to/bundles
+```
+
+MCP over stdin/stdout, stdlib JSON-RPC, no SDK. Point any MCP client at it:
+
+| Tool | Answers |
+|---|---|
+| `list_bundles` | what evidence exists at all |
+| `subject_history` | every recorded fact about one subject, both clocks, actors |
+| `policy_in_force` | which table the log says applied on a date |
+| `verdict` | why one task got the verdict it did — rule id, rationale, chain |
+| `was_affected` | "show that this output did not use that material" |
+| `check_integrity` | the deterministic verifier's own output |
+| `gate_result` | what a pre-flight gate blocked, and on what basis |
+
+**Clew ships no model and calls none.** It exposes tools; the auditor's own
+client supplies the conversation. That is the architecture, not modesty about
+scope — *no AI in the decision path* stays literally true, because every
+verdict was computed before the server started, by code that has never seen a
+prompt. A model cannot talk the tools into a different answer.
+
+**Read-only by construction.** No tool writes anything and the server never
+opens a database connection at all — it reads sealed bundles. Recording a
+fact is `logbook.py`, run by a person with an actor identity, and an
+auditor's chat session is the last place a new fact should be able to enter a
+compliance record. There is a test asserting `mcp_server.py` contains no
+connection call, so a future convenience has to break it to land.
+
+**Every answer carries its citations**, structurally — `query.answer()`
+refuses to return without them:
+
+```json
+{ "kind": "log_entry", "seq": 1, "hash": "01fd6803a761d58a…",
+  "actor": "registry@example.org", "effective_from": "2026-03-01" }
+```
+
+That matters because the consumer is a language model, and an auditor cannot
+tell fluent-and-wrong from fluent-and-right by reading it. Facts welded to
+their citations make a bad paraphrase *checkable* rather than merely
+persuasive. The guardrail the server hands the model at startup says it
+plainly: quote the citations, read the coverage out loud, and **never
+conclude compliance** — there is no tool here that says an obligation was
+met, and the model must not supply one.
+
+That is a guardrail, not a guarantee. Assume the prose is a convenience and
+the citations are the record.
+
+### A log has no identity, and that is handled rather than hidden
+
+Two logs both number their entries from 1. Merging bundles sealed from
+different logs would interleave two unrelated histories into one plausible
+timeline, and no field distinguishes them. So the loader compares what must
+agree if the logs are the same — an entry at a given sequence number has one
+hash — and says so loudly when they do not:
+
+```
+THESE BUNDLES DISAGREE: 2 sequence numbers (including 1, 2) carry different
+entries in different bundles, which means they were sealed from DIFFERENT
+LOGS. Answers drawn from the combined history are not trustworthy.
+```
+
+The warning travels on every answer drawn from the merged entries, and the
+dashboard renders it as a stop panel above everything else. Giving the log a
+real identity is the proper fix and is not built.
+
 ## What Clew claims, and what it does not
 
 Clew is a system of record, not an attester. It claims three things, all
@@ -708,9 +803,10 @@ Honest edges, reported rather than hidden:
 
 ```
 core/       traversal, contribution vocabulary, versioned policy, event log,
-            evidence bundles, the gate. Zero domain vocabulary.
+            evidence bundles, the gate, the query surface. Zero domain
+            vocabulary.
 domains/    the layer allowed to know about sarek, samplesheets, donors.
-tests/      241 tests, stdlib unittest.
+tests/      287 tests, stdlib unittest.
 ```
 
 The boundary is enforced by a grep: `core/` must never mention a sample, a
@@ -724,7 +820,7 @@ rule stays true right up until it doesn't.
 python3 -m unittest discover -s tests
 ```
 
-216 of the tests need nothing installed. The other 25 exercise the log's
+262 of the tests need nothing installed. The other 25 exercise the log's
 storage behaviour — the role grants, the triggers, concurrent appends — and
 skip unless you point them at a database you own:
 
@@ -744,10 +840,12 @@ Working: lineage extraction from real runs, blast radius for three trigger
 types, contribution classes with fail-closed defaults, remediation plans,
 publication assertions, mixed verdicts from a single traversal, the
 append-only event log, the versioned remediation policy, sealed evidence
-bundles that replay offline, and the CI gate.
+bundles that replay offline, the CI gate, and the auditor surfaces — an
+offline dashboard and a read-only MCP server.
 
-Not built: a donor-facing transparency log, and any domain beyond nf-core
-pipelines.
+Not built: a log identity, so bundles from different logs are detected rather
+than distinguished. A donor-facing transparency log. Any domain beyond
+nf-core pipelines.
 
 ## Contributing
 
