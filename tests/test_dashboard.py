@@ -233,5 +233,26 @@ class TestCli(DashboardTestCase):
         self.assertIn("no readable bundle", result.stderr)
 
 
+class TestSurfacesShareOneStore(unittest.TestCase):
+    """
+    The dashboard and the MCP server must read evidence the same way, or one
+    day they disagree and nobody can say which is wrong. The shared layer is
+    core/bundlestore.py, and neither surface may import the other.
+    """
+
+    def test_neither_surface_imports_the_other(self):
+        root = Path(__file__).resolve().parent.parent
+        dash = (root / "dashboard.py").read_text()
+        served = (root / "mcp_server.py").read_text()
+        self.assertNotRegex(
+            dash, re.compile(r"^\s*(from|import)\s+mcp_server", re.M),
+            "dashboard.py imports mcp_server.py")
+        self.assertNotRegex(
+            served, re.compile(r"^\s*(from|import)\s+dashboard", re.M),
+            "mcp_server.py imports dashboard.py")
+        for name, text in (("dashboard.py", dash), ("mcp_server.py", served)):
+            self.assertIn("bundlestore", text,
+                          f"{name} no longer reads through core/bundlestore")
+
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,7 @@ crossing it is the difference between per-run provenance and an answer to
 HOW THE BRIDGE IS FOUND
 -----------------------
 An upstream task's outputs are matched to their published copies by
-(basename, size) — see blast.index_results for why not checksums. A
+(basename, size) — see domains/nfcore.py index_results for why not checksums. A
 downstream run's EXTERNAL input records the absolute path it was staged
 from. Where that path IS one of the upstream run's published copies, the
 EXTERNAL edge is rewritten to point at the task that produced it. The
@@ -45,7 +45,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from blast import index_results
+from domains.nfcore import index_results
 
 
 def prefix_graph(label, graph):

@@ -690,9 +690,10 @@ yours to author and yours to defend.
 ## For auditors: a dashboard and a chat interface
 
 Everything above produces evidence. These two read it, and both go through
-the same `core/query.py` — two surfaces answering the same questions two
-different ways would eventually disagree, and on the day they did nobody
-could say which was wrong.
+the same core layer — `core/bundlestore.py` to load bundles, `core/query.py`
+to answer — because two surfaces answering the same questions two different
+ways would eventually disagree, and on the day they did nobody could say
+which was wrong. A test asserts neither surface imports the other.
 
 ### A page you can open from a USB stick
 
@@ -838,7 +839,7 @@ core/       traversal, contribution vocabulary, versioned policy, event log,
             evidence bundles, the gate, the query surface. Zero domain
             vocabulary.
 domains/    the layer allowed to know about sarek, samplesheets, donors.
-tests/      287 tests, stdlib unittest.
+tests/      288 tests, stdlib unittest.
 ```
 
 The boundary is enforced by a grep: `core/` must never mention a sample, a
@@ -852,7 +853,7 @@ rule stays true right up until it doesn't.
 python3 -m unittest discover -s tests
 ```
 
-262 of the tests need nothing installed. The other 25 exercise the log's
+263 of the tests need nothing installed. The other 25 exercise the log's
 storage behaviour — the role grants, the triggers, concurrent appends — and
 skip unless you point them at a database you own:
 

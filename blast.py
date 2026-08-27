@@ -53,6 +53,7 @@ from core import contribution
 from core import policy
 from core.policy import UNDETERMINED
 from domains import rnaseq, sarek, viralrecon
+from domains.nfcore import index_results, published_copies
 
 # Which adapter translates between this pipeline's vocabulary and core's.
 # Adding a pipeline = adding a module in domains/ and one entry here.
@@ -149,44 +150,6 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
 
 def count_undetermined(plan):
     return sum(1 for _, _, decision in plan if decision["action"] is None)
-
-
-def index_results(results_dir):
-    """
-    Index a published-results tree by (basename, size).
-
-    Why this key: the artifacts in results/ are COPIES made by publishDir.
-    The lineage store's checksums are Nextflow's "standard" mode — hashed
-    from path and mtime — so they change on copy and cannot identify one.
-    Basename plus exact size can, almost always; where several published
-    files collide on both, every candidate is listed and the match is
-    flagged ambiguous rather than silently picking one. A deletion list
-    must over-report candidates, never guess.
-    """
-    index = {}
-    root = Path(results_dir)
-    for path in root.rglob("*"):
-        if path.is_file():
-            key = (path.name, path.stat().st_size)
-            index.setdefault(key, []).append(str(path.relative_to(root)))
-    return index
-
-
-def published_copies(graph, task_hash, results_index):
-    """Published copies of one task's outputs, from the (name, size) index."""
-    if not results_index:
-        return []
-    matches = []
-    for detail in graph.get("output_details", {}).get(task_hash, []):
-        key = (Path(detail["file"]).name, detail.get("size"))
-        found = results_index.get(key, [])
-        if found:
-            matches.append({
-                "output": detail["file"],
-                "published": sorted(found),
-                "ambiguous": len(found) > 1,
-            })
-    return matches
 
 
 def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,

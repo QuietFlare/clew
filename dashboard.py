@@ -44,9 +44,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import mcp_server
-from core import evidence
-from core import eventlog
+from core import bundlestore
 from core import policy as policy_module
 from core import query
 
@@ -150,7 +148,7 @@ def section_integrity(store):
     bundles, _, _ = store
     rows = []
     for bundle in bundles:
-        result = mcp_server.tool_check_integrity(store, {"bundle": bundle["name"]})
+        result = bundlestore.check_integrity(bundle)
         checks = result["result"]["checks"]
         cells = []
         for check in checks:
@@ -188,7 +186,7 @@ def section_unknowns(store):
     undetermined = unknown_subjects = 0
     notes = []
     for bundle in bundles:
-        plan = mcp_server.plan_of(bundle)
+        plan = bundlestore.plan_of(bundle)
         if plan:
             missing = [i for i in plan.get("plan", []) if not i.get("action")]
             undetermined += len(missing)
@@ -266,8 +264,9 @@ def section_log(store):
 
 
 def section_policy(store):
-    _, entries, _ = store
-    result = mcp_server.tool_policy_history(store, {})
+    _, entries, conflicts = store
+    result = bundlestore.with_conflicts(query.policy_history(entries),
+                                        conflicts)
     adoptions = result["result"]["adoptions"]
     if not adoptions:
         return "<h2>Policy</h2>" + coverage_panel(result["coverage"])
@@ -288,8 +287,8 @@ def section_policy(store):
 
 
 def section_plan(bundle, store):
-    plan = mcp_server.plan_of(bundle)
-    policy_document = mcp_server.policy_of(bundle)
+    plan = bundlestore.plan_of(bundle)
+    policy_document = bundlestore.policy_of(bundle)
     summary = query.plan_summary(plan)["result"]
 
     counts = "".join(
@@ -357,7 +356,7 @@ def section_bundles(store):
     bundles, _, _ = store
     parts = ["<h2>Findings</h2>"]
     for bundle in bundles:
-        if mcp_server.plan_of(bundle):
+        if bundlestore.plan_of(bundle):
             parts.append(section_plan(bundle, store))
         elif "gate.json" in bundle["documents"]:
             parts.append(section_gate(bundle))
@@ -401,7 +400,7 @@ def main():
     parser.add_argument("--out", required=True, metavar="FILE")
     args = parser.parse_args()
 
-    store = mcp_server.load_store(args.bundles)
+    store = bundlestore.load_store(args.bundles)
     if not store[0]:
         raise SystemExit(f"no readable bundle found in {args.bundles}")
     Path(args.out).write_text(render(store, args.bundles))
