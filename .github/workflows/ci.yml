@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   tests:
-    uses: QuietFlare/ci-workflows/.github/workflows/python-test.yml@v1.4.0
+    uses: QuietFlare/ci-workflows/.github/workflows/python-test.yml@v1
     with:
       test-command: 'python3 -m unittest discover -s tests'
 
