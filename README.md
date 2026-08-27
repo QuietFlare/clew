@@ -801,6 +801,38 @@ Honest edges, reported rather than hidden:
 
 ## Architecture
 
+Two streams meet in the middle. The left one is machine facts — whatever the
+engine recorded, merged into one graph. The right one is human facts — things
+no engine can know, translated by the domain layer into graph terms. The core
+knows nothing about either world: it traverses, applies the versioned policy,
+and logs.
+
+```mermaid
+flowchart TB
+    subgraph NF["Nextflow already writes this"]
+        LS["Lineage store (25.04+)"]
+        RC["nf-prov RO-Crate"]
+        WS["work/ symlinks (any version)"]
+    end
+    subgraph PA["People assert this"]
+        W["Withdrawal"]
+        P["Publication"]
+        D["Tool defect"]
+    end
+    subgraph CORE["core/ — the engine, zero domain vocabulary"]
+        T["Traversal<br/>blast radius, classes"]
+        POL["Policy<br/>versioned, hashed"]
+        LOG["Log + evidence<br/>append-only, replayable"]
+    end
+    NF -- extractors --> G["One stitched graph<br/>every run, one JSON"]
+    PA --> DOM["domains/<br/>donor &rarr; graph nodes"]
+    G --> CORE
+    DOM --> CORE
+    CORE --> PLAN["Remediation plan<br/>delete, re-run, disclose"]
+    CORE --> GATE["CI gate<br/>blocks bad inputs"]
+    CORE --> AUD["Dashboard + MCP<br/>answers with citations"]
+```
+
 ```
 core/       traversal, contribution vocabulary, versioned policy, event log,
             evidence bundles, the gate, the query surface. Zero domain
