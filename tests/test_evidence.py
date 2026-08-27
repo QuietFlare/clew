@@ -21,9 +21,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import evidence
-from core import eventlog
-from core import policy as policy_module
+from clew.core import evidence
+from clew.core import eventlog
+from clew.core import policy as policy_module
 
 ROOT = Path(__file__).resolve().parent.parent
 T0 = "2026-01-01T00:00:00+00:00"
@@ -336,7 +336,7 @@ class TestEndToEnd(BundleTestCase):
 
     def run_cli(self, *args):
         return subprocess.run(
-            [sys.executable, str(ROOT / "evidence.py"), *args],
+            [sys.executable, "-m", "clew.evidence", *args],
             capture_output=True, text=True)
 
     def test_build_then_verify(self):

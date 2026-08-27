@@ -1,10 +1,10 @@
 """
 Clew — the remediation policy, from the command line.
 
-    python3 rulebook.py show
-    python3 rulebook.py export --out policy_v1.json
-    python3 rulebook.py check policy_v1.json
-    python3 rulebook.py register --dsn "$CLEW_DSN" --actor qa.lead@example.org
+    clew rulebook show
+    clew rulebook export --out policy_v1.json
+    clew rulebook check policy_v1.json
+    clew rulebook register --dsn "$CLEW_DSN" --actor qa.lead@example.org
 
 WHY REGISTER A POLICY IN THE EVENT LOG
 --------------------------------------
@@ -26,9 +26,8 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import policy
+from clew.core import policy
 
 ADOPTED = "PolicyAdopted"
 
@@ -159,7 +158,7 @@ def cmd_diff(args):
 
 
 def cmd_register(args):
-    from core import eventlog
+    from clew.core import eventlog
 
     active = selected(args)
     stamp = policy.identify(active)
@@ -176,7 +175,7 @@ def cmd_register(args):
     print(f"  log hash        {entry['hash']}")
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Inspect, validate and record Clew's remediation policy.")
     source = parser.add_mutually_exclusive_group()
@@ -209,7 +208,7 @@ def main():
                           help="when it takes effect (defaults to now)")
     register.set_defaults(run=cmd_register)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.command == "register" and not args.dsn:
         raise SystemExit("no connection string: pass --dsn or set CLEW_DSN")
     try:

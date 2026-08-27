@@ -129,12 +129,12 @@ def extract(crate_path):
     return {"tasks": tasks, "edges": edges, "outputs": outputs}
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Build a Clew graph from a Workflow Run RO-Crate (nf-prov).")
     parser.add_argument("--crate", required=True, help="ro-crate-metadata.json path")
     parser.add_argument("--json-out", help="path to write the graph as JSON")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     graph = extract(args.crate)
     known = set(graph["tasks"])

@@ -11,7 +11,7 @@ witness — inputs are typed, externals carry checksums, and each task names
 the exact workflow run it belongs to, so filtering one run out of a shared
 store is a field lookup instead of a heuristic.
 
-Both extractors emit the SAME graph JSON. Everything downstream (blast.py,
+Both extractors emit the SAME graph JSON. Everything downstream (clew impact,
 core/, domains/) neither knows nor cares which one produced its input.
 
 THE STORE, AS FOUND ON DISK (lineage/v1beta1)
@@ -42,8 +42,8 @@ semantics are modelled properly.
 
 USAGE
 -----
-    python3 extract_from_lineage_store.py --store /path/to/.lineage --list-runs
-    python3 extract_from_lineage_store.py \
+    clew extract-store --store /path/to/.lineage --list-runs
+    clew extract-store \
         --store /path/to/.lineage --run tender_mccarthy --json-out graph.json
 """
 
@@ -187,7 +187,7 @@ def task_outputs(store, task_hash):
 
 def extract(store, run_hash):
     """
-    Build the graph for one run, in the exact schema extract_lineage.py
+    Build the graph for one run, in the exact schema clew extract-work
     emits: {"tasks": {...}, "edges": [...], "outputs": {...}} — plus
     "output_details", which only this adapter can provide: per-output size
     (and recorded checksum) from the FileOutput records. That is what lets
@@ -235,7 +235,7 @@ def extract(store, run_hash):
             "output_details": output_details}
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Build a Clew graph from a Nextflow .lineage store.")
     parser.add_argument("--store", required=True, help="path to the .lineage directory")
@@ -243,7 +243,7 @@ def main():
                                       "(default: most recent run)")
     parser.add_argument("--list-runs", action="store_true", help="list recorded runs and exit")
     parser.add_argument("--json-out", help="path to write the graph as JSON")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     runs = load_history(args.store)
 

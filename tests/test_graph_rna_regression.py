@@ -13,12 +13,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import blast_radius as core
-from domains import rnaseq
+from clew.core import blast_radius as core
+from clew.domains import rnaseq
 
 ROOT = Path(__file__).resolve().parent.parent
-GRAPH = ROOT / "graph_rna.json"
-SHEET = ROOT / "samplesheets" / "rnaseq_yeast.csv"
+GRAPH = ROOT / "clew" / "data" / "graph_rna.json"
+SHEET = ROOT / "clew" / "data" / "samplesheets" / "rnaseq_yeast.csv"
 
 
 @unittest.skipUnless(GRAPH.exists() and SHEET.exists(), "rnaseq graph not present")

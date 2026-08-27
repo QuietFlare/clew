@@ -13,9 +13,9 @@ in it opens a database connection.
 import json
 from pathlib import Path
 
-from core import evidence
-from core import eventlog
-from core import query
+from clew.core import evidence
+from clew.core import eventlog
+from clew.core import query
 
 
 def load_store(bundle_root):
@@ -144,6 +144,6 @@ def check_integrity(bundle):
             "that every verdict re-derives. It says nothing about whether the "
             "facts sealed into it were true.",
             "a signature, if present, is not checked here: that needs an "
-            "allowed_signers file the reader trusts. Use `evidence.py verify "
+            "allowed_signers file the reader trusts. Use `clew evidence verify "
             "--allowed-signers`.",
         ])

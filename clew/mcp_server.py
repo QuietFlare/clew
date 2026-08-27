@@ -1,7 +1,7 @@
 """
 Clew — an MCP server, so an auditor can ask questions in their own words.
 
-    python3 mcp_server.py --bundles /path/to/bundles
+    clew mcp --bundles /path/to/bundles
 
 Speaks MCP over stdin/stdout as newline-delimited JSON-RPC 2.0. No SDK, no
 dependency: the protocol is small enough that adding one would cost more than
@@ -29,7 +29,7 @@ READ-ONLY BY CONSTRUCTION
 -------------------------
 No tool here writes anything, and the server never opens a connection that
 could. It reads sealed bundles from a directory. Recording a fact is
-logbook.py, run by a person with an actor identity, and it stays that way —
+clew log, run by a person with an actor identity, and it stays that way —
 an auditor's chat session is the last place a new fact should be able to
 enter a compliance record.
 
@@ -53,10 +53,9 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import query
-from core.bundlestore import (check_integrity, conflict_coverage, find_bundle,
+from clew.core import query
+from clew.core.bundlestore import (check_integrity, conflict_coverage, find_bundle,
                               load_store, plan_of, policy_of, with_conflicts)
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -402,12 +401,12 @@ def handle(message, store):
                                       "message": f"unknown method {method!r}"})
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Serve Clew evidence to an MCP client. Read-only.")
     parser.add_argument("--bundles", required=True, metavar="DIR",
                         help="a directory of evidence bundles, or one bundle")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     store = load_store(args.bundles)
     print(f"clew: {len(store[0])} bundles, {len(store[1])} log entries, "

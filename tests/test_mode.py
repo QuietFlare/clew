@@ -14,15 +14,15 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def run_blast(*extra):
-    cmd = [sys.executable, str(ROOT / "blast.py"),
+    cmd = [sys.executable, "-m", "clew.impact",
            "--pipeline", "viralrecon",
-           "--graph", str(ROOT / "graph_vr.json"),
-           "--samplesheet", str(ROOT / "samplesheets" / "viralrecon_coguk.csv"),
+           "--graph", str(ROOT / "clew" / "data" / "graph_vr.json"),
+           "--samplesheet", str(ROOT / "clew" / "data" / "samplesheets" / "viralrecon_coguk.csv"),
            *extra]
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
-@unittest.skipUnless((ROOT / "graph_vr.json").exists(), "viralrecon graph not present")
+@unittest.skipUnless((ROOT / "clew" / "data" / "graph_vr.json").exists(), "viralrecon graph not present")
 class TestMode(unittest.TestCase):
     def plan(self, *extra):
         out = run_blast(*extra, "--json", "-").stdout

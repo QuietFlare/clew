@@ -4,13 +4,13 @@ Clew — what must happen downstream when something upstream turns out invalid.
 Three triggers, one engine:
 
     # consent withdrawal (a source is removed)
-    python3 blast.py --graph graph5.json --samplesheet donors.csv --donor donor_003
+    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --donor donor_003
 
     # tool defect (every artifact a container touched is suspect)
-    python3 blast.py --graph graph5.json --samplesheet donors.csv --container gatk4
+    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --container gatk4
 
     # reference / load-bearing input update
-    python3 blast.py --graph graph5.json --samplesheet donors.csv --input genome.fasta
+    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --input genome.fasta
 
     # externally-asserted facts (publication) change the verdicts
     ... --donor donor_003 --assertions assertions.json
@@ -46,14 +46,13 @@ from pathlib import Path
 
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import blast_radius as core
-from core import contribution
-from core import policy
-from core.policy import UNDETERMINED
-from domains import rnaseq, sarek, viralrecon
-from domains.nfcore import index_results, published_copies
+from clew.core import blast_radius as core
+from clew.core import contribution
+from clew.core import policy
+from clew.core.policy import UNDETERMINED
+from clew.domains import rnaseq, sarek, viralrecon
+from clew.domains.nfcore import index_results, published_copies
 
 # Which adapter translates between this pipeline's vocabulary and core's.
 # Adding a pipeline = adding a module in domains/ and one entry here.
@@ -231,7 +230,7 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
     }
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Compute a blast radius and remediation plan.")
     parser.add_argument("--graph", required=True, help="graph JSON from an extractor")
     parser.add_argument("--samplesheet", required=True, help="nf-core samplesheet CSV")
@@ -268,7 +267,7 @@ def main():
                         help="the run's published results directory; plan items "
                              "then name the published copies of each artifact "
                              "(needs a graph from the lineage store adapter)")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     domain = DOMAINS[args.pipeline]
     try:

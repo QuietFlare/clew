@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import extract_lineage as ex
+from clew import extract_lineage as ex
 
 
 class TestTargetToHash(unittest.TestCase):

@@ -12,12 +12,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import blast_radius as core
-from domains import sarek
+from clew.core import blast_radius as core
+from clew.domains import sarek
 
 ROOT = Path(__file__).resolve().parent.parent
-GRAPH = ROOT / "graph5.json"
-SHEET = ROOT / "donors.csv"
+GRAPH = ROOT / "clew" / "data" / "graph5.json"
+SHEET = ROOT / "clew" / "data" / "donors.csv"
 
 
 @unittest.skipUnless(GRAPH.exists(), "real-run graph not present")

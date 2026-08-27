@@ -25,9 +25,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Clew
-        run: |
-          git clone --depth 1 https://github.com/YOUR-ORG/clew.git .clew
-          pip install -r .clew/requirements.txt
+        run: pip install clew-lineage
 
       - name: Check the inputs against the log
         env:
@@ -36,10 +34,10 @@ jobs:
           # put one that can.
           CLEW_DSN: ${{ secrets.CLEW_AUDIT_DSN }}
         run: |
-          python3 .clew/gate.py \
+          clew gate \
             --pipeline sarek \
             --samplesheet samplesheet.csv \
-            --gate-policy .clew/gate-policy.example.json \
+            --gate-policy gate-policy.json \
             --out clew-evidence/
 
       # always(): the evidence of a REFUSAL matters at least as much as the
@@ -64,9 +62,9 @@ jobs:
       #   env:
       #     CLEW_DSN: ${{ secrets.CLEW_WRITER_DSN }}
       #   run: |
-      #     python3 .clew/gate.py --pipeline sarek \
+      #     clew gate --pipeline sarek \
       #       --samplesheet samplesheet.csv \
-      #       --gate-policy .clew/gate-policy.example.json \
+      #       --gate-policy gate-policy.json \
       #       --out clew-evidence/ --seal-into-log \
       #       --actor "github-actions@${{ github.repository }}"
 
@@ -79,8 +77,8 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - run: |
-  #         python3 .clew/blast.py --pipeline sarek --graph graph.json \
+  #         clew impact --pipeline sarek --graph graph.json \
   #           --samplesheet samplesheet.csv --donor "$SUBJECT" \
   #           --work-root work/ --json plan.json
-  #         python3 .clew/evidence.py build --out clew-evidence/ \
+  #         clew evidence build --out clew-evidence/ \
   #           --plan plan.json --input graph.json --input samplesheet.csv

@@ -10,3 +10,8 @@ graph.json
 # bundles and gate results written by the examples
 clew-evidence/
 bundle/
+
+# packaging build artifacts
+build/
+dist/
+*.egg-info/

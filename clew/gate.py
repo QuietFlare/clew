@@ -1,7 +1,7 @@
 """
 Clew — the pre-flight gate. Compliance as a build check, not a PDF.
 
-    python3 gate.py --pipeline sarek --samplesheet samplesheet.csv \
+    clew gate --pipeline sarek --samplesheet samplesheet.csv \
         --dsn "$CLEW_DSN" --block-on Withdrawn --clear-on Reinstated \
         --out bundle/
 
@@ -42,11 +42,10 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import evidence
-from core import gate as core_gate
-from domains import rnaseq, sarek, viralrecon
+from clew.core import evidence
+from clew.core import gate as core_gate
+from clew.domains import rnaseq, sarek, viralrecon
 
 DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
 
@@ -89,7 +88,7 @@ def load_gate_policy(args):
             "clearing": sorted(set(clearing))}
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Stop a pipeline run whose inputs are not permitted.")
     parser.add_argument("--samplesheet", required=True)
@@ -116,7 +115,7 @@ def main():
                         help="who ran the check, for --out --seal-into-log")
     parser.add_argument("--seal-into-log", action="store_true",
                         help="record the gate result back into the log")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     policy = load_gate_policy(args)
     domain = DOMAINS[args.pipeline]
@@ -128,7 +127,7 @@ def main():
             "log there are no facts to check against, and a gate that cannot "
             "check must not pass.")
     try:
-        from core import eventlog
+        from clew.core import eventlog
         conn = eventlog.connect(args.dsn)
         entries = eventlog.read(conn)
         log_head = eventlog.head(conn)
@@ -240,7 +239,7 @@ def seal(args, result, policy, entries, log_head):
     print(f"  bundle hash  {digest}")
 
     if args.seal_into_log:
-        from core import eventlog
+        from clew.core import eventlog
         conn = eventlog.connect(args.dsn)
         entry = eventlog.append(
             conn, event_type=CHECKED, subject=Path(args.samplesheet).name,

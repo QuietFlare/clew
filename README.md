@@ -51,28 +51,35 @@ and ends inside another, crossing at a checkable published path. Engine
 lineage sees each run in isolation; this graph is the part nobody else has.
 
 ```bash
-python3 stitch_graphs.py --graph rna=graph_rna.json --results rna=<rnaseq results dir> \
-    --graph da=graph_da.json --out graph_chain.json
+clew stitch --graph rna=clew/data/graph_rna.json --results rna=<rnaseq results dir> \
+    --graph da=clew/data/graph_da.json --out graph_chain.json
 ```
 
 ```bash
-python3 blast.py --pipeline rnaseq --graph graph_chain.json \
-    --samplesheet samplesheets/rnaseq_yeast.csv --donor SRR10441036_cox4d
+clew impact --pipeline rnaseq --graph clew/data/graph_chain.json \
+    --samplesheet clew/data/samplesheets/rnaseq_yeast.csv --donor SRR10441036_cox4d
 ```
 
 ## See it in two minutes
 
-No dependencies beyond Python 3.11 — the demo, the extractors and
-`blast.py` are stdlib-only and stay that way. The repo ships a real graph
-extracted from an nf-core/sarek run with 5 synthetic donors, 81 tasks,
-344 edges.
+```bash
+pip install clew-lineage
+```
 
 ```bash
-python3 demo.py
+clew demo
 ```
 
 It answers three questions, one per audience, then crosses a run boundary —
-all from the same engine.
+all from the same engine, over a real graph that ships with the package:
+an nf-core/sarek run with 5 synthetic donors, 81 tasks, 344 edges.
+
+The base install has no dependencies beyond Python 3.11 — the demo, the
+extractors and `clew impact` are stdlib-only and stay that way. Only the
+event log needs a database driver: `pip install 'clew-lineage[log]'`.
+
+Prefer not to install anything? Clone the repo and run `python3 -m clew demo`
+from its root; every command below also works as `python3 -m clew ...`.
 
 ## Use it on your own run
 
@@ -96,11 +103,11 @@ where you put that setting; it only reads the store the engine writes.
 Build the graph from it:
 
 ```bash
-python3 extract_from_lineage_store.py --store /path/to/.lineage --list-runs
+clew extract-store --store /path/to/.lineage --list-runs
 ```
 
 ```bash
-python3 extract_from_lineage_store.py --store /path/to/.lineage \
+clew extract-store --store /path/to/.lineage \
     --run <run-name> --json-out graph.json
 ```
 
@@ -114,7 +121,7 @@ publish crates for journals or archives have lineage on disk without
 knowing it:
 
 ```bash
-python3 extract_from_rocrate.py --crate ro-crate-metadata.json --json-out graph.json
+clew extract-crate --crate ro-crate-metadata.json --json-out graph.json
 ```
 
 A crate records what ran, not how to re-run it: no script, no workdir. So
@@ -128,7 +135,7 @@ and those symlinks accidentally record the entire history of the run. No
 pipeline modification, works on any Nextflow version:
 
 ```bash
-python3 extract_lineage.py \
+clew extract-work \
     --jsonl /path/to/weblog/<run-id>.jsonl \
     --work  /path/to/work \
     --json-out graph.json
@@ -199,7 +206,7 @@ event, not a plugin.
 ### Pipeline engineer: "We bumped the reference genome. What must be re-run?"
 
 ```bash
-python3 blast.py --graph graph5.json --samplesheet donors.csv --input genome.fasta
+clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --input genome.fasta
 ```
 
 On the sample run: genome.fasta was consumed directly by 41 tasks, and 72 of
@@ -209,7 +216,7 @@ with the derivation chain printed as evidence for every claim.
 ### QA: "A defect was reported in a GATK4 container. What did it produce?"
 
 ```bash
-python3 blast.py --graph graph5.json --samplesheet donors.csv --container gatk4
+clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --container gatk4
 ```
 
 On the sample run: 16 tasks ran the container, 68 of 81 tasks are suspect.
@@ -219,8 +226,8 @@ source, so artifacts are rebuilt rather than deleted.
 ### Compliance: "A donor withdrew consent. What happens now?"
 
 ```bash
-python3 blast.py --graph graph5.json --samplesheet donors.csv \
-    --donor donor_003 --assertions assertions.json
+clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv \
+    --donor donor_003 --assertions clew/data/assertions.json
 ```
 
 On the sample run: 16 of 81 tasks are affected. The 15 that exist only
@@ -265,7 +272,7 @@ different host, a CI runner, a laptop reading a graph someone emailed over.
 So Clew does not check unless you tell it where to look:
 
 ```bash
-python3 blast.py --graph graph.json --samplesheet samplesheet.csv \
+clew impact --graph graph.json --samplesheet samplesheet.csv \
     --donor donor_003 --work-root /path/to/work
 ```
 
@@ -321,12 +328,12 @@ pip install 'psycopg[binary]'
 ```
 
 ```bash
-python3 logbook.py --dsn "$CLEW_ADMIN_DSN" init \
+clew log --dsn "$CLEW_ADMIN_DSN" init \
     --writer-password "$W" --auditor-password "$A"
 ```
 
 ```bash
-python3 logbook.py --dsn "$CLEW_DSN" append --type ContainerDefectReported \
+clew log --dsn "$CLEW_DSN" append --type ContainerDefectReported \
     --subject "gatk4:4.2.1" --actor qa.lead@example.org \
     --effective-from 2026-08-10T00:00:00+00:00 \
     --body '{"defect":"BQSR miscalibration","reference":"JIRA QA-4471"}'
@@ -359,7 +366,7 @@ otherwise empty the log in one statement.
 Verification needs no database and no driver:
 
 ```bash
-python3 logbook.py --dsn "$CLEW_AUDIT_DSN" verify
+clew log --dsn "$CLEW_AUDIT_DSN" verify
 ```
 
 ```
@@ -389,7 +396,7 @@ is unfalsifiable, which is the same as worthless.
 So the table is data, with a version and a content hash:
 
 ```bash
-python3 rulebook.py show
+clew rulebook show
 ```
 
 ```
@@ -407,7 +414,7 @@ wildcard. That is not a detail: it is the entire difference between the two
 shipped versions.
 
 ```bash
-python3 rulebook.py diff v1 v2
+clew rulebook diff v1 v2
 ```
 
 ```
@@ -434,8 +441,8 @@ disk check. Under v2 a published artifact resolves without one, because the
 answer genuinely does not depend on it:
 
 ```bash
-python3 blast.py --graph graph5.json --samplesheet donors.csv \
-    --donor donor_003 --assertions assertions.json --policy v1
+clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv \
+    --donor donor_003 --assertions clew/data/assertions.json --policy v1
 ```
 
 ```
@@ -450,12 +457,12 @@ under today's. A semantic change is a new version, never an edit — the
 shipped hashes are frozen as literals in the test suite, so editing one fails
 the build and says to add a version instead.
 
-**Adoption is a logged fact.** `rulebook.py register` writes a
+**Adoption is a logged fact.** `clew rulebook register` writes a
 `PolicyAdopted` event carrying the whole table, not a pointer to it — a
 pointer to code is worthless six months and four releases later:
 
 ```bash
-python3 rulebook.py register --dsn "$CLEW_DSN" --actor qa.lead@example.org
+clew rulebook register --dsn "$CLEW_DSN" --actor qa.lead@example.org
 ```
 
 **Validation refuses, it does not warn.** A policy naming an unknown action,
@@ -491,13 +498,13 @@ third party check it without trusting you, without your database, and without
 your code being the thing that says so.
 
 ```bash
-python3 evidence.py build --out bundle/ --plan plan.json --dsn "$CLEW_DSN" \
+clew evidence build --out bundle/ --plan plan.json --dsn "$CLEW_DSN" \
     --input graph.json --input samplesheet.csv --seal-into-log \
     --actor qa.lead@example.org
 ```
 
 ```bash
-python3 evidence.py verify bundle/
+clew evidence verify bundle/
 ```
 
 `verify` reads a directory. **No database, no network, no credentials, no
@@ -540,14 +547,14 @@ bundle hash back into the log. Neither can be rolled back without
 contradicting the other:
 
 ```bash
-python3 evidence.py witness bundle/ --dsn "$CLEW_DSN"
+clew evidence witness bundle/ --dsn "$CLEW_DSN"
 ```
 
 ```
-$ logbook.py verify              # the log alone, after entries 2-3 were deleted
+$ `clew log` verify              # the log alone, after entries 2-3 were deleted
 OK  1 entries, chain intact      # a short chain is a valid chain
 
-$ evidence.py witness bundle/
+$ clew evidence witness bundle/
 FAIL witness   the log has no entry at seq 2, but this bundle recorded one.
                Entries have been removed from the end since this bundle was issued.
 ```
@@ -568,8 +575,8 @@ and uses `ssh-keygen -Y`, which ships with OpenSSH and whose keys your
 organisation already manages:
 
 ```bash
-python3 evidence.py sign bundle/ --key ~/.ssh/id_ed25519
-python3 evidence.py verify bundle/ --allowed-signers allowed_signers
+clew evidence sign bundle/ --key ~/.ssh/id_ed25519
+clew evidence verify bundle/ --allowed-signers allowed_signers
 ```
 
 A signature from a key not in `allowed_signers` fails as *"by someone this
@@ -586,12 +593,12 @@ question, before anything runs: is any of this material something we are not
 allowed to use?
 
 ```bash
-python3 gate.py --pipeline sarek --samplesheet samplesheet.csv \
+clew gate --pipeline sarek --samplesheet samplesheet.csv \
     --dsn "$CLEW_DSN" --gate-policy gate-policy.json --out clew-evidence/
 ```
 
 ```
-CLEW GATE  donors.csv
+CLEW GATE  clew/data/donors.csv
   blocking on     ConsentWithdrawn, QCFailed, SampleContaminated
   cleared by      ConsentReinstated, QCPassed
   log head        seq 5  0a9f436b2c7dca66
@@ -648,7 +655,7 @@ back-date.
 Which makes "was this run permitted *when we ran it*?" answerable:
 
 ```bash
-python3 gate.py ... --as-of 2026-05-01
+clew gate ... --as-of 2026-05-01
 ```
 
 ```
@@ -663,7 +670,7 @@ something new. This is what the log's two clocks were for.
 
 ### It emits its own evidence
 
-`--out` seals the result into a bundle, and `evidence.py verify` re-derives
+`--out` seals the result into a bundle, and `clew evidence verify` re-derives
 the gate decision from the bundled facts and the bundled gate policy — the
 same discipline as replaying a remediation plan:
 
@@ -674,7 +681,7 @@ same discipline as replaying a remediation plan:
 ```
 
 The shipped workflow at
-[.github/workflows/clew-gate.yml](.github/workflows/clew-gate.yml) uploads
+[examples/clew-gate.yml](examples/clew-gate.yml) uploads
 that bundle with `if: always()`, because the evidence of a *refusal* matters
 at least as much as the evidence of a pass — an artifact that only survives
 on green builds documents the days nothing was wrong.
@@ -683,7 +690,7 @@ The gate runs with **read-only credentials**. It asks questions; it has no
 reason to hold a role that can write facts, and CI is the last place to put
 one that can.
 
-Clew ships [gate-policy.example.json](gate-policy.example.json) as a
+Clew ships [gate-policy.example.json](clew/data/gate-policy.example.json) as a
 template, not a recommendation. Which of your event types should stop work is
 yours to author and yours to defend.
 
@@ -698,7 +705,7 @@ which was wrong. A test asserts neither surface imports the other.
 ### A page you can open from a USB stick
 
 ```bash
-python3 dashboard.py --bundles /path/to/bundles --out evidence.html
+clew dashboard --bundles /path/to/bundles --out evidence.html
 ```
 
 One self-contained HTML file. No server, no network, no scripts, prints
@@ -718,7 +725,7 @@ every panel names the bundle hash it was drawn from.
 ### An MCP server, so an auditor can just ask
 
 ```bash
-python3 mcp_server.py --bundles /path/to/bundles
+clew mcp --bundles /path/to/bundles
 ```
 
 MCP over stdin/stdout, stdlib JSON-RPC, no SDK. Point any MCP client at it:
@@ -741,9 +748,9 @@ prompt. A model cannot talk the tools into a different answer.
 
 **Read-only by construction.** No tool writes anything and the server never
 opens a database connection at all — it reads sealed bundles. Recording a
-fact is `logbook.py`, run by a person with an actor identity, and an
+fact is ``clew log``, run by a person with an actor identity, and an
 auditor's chat session is the last place a new fact should be able to enter a
-compliance record. There is a test asserting `mcp_server.py` contains no
+compliance record. There is a test asserting the server module contains no
 connection call, so a future convenience has to break it to land.
 
 **Every answer carries its citations**, structurally — `query.answer()`
@@ -835,14 +842,14 @@ flowchart TB
 ```
 
 ```
-core/       traversal, contribution vocabulary, versioned policy, event log,
+clew/core/     traversal, contribution vocabulary, versioned policy, event log,
             evidence bundles, the gate, the query surface. Zero domain
             vocabulary.
-domains/    the layer allowed to know about sarek, samplesheets, donors.
-tests/      288 tests, stdlib unittest.
+clew/domains/  the layer allowed to know about sarek, samplesheets, donors.
+tests/         288 tests, stdlib unittest.
 ```
 
-The boundary is enforced by a grep: `core/` must never mention a sample, a
+The boundary is enforced by a grep: `clew/core/` must never mention a sample, a
 donor, a consent, or a workflow engine, and must import nothing from
 `domains/`. Adding a new domain (say, AI training data with opt-out
 semantics) means adding a directory, not editing core. That grep is

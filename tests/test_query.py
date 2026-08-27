@@ -18,8 +18,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import policy as policy_module
-from core import query
+from clew.core import policy as policy_module
+from clew.core import query
 
 T = "2026-01-01T00:00:00+00:00"
 

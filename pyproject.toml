@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clew-lineage"
+version = "0.1.0"
+description = "Computes what must happen downstream when something upstream goes bad: rebuilds Nextflow run lineage and produces a remediation plan you can hand to an auditor"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "QuietFlare" }]
+keywords = ["lineage", "provenance", "nextflow", "nf-core", "impact-analysis", "compliance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+# The base install is stdlib-only on purpose: someone evaluating the
+# argument should not have to install anything.
+dependencies = []
+
+[project.optional-dependencies]
+# Only the event log needs a driver. Everything else stays stdlib.
+log = ["psycopg[binary]>=3.1"]
+
+[project.urls]
+Homepage = "https://github.com/QuietFlare/clew"
+Source = "https://github.com/QuietFlare/clew"
+Issues = "https://github.com/QuietFlare/clew/issues"
+
+[project.scripts]
+clew = "clew.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["clew*"]
+
+[tool.setuptools.package-data]
+clew = ["data/*.json", "data/*.csv", "data/samplesheets/*.csv"]

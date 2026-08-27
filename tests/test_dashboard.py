@@ -27,11 +27,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import dashboard
-import mcp_server
-from core import evidence
-from core import eventlog
-from core import policy as policy_module
+from clew import dashboard
+from clew import mcp_server
+from clew.core import evidence
+from clew.core import eventlog
+from clew.core import policy as policy_module
 
 T = "2026-01-01T00:00:00+00:00"
 
@@ -225,8 +225,7 @@ class TestCli(DashboardTestCase):
         empty = Path(self.tmp) / "empty"
         empty.mkdir()
         result = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve().parent.parent
-                                 / "dashboard.py"),
+            [sys.executable, "-m", "clew.dashboard",
              "--bundles", str(empty), "--out", str(Path(self.tmp) / "x.html")],
             capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
@@ -242,8 +241,8 @@ class TestSurfacesShareOneStore(unittest.TestCase):
 
     def test_neither_surface_imports_the_other(self):
         root = Path(__file__).resolve().parent.parent
-        dash = (root / "dashboard.py").read_text()
-        served = (root / "mcp_server.py").read_text()
+        dash = (root / "clew" / "dashboard.py").read_text()
+        served = (root / "clew" / "mcp_server.py").read_text()
         self.assertNotRegex(
             dash, re.compile(r"^\s*(from|import)\s+mcp_server", re.M),
             "dashboard.py imports mcp_server.py")

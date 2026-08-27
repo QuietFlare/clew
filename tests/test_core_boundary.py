@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-CORE = Path(__file__).resolve().parent.parent / "core"
+CORE = Path(__file__).resolve().parent.parent / "clew" / "core"
 
 # Assembled rather than written out; see the module docstring.
 FORBIDDEN = [

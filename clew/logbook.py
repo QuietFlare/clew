@@ -2,17 +2,17 @@
 Clew — the event log, from the command line.
 
     # once, as the database owner: table, guards, and the two roles
-    python3 logbook.py --dsn "$CLEW_ADMIN_DSN" init \
+    clew log --dsn "$CLEW_ADMIN_DSN" init \
         --writer-password "$W" --auditor-password "$A"
 
     # thereafter, as the writer role, which holds INSERT and SELECT only
-    python3 logbook.py --dsn "$CLEW_DSN" append --type ContainerDefectReported \
+    clew log --dsn "$CLEW_DSN" append --type ContainerDefectReported \
         --subject "gatk4:4.2.1" --actor qa.lead@example.org \
         --effective-from 2026-08-10T00:00:00+00:00 \
         --body '{"defect":"BQSR miscalibration","reference":"JIRA QA-4471"}'
 
     # by anyone, including someone who does not trust us
-    python3 logbook.py --dsn "$CLEW_AUDIT_DSN" verify
+    clew log --dsn "$CLEW_AUDIT_DSN" verify
 
 THREE DSNs, THREE IDENTITIES
 ----------------------------
@@ -21,7 +21,7 @@ the auditor cannot write. If the pipeline runs as the owner, the separation
 that makes this log worth having is gone, and no amount of Clew code can put
 it back. Use different credentials, and keep the owner's out of CI.
 
-WHY A SEPARATE ENTRY POINT FROM blast.py
+WHY A SEPARATE ENTRY POINT FROM clew impact
 ----------------------------------------
 Recording a fact and computing over it are different acts by different people
 at different times. A coordinator enters a withdrawal months before anyone
@@ -43,9 +43,8 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import eventlog
+from clew.core import eventlog
 
 
 def cmd_init(conn, args):
@@ -117,7 +116,7 @@ def cmd_head(conn, args):
     print(f"{current['seq']}  {current['hash']}")
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Append to and verify Clew's append-only event log.")
     parser.add_argument("--dsn", default=os.environ.get("CLEW_DSN"),
@@ -156,7 +155,7 @@ def main():
     tip = sub.add_parser("head", help="print the current head seq and hash")
     tip.set_defaults(run=cmd_head)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if not args.dsn:
         raise SystemExit("no connection string: pass --dsn or set CLEW_DSN")
     try:

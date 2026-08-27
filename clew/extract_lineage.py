@@ -29,7 +29,7 @@ the filesystem records. Traversing downstream means inverting them.
 
 USAGE
 -----
-    python3 extract_lineage.py \
+    clew extract-work \
         --jsonl /path/to/Petri/logs/<run-id>.jsonl \
         --work  /path/to/Petri/work
 """
@@ -229,12 +229,12 @@ def extract(jsonl_path, work_root):
     return tasks, edges, outputs, missing_dirs
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Rebuild Nextflow lineage from work/ symlinks.")
     parser.add_argument("--jsonl", required=True, help="Petri weblog JSONL for one run")
     parser.add_argument("--work", required=True, help="Nextflow work/ directory")
     parser.add_argument("--json-out", help="Optional path to write the graph as JSON")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     tasks, edges, outputs, missing = extract(args.jsonl, args.work)
 

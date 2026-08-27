@@ -2,15 +2,15 @@
 Clew — build and check evidence bundles.
 
     # seal a plan, the policy it used, and the log entries behind it
-    python3 evidence.py build --out bundle/ --plan plan.json \
+    clew evidence build --out bundle/ --plan plan.json \
         --dsn "$CLEW_DSN" --input graph.json --input donors.csv
 
     # anyone, anywhere, with Python and nothing else
-    python3 evidence.py verify bundle/
+    clew evidence verify bundle/
 
     # countersigning is delegated, not invented
-    python3 evidence.py sign bundle/ --key ~/.ssh/id_ed25519
-    python3 evidence.py verify bundle/ --allowed-signers allowed_signers
+    clew evidence sign bundle/ --key ~/.ssh/id_ed25519
+    clew evidence verify bundle/ --allowed-signers allowed_signers
 
 WHY THE VERIFIER TAKES NO CREDENTIALS
 -------------------------------------
@@ -21,7 +21,7 @@ any step that routes through the producer's infrastructure defeats that.
 
 WHY BUILDING IS SEPARATE FROM COMPUTING
 ---------------------------------------
-blast.py answers a question. This packages an answer that was already given.
+clew impact answers a question. This packages an answer that was already given.
 Keeping them apart means a bundle can only ever contain a plan that was
 produced independently — sealing cannot quietly recompute something on more
 convenient terms on its way into the folder.
@@ -35,10 +35,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import evidence
-from core import policy as policy_module
+from clew.core import evidence
+from clew.core import policy as policy_module
 
 SEALED = "BundleSealed"
 
@@ -49,7 +48,7 @@ def load_json(path):
 
 def open_log(dsn):
     """Connect, or fail with something an operator can act on."""
-    from core import eventlog
+    from clew.core import eventlog
     try:
         return eventlog.connect(dsn)
     except ImportError:
@@ -93,7 +92,7 @@ def cmd_build(args):
 
     events, log_head = [], {"seq": 0, "hash": "0" * 64}
     if args.dsn:
-        from core import eventlog
+        from clew.core import eventlog
         conn = open_log(args.dsn)
         log_head = eventlog.head(conn)
         events = eventlog.raw(conn, since=args.since)
@@ -158,7 +157,7 @@ def cmd_build(args):
     if args.seal_into_log:
         if not args.dsn:
             raise SystemExit("--seal-into-log needs --dsn")
-        from core import eventlog
+        from clew.core import eventlog
         conn = open_log(args.dsn)
         entry = eventlog.append(
             conn, event_type=SEALED, subject=digest, actor=args.actor,
@@ -195,7 +194,7 @@ def cmd_verify(args):
             "contents", None,
             "not checked: the files themselves do not verify"))
     else:
-        from core import eventlog
+        from clew.core import eventlog
 
         events = load_json(directory / "events.json") \
             if "events.json" in sealed else []
@@ -260,7 +259,7 @@ def cmd_witness(args):
     folding it into `verify` would make the credential-free property look
     optional when it is the whole design.
     """
-    from core import eventlog
+    from clew.core import eventlog
 
     manifest = load_json(Path(args.bundle) / evidence.MANIFEST)
     conn = open_log(args.dsn)
@@ -351,7 +350,7 @@ def cmd_sign(args):
     return 0
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Build and check Clew evidence bundles.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -359,7 +358,7 @@ def main():
     build = sub.add_parser("build", help="seal a plan into a bundle")
     build.add_argument("--out", required=True, metavar="DIR")
     build.add_argument("--plan", required=True,
-                       help="plan JSON from blast.py --json")
+                       help="plan JSON from clew impact --json")
     build.add_argument("--policy", metavar="VERSION|PATH",
                        help="the table the plan was computed under; inferred "
                             "from the plan when it names a shipped version")
@@ -396,7 +395,7 @@ def main():
     sign.add_argument("--key", required=True, help="private key to sign with")
     sign.set_defaults(run=cmd_sign)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     raise SystemExit(args.run(args) or 0)
 
 

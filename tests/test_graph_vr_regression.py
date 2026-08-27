@@ -13,12 +13,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import blast_radius as core
-from domains import viralrecon
+from clew.core import blast_radius as core
+from clew.domains import viralrecon
 
 ROOT = Path(__file__).resolve().parent.parent
-GRAPH = ROOT / "graph_vr.json"
-SHEET = ROOT / "samplesheets" / "viralrecon_coguk.csv"
+GRAPH = ROOT / "clew" / "data" / "graph_vr.json"
+SHEET = ROOT / "clew" / "data" / "samplesheets" / "viralrecon_coguk.csv"
 
 
 @unittest.skipUnless(GRAPH.exists() and SHEET.exists(), "viralrecon graph not present")

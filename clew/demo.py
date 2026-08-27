@@ -1,7 +1,7 @@
 """
 Clew — the whole argument in one command, on one real pipeline run.
 
-    python3 demo.py
+    clew demo
 
 Three questions, three audiences, one engine. Every number below is computed
 live from graph5.json — a real nf-core/sarek run (5 synthetic donors,
@@ -14,12 +14,11 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import blast_radius as core
-from core import contribution
-from core import policy
-from domains import sarek
+from clew.core import blast_radius as core
+from clew.core import contribution
+from clew.core import policy
+from clew.domains import sarek
 
 ROOT = Path(__file__).resolve().parent
 
@@ -61,10 +60,10 @@ def show(plan, graph, sample_rows=3):
             print(f"        ... {len(rows) - sample_rows} more")
 
 
-def main():
-    graph = core.load_graph(ROOT / "graph5.json")
-    donors = sarek.load_donors(ROOT / "donors.csv")
-    published = sarek.load_assertions(ROOT / "assertions.json")
+def main(argv=None):
+    graph = core.load_graph(ROOT / "data" / "graph5.json")
+    donors = sarek.load_donors(ROOT / "data" / "donors.csv")
+    published = sarek.load_assertions(ROOT / "data" / "assertions.json")
     n = len(graph["tasks"])
 
     print(f"Run: nf-core/sarek, {len(donors)} donors, {n} tasks, "
@@ -123,10 +122,10 @@ def main():
 """)
 
     # ------------------------------------------------------------------ act 4
-    chain = ROOT / "graph_chain.json"
-    sheet = ROOT / "samplesheets" / "rnaseq_yeast.csv"
+    chain = ROOT / "data" / "graph_chain.json"
+    sheet = ROOT / "data" / "samplesheets" / "rnaseq_yeast.csv"
     if chain.exists() and sheet.exists():
-        from domains import rnaseq
+        from clew.domains import rnaseq
 
         print()
         print("=" * 70)
@@ -159,10 +158,10 @@ def main():
     print("Same engine, three triggers — only the entry-node selection differed.")
     print(f"Every verdict above is under policy {stamp['policy_version']}, "
           f"sha256 {stamp['policy_hash'][:16]};")
-    print("`python3 rulebook.py show` prints the table and the rationale for")
-    print("each rule; `rulebook.py diff v1 v2` shows what the last change to")
-    print("it was, and why. `evidence.py build` seals any of the above into")
-    print("a bundle that replays offline, and `gate.py` stops a run whose")
+    print("`clew rulebook show` prints the table and the rationale for")
+    print("each rule; `clew rulebook diff v1 v2` shows what the last change to")
+    print("it was, and why. `clew evidence build` seals any of the above into")
+    print("a bundle that replays offline, and `clew gate` stops a run whose")
     print("inputs are not permitted before the pipeline starts.")
     print("Honest caveats: publication/MTA/destruction are asserted from")
     print("outside; uninstrumented systems are unknown, not clean.")

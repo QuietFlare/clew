@@ -1,7 +1,7 @@
 """
 Clew — a self-contained HTML view over an evidence store.
 
-    python3 dashboard.py --bundles /path/to/bundles --out evidence.html
+    clew dashboard --bundles /path/to/bundles --out evidence.html
 
 One file, no server, no network, no scripts. An auditor opens it from a USB
 stick on a machine with no access to anything, and it still works. Printing
@@ -42,11 +42,10 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core import bundlestore
-from core import policy as policy_module
-from core import query
+from clew.core import bundlestore
+from clew.core import policy as policy_module
+from clew.core import query
 
 STYLE = """
 :root {
@@ -128,7 +127,7 @@ def section_header(store, root):
         '<strong>This page is not the record</strong> — the bundles are, and '
         'each panel names the bundle hash it was drawn from so anything here '
         'can be traced back and checked independently with '
-        '<code>evidence.py verify</code>.</p>',
+        '<code>clew evidence verify</code>.</p>',
         f"<p>{len(bundles)} bundle(s) from <code>{esc(root)}</code>, "
         f"{len(entries)} log entries.</p>",
     ]
@@ -176,7 +175,7 @@ def section_integrity(store):
                 "facts sealed into it were true.",
                 "Signatures are not checked here. That needs an "
                 "allowed_signers file this reader trusts: "
-                "evidence.py verify --allowed-signers.",
+                "clew evidence verify --allowed-signers.",
             ]))
 
 
@@ -393,12 +392,12 @@ The claim is proof of non-use, not proof of destruction.</p>
 """
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Generate a self-contained HTML view of an evidence store.")
     parser.add_argument("--bundles", required=True, metavar="DIR")
     parser.add_argument("--out", required=True, metavar="FILE")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     store = bundlestore.load_store(args.bundles)
     if not store[0]:

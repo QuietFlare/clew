@@ -13,15 +13,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 ROOT = Path(__file__).resolve().parent.parent
 
 
-@unittest.skipUnless((ROOT / "graph_vr.json").exists(), "viralrecon graph not present")
+@unittest.skipUnless((ROOT / "clew" / "data" / "graph_vr.json").exists(), "viralrecon graph not present")
 class TestPlanJson(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cmd = [
-            sys.executable, str(ROOT / "blast.py"),
+            sys.executable, "-m", "clew.impact",
             "--pipeline", "viralrecon",
-            "--graph", str(ROOT / "graph_vr.json"),
-            "--samplesheet", str(ROOT / "samplesheets" / "viralrecon_coguk.csv"),
+            "--graph", str(ROOT / "clew" / "data" / "graph_vr.json"),
+            "--samplesheet", str(ROOT / "clew" / "data" / "samplesheets" / "viralrecon_coguk.csv"),
             "--container", "ivar",
             "--json", "-",
         ]
@@ -36,7 +36,7 @@ class TestPlanJson(unittest.TestCase):
         # Without this the plan is a set of verdicts with no stated basis.
         # The version is a label anyone can print; the hash is what lets two
         # parties prove they were reading the same table.
-        from core import policy
+        from clew.core import policy
         self.assertEqual(self.payload["policy_version"], policy.DEFAULT["version"])
         self.assertEqual(self.payload["policy_hash"],
                          policy.fingerprint(policy.DEFAULT))
@@ -57,7 +57,7 @@ class TestPlanJson(unittest.TestCase):
     def test_the_cited_rule_actually_yields_the_stated_action(self):
         # Guards against the citation drifting from the verdict — a plan whose
         # rule ids are decorative would be worse than one with none.
-        from core import policy
+        from clew.core import policy
         by_id = {r["id"]: r for r in policy.DEFAULT["rules"]}
         for item in self.payload["plan"]:
             if not item["action"]:

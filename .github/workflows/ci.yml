@@ -1,0 +1,54 @@
+# Clew's own tests, on every push and pull request.
+#
+# Two jobs, split by what they need. The stdlib suite runs through the
+# shared workflow across three Python versions and installs nothing. The
+# log's storage tests need a real Postgres, because the append-only
+# guarantees live in role grants and triggers that only a server enforces,
+# so that job carries its own service container and runs the full suite
+# with CLEW_TEST_DSN set.
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    uses: QuietFlare/ci-workflows/.github/workflows/python-test.yml@v1.4.0
+    with:
+      test-command: 'python3 -m unittest discover -s tests'
+
+  log-storage:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the driver
+        run: pip install -r requirements.txt
+
+      - name: Run the full suite against Postgres
+        env:
+          CLEW_TEST_DSN: postgresql://postgres:postgres@localhost:5432/postgres
+        run: python3 -m unittest discover -s tests

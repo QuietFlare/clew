@@ -18,10 +18,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import mcp_server
-from core import evidence
-from core import eventlog
-from core import policy as policy_module
+from clew import mcp_server
+from clew.core import evidence
+from clew.core import eventlog
+from clew.core import policy as policy_module
 
 ROOT = Path(__file__).resolve().parent.parent
 T = "2026-01-01T00:00:00+00:00"
@@ -85,7 +85,7 @@ class TestProtocol(ServerTestCase):
 
     def converse(self, messages, bundles):
         process = subprocess.Popen(
-            [sys.executable, str(ROOT / "mcp_server.py"), "--bundles", bundles],
+            [sys.executable, "-m", "clew.mcp_server", "--bundles", bundles],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True)
         payload = "".join(json.dumps(m) + "\n" for m in messages)
@@ -144,7 +144,7 @@ class TestProtocol(ServerTestCase):
 
     def converse_raw(self, lines, bundles):
         process = subprocess.Popen(
-            [sys.executable, str(ROOT / "mcp_server.py"), "--bundles", bundles],
+            [sys.executable, "-m", "clew.mcp_server", "--bundles", bundles],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True)
         out, _ = process.communicate("".join(lines), timeout=30)
@@ -184,7 +184,7 @@ class TestReadOnly(ServerTestCase):
     def test_the_server_never_opens_a_database_connection(self):
         # The auditor surface reads sealed bundles. A connection is a
         # credential, and this process should not hold one.
-        source = (ROOT / "mcp_server.py").read_text()
+        source = (ROOT / "clew" / "mcp_server.py").read_text()
         self.assertNotIn("eventlog.connect", source)
         self.assertNotIn("--dsn", source)
 

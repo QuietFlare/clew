@@ -20,8 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import contribution as c
-from core import policy as p
+from clew.core import contribution as c
+from clew.core import policy as p
 
 # Every combination the engine can present, including classes it should never
 # see. 4 x 3 x 2 x 2.

@@ -13,9 +13,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import extract_from_rocrate as rc
-from core import blast_radius as core
-from domains import viralrecon  # sample-keyed adapter; the crate has no donors
+from clew import extract_from_rocrate as rc
+from clew.core import blast_radius as core
+from clew.domains import viralrecon  # sample-keyed adapter; the crate has no donors
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 CRATE = FIXTURES / "ro-crate-metadata.json"

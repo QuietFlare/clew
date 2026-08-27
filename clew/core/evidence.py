@@ -63,8 +63,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from core import gate as gate_module
-from core import policy as policy_module
+from clew.core import gate as gate_module
+from clew.core import policy as policy_module
 
 BUNDLE_VERSION = 1
 
@@ -134,7 +134,7 @@ HOW_TO_VERIFY = """\
 How to check this bundle without trusting whoever gave it to you
 ===============================================================
 
-    python3 evidence.py verify <this directory>
+    clew evidence verify <this directory>
 
 That needs Python and nothing else. No database, no network, no credentials,
 and no cooperation from the party that produced this. It performs four

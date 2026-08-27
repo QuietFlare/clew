@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core import gate
+from clew.core import gate
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -156,19 +156,19 @@ class TestCliFailsClosed(unittest.TestCase):
 
     def run_gate(self, *args):
         return subprocess.run(
-            [sys.executable, str(ROOT / "gate.py"), *args],
+            [sys.executable, "-m", "clew.gate", *args],
             capture_output=True, text=True)
 
     def test_no_blocking_types_is_refused(self):
-        result = self.run_gate("--samplesheet", str(ROOT / "donors.csv"),
+        result = self.run_gate("--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"),
                                "--dsn", "postgresql://nowhere/none")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no blocking fact types", result.stderr)
 
     def test_no_connection_string_is_refused(self):
         env_free = subprocess.run(
-            [sys.executable, str(ROOT / "gate.py"),
-             "--samplesheet", str(ROOT / "donors.csv"), "--block-on", "X"],
+            [sys.executable, "-m", "clew.gate",
+             "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"), "--block-on", "X"],
             capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})
         self.assertNotEqual(env_free.returncode, 0)
         self.assertIn("gate that cannot", env_free.stderr)
@@ -182,7 +182,7 @@ class TestCliFailsClosed(unittest.TestCase):
         # rather than on either message. Pinning one string would have let
         # the other path regress to exit 0 unnoticed.
         result = self.run_gate(
-            "--samplesheet", str(ROOT / "donors.csv"), "--block-on", "X",
+            "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"), "--block-on", "X",
             "--dsn", "postgresql://nobody@127.0.0.1:1/none")
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(
@@ -200,20 +200,20 @@ class TestCliFailsClosed(unittest.TestCase):
              "--dsn", "postgresql://nowhere/none"),
             ("--block-on", "X", "--dsn", "not-a-connection-string"),
         ):
-            result = self.run_gate("--samplesheet", str(ROOT / "donors.csv"),
+            result = self.run_gate("--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"),
                                    *args)
             self.assertNotEqual(result.returncode, 0, f"{args} exited 0")
 
     def test_a_type_that_both_blocks_and_clears_is_refused(self):
         result = self.run_gate(
-            "--samplesheet", str(ROOT / "donors.csv"),
+            "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"),
             "--block-on", "X", "--clear-on", "X",
             "--dsn", "postgresql://nowhere/none")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("both blocking and clearing", result.stderr)
 
     def test_the_shipped_policy_template_is_valid_json_and_names_types(self):
-        template = json.loads((ROOT / "gate-policy.example.json").read_text())
+        template = json.loads((ROOT / "clew" / "data" / "gate-policy.example.json").read_text())
         self.assertTrue(template["blocking"])
         self.assertFalse(set(template["blocking"]) & set(template["clearing"]))
 

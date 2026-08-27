@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import extract_from_lineage_store as ls
+from clew import extract_from_lineage_store as ls
 
 RUN_A = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 RUN_B = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -169,8 +169,8 @@ class RealStoreEquivalence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-        from core import blast_radius as core
-        from domains import sarek
+        from clew.core import blast_radius as core
+        from clew.domains import sarek
 
         runs = ls.load_history(PETRI_STORE)
         run = ls.pick_run(runs, "tender_mccarthy")
@@ -189,7 +189,7 @@ class RealStoreEquivalence(unittest.TestCase):
 
     def test_withdrawal_numbers_match_symlink_extractor(self):
         donors = self.sarek.load_donors(
-            Path(__file__).resolve().parent.parent / "donors.csv")
+            Path(__file__).resolve().parent.parent / "clew" / "data" / "donors.csv")
         entry = self.sarek.subject_entry_nodes(self.graph, donors)
         radius = self.core.blast_radius(self.graph, entry)
         for donor, r in radius.items():

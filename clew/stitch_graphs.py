@@ -27,7 +27,7 @@ are opaque to it.
 
 USAGE
 -----
-    python3 stitch_graphs.py \
+    clew stitch \
         --graph rna=graph_rna.json --results rna=/path/to/rnaseq/results \
         --graph da=graph_da.json \
         --out graph_chain.json
@@ -43,9 +43,8 @@ from pathlib import Path
 
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from domains.nfcore import index_results
+from clew.domains.nfcore import index_results
 
 
 def prefix_graph(label, graph):
@@ -127,7 +126,7 @@ def stitch(labelled_graphs, labelled_results):
     return merged, bridges
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Stitch per-run Clew graphs into one cross-run graph.")
     parser.add_argument("--graph", action="append", required=True,
@@ -136,7 +135,7 @@ def main():
                         metavar="LABEL=DIR",
                         help="published results tree for the graph with that label")
     parser.add_argument("--out", required=True, help="stitched graph JSON")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     def parse_pairs(pairs):
         out = {}

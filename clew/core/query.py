@@ -46,8 +46,8 @@ completeness. So it is said, every time, in the answer itself.
 
 import json
 
-from core import contribution as contribution_module
-from core import policy as policy_module
+from clew.core import contribution as contribution_module
+from clew.core import policy as policy_module
 
 # Fact types core does recognise, because Clew itself writes them. Everything
 # else in a log is the customer's vocabulary and stays opaque.
