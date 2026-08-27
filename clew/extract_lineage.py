@@ -37,6 +37,7 @@ USAGE
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 # Nextflow's own bookkeeping files. Not data, never lineage.
@@ -237,6 +238,21 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     tasks, edges, outputs, missing = extract(args.jsonl, args.work)
+
+    # A work tree with tasks but no symlinks at all means the inputs were
+    # staged by copy or hard link (stageInMode 'copy'/'link', or a cloud
+    # executor downloading from object storage). There is no lineage to read
+    # here, and returning an empty graph would report every task as having
+    # no inputs - a false negative dressed up as an answer. Refuse instead.
+    if tasks and not edges and len(missing) < len(tasks):
+        sys.exit(
+            "clew extract-work: no symlinks found in any task directory.\n"
+            "This extractor reads the symlinks Nextflow leaves with the\n"
+            "default stage-in mode ('symlink'/'rellink') on local and HPC\n"
+            "executors. Runs staged by copy or hard link, including cloud\n"
+            "executors staging from object storage, leave no symlinks to\n"
+            "read. For those runs, enable Nextflow's lineage store and use\n"
+            "'clew extract-store' instead.")
 
     known = set(tasks)
     resolved = [e for e in edges if e["producer"] in known]

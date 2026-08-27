@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import tempfile
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -113,6 +114,42 @@ class TestNumberedSubdirectories(unittest.TestCase):
         tasks, edges, outputs, missing = ex.extract(self.jsonl, self.work)
         self.assertEqual(set(tasks), {"ab/123456", "cd/abcdef"})
 
+
+class TestCopyStagedRunsAreRefused(unittest.TestCase):
+    """
+    stageInMode 'copy' and 'link' leave no symlinks, and cloud executors
+    stage from object storage the same way. An empty graph from such a run
+    would report every task as having no inputs, a false negative dressed
+    up as an answer, so the CLI must refuse instead.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+        taskdir = self.work / "ab" / "123456aaaa0000"
+        taskdir.mkdir(parents=True)
+        # Inputs staged by COPY: regular files, no symlinks anywhere.
+        (taskdir / "input.fastq").write_text("copied, not linked")
+        (taskdir / "out.bam").write_text("result")
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text(json.dumps(
+            {"trace": {"hash": "ab/123456", "task_id": 1, "name": "ALIGN",
+                       "process": "ALIGN", "container": "img",
+                       "status": "COMPLETED"}}) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_cli_exits_nonzero_and_points_at_the_lineage_store(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "clew.extract_lineage",
+             "--jsonl", str(self.jsonl), "--work", str(self.work)],
+            capture_output=True, text=True,
+            cwd=Path(__file__).resolve().parent.parent)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no symlinks", result.stderr)
+        self.assertIn("extract-store", result.stderr)
 
 if __name__ == "__main__":
     unittest.main()

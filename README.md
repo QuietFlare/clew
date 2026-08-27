@@ -130,9 +130,10 @@ tasks from a crate classify as `IRREDUCIBLE` and their storage reads
 Prefer the lineage store when both exist.
 
 **Fallback: the `work/` symlink extractor**, for runs that already happened
-without lineage enabled. Nextflow stages inputs as symlinks to save disk,
-and those symlinks accidentally record the entire history of the run. No
-pipeline modification, works on any Nextflow version:
+without lineage enabled. With the default stage-in mode on local and HPC
+executors, Nextflow stages inputs as symlinks to save disk, and those
+symlinks accidentally record the entire history of the run. No pipeline
+modification, any Nextflow version:
 
 ```bash
 clew extract-work \
@@ -143,6 +144,13 @@ clew extract-work \
 
 Do this during or right after the run. `nextflow clean` removes the
 symlinks, and lineage that was never captured cannot be reconstructed.
+
+The symlink trail only exists where inputs really are staged as symlinks:
+`stageInMode 'symlink'` or `'rellink'`, the default on local and HPC
+executors. Runs staged by copy or hard link, including cloud executors
+staging from object storage, leave nothing for this extractor to read, and
+it refuses with an error rather than returning an empty graph that would
+report every task as clean. Use the lineage store for those runs.
 
 On the same sarek pipeline the store and symlink extractors produce
 identical impact numbers, and the test suite enforces that equivalence.
@@ -820,7 +828,7 @@ flowchart TB
     subgraph NF["Nextflow already writes this"]
         LS["Lineage store (25.04+)"]
         RC["nf-prov RO-Crate"]
-        WS["work/ symlinks (any version)"]
+        WS["work/ symlinks (local and HPC)"]
     end
     subgraph PA["People assert this"]
         W["Withdrawal"]
