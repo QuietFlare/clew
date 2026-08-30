@@ -50,15 +50,26 @@ The evidence chain starts at the sample's alignment in one Nextflow launch
 and ends inside another, crossing at a checkable published path. Engine
 lineage sees each run in isolation; this graph is the part nobody else has.
 
-```bash
-clew stitch --graph rna=clew/data/graph_rna.json --results rna=<rnaseq results dir> \
-    --graph da=clew/data/graph_da.json --out graph_chain.json
-```
+Ask it on the graph that ships with the package, already stitched:
 
 ```bash
 clew impact --pipeline rnaseq --graph clew/data/graph_chain.json \
     --samplesheet clew/data/samplesheets/rnaseq_yeast.csv --donor SRR10441036_cox4d
 ```
+
+To build such a graph from two of **your own** runs, give each run a label,
+and point `--results` at the published output of the run that produced the
+shared file:
+
+```bash
+clew stitch --graph rna=rnaseq_run.json --results rna=/path/to/rnaseq/results \
+    --graph da=de_run.json --out graph_chain.json
+```
+
+The join is by path, so the paths recorded in the graph must be the paths on
+this machine. That is why the shipped `graph_rna.json` and `graph_da.json`
+cannot be re-stitched: their paths were anonymised before publication, and
+`clew stitch` will correctly report zero bridges rather than invent one.
 
 ## See it in two minutes
 

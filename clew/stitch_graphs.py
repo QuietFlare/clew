@@ -163,8 +163,22 @@ def main(argv=None):
         print(f"  {b['consumer']}  <-  {b['producer']}")
         print(f"      via {b['path']}")
     if not bridges:
-        print("  (none found — check that --results dirs match the runs "
-              "that actually published the chained inputs)")
+        # The join is by absolute path, so the usual cause is that the graph
+        # was recorded on a different machine (or had its paths rewritten)
+        # and no external input can match anything under --results.
+        print("  (none found. The join matches the external inputs recorded "
+              "in one graph against the published files under --results, by "
+              "absolute path. Check that the paths inside the graphs are the "
+              "paths on this machine, and that --results points at the run "
+              "that published the shared file.)")
+        seen = set()
+        for edge in merged["edges"]:
+            label = edge["consumer"].split(":", 1)[0]
+            if (edge["producer"] == "EXTERNAL" and edge.get("target")
+                    and label not in seen):
+                seen.add(label)
+                print(f"      {label} reads e.g. "
+                      f"{edge['target'].split('#', 1)[0]}")
 
     Path(args.out).write_text(json.dumps(merged, indent=2))
     print(f"\nwrote {args.out}")
