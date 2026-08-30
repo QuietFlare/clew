@@ -189,8 +189,9 @@ def extract(store, run_hash):
     """
     Build the graph for one run, in the exact schema clew extract-work
     emits: {"tasks": {...}, "edges": [...], "outputs": {...}} — plus
-    "output_details", which only this adapter can provide: per-output size
-    (and recorded checksum) from the FileOutput records. That is what lets
+    "output_details": per-output size (and, here, the recorded checksum)
+    from the FileOutput records. The symlink extractor records size too, by
+    reading it off disk; the checksum is what only the store carries. That is what lets
     a remediation plan name the PUBLISHED copies of an artifact, not just
     its workdir path. Note the store's checksums are Nextflow's "standard"
     mode (path+mtime, not content), so they cannot identify a copy — size

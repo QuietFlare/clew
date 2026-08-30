@@ -90,7 +90,8 @@ class TestNumberedSubdirectories(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_inputs_inside_numbered_subdirs_are_found(self):
-        tasks, edges, outputs, missing = ex.extract(self.jsonl, self.work)
+        tasks, edges, outputs, details, missing = ex.extract(
+            self.jsonl, self.work)
         self.assertEqual(missing, [])
 
         agg_edges = [e for e in edges if e["consumer"] == "cd/abcdef"]
@@ -101,7 +102,8 @@ class TestNumberedSubdirectories(unittest.TestCase):
         self.assertIn("1/report_two.txt", filenames)
 
     def test_outputs_exclude_symlinked_inputs(self):
-        tasks, edges, outputs, missing = ex.extract(self.jsonl, self.work)
+        tasks, edges, outputs, details, missing = ex.extract(
+            self.jsonl, self.work)
         self.assertEqual(outputs["cd/abcdef"], ["aggregate.html"])
 
     def test_only_this_runs_tasks_are_loaded(self):
@@ -111,7 +113,8 @@ class TestNumberedSubdirectories(unittest.TestCase):
         stray.mkdir(parents=True)
         (stray / "old_run.txt").write_text("z")
 
-        tasks, edges, outputs, missing = ex.extract(self.jsonl, self.work)
+        tasks, edges, outputs, details, missing = ex.extract(
+            self.jsonl, self.work)
         self.assertEqual(set(tasks), {"ab/123456", "cd/abcdef"})
 
 
@@ -150,6 +153,35 @@ class TestCopyStagedRunsAreRefused(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no symlinks", result.stderr)
         self.assertIn("extract-store", result.stderr)
+
+class TestOutputSizesAreRecorded(unittest.TestCase):
+    """
+    Sizes must be read while the work tree still exists. A published copy
+    keeps its name and byte count but gets a new path and mtime, so
+    (basename, size) is the only join key that survives publishDir — and
+    the workdir is usually deleted soon after the run.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+        taskdir = self.work / "ab" / "123456aaaa0000"
+        taskdir.mkdir(parents=True)
+        (taskdir / "counts.tsv").write_text("x" * 4812)
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text(json.dumps(
+            {"trace": {"hash": "ab/123456", "task_id": 1, "name": "COUNT",
+                       "process": "COUNT", "container": "img",
+                       "status": "COMPLETED"}}) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_each_output_carries_its_size(self):
+        _, _, _, details, _ = ex.extract(self.jsonl, self.work)
+        self.assertEqual(details["ab/123456"],
+                         [{"file": "counts.tsv", "size": 4812}])
 
 if __name__ == "__main__":
     unittest.main()

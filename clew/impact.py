@@ -279,8 +279,9 @@ def main(argv=None):
     graph = core.load_graph(args.graph)
     results_index = index_results(args.results) if args.results else None
     if args.results and not graph.get("output_details"):
-        print("note: this graph has no output sizes (symlink extractor?); "
-              "--results mapping needs a lineage-store graph\n")
+        print("note: this graph records no output sizes, so published "
+              "copies cannot be mapped. Graphs extracted before sizes were "
+              "recorded look like this; re-extract to fix.\n")
     donors = domain.load_subjects(args.samplesheet)
     published = domain.load_assertions(args.assertions)
 

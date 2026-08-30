@@ -183,6 +183,7 @@ def extract(jsonl_path, work_root):
     tasks = load_run(jsonl_path)
     edges = []
     outputs = {}
+    output_details = {}
     missing_dirs = []
 
     for task_hash in sorted(tasks):
@@ -223,11 +224,27 @@ def extract(jsonl_path, work_root):
                 if entry.is_symlink():
                     _record_symlink(edges, task_hash, entry, workdir, work_root)
                 else:
-                    produced.append(str(entry.relative_to(workdir)))
+                    produced.append(entry)
 
-        outputs[task_hash] = sorted(produced)
+        outputs[task_hash] = sorted(str(p.relative_to(workdir))
+                                    for p in produced)
+        # Size is recorded here, while the workdir still exists, because it
+        # is the only join key that survives publishDir copying a file: the
+        # copy keeps its name and byte count but gets a new path and mtime.
+        # Read it now or lose it — this extractor runs against a work tree
+        # that is about to be cleaned.
+        details = []
+        for path in produced:
+            try:
+                size = path.stat().st_size
+            except OSError:
+                continue
+            details.append({"file": str(path.relative_to(workdir)),
+                            "size": size})
+        output_details[task_hash] = sorted(details,
+                                           key=lambda d: d["file"])
 
-    return tasks, edges, outputs, missing_dirs
+    return tasks, edges, outputs, output_details, missing_dirs
 
 
 def main(argv=None):
@@ -237,7 +254,8 @@ def main(argv=None):
     parser.add_argument("--json-out", help="Optional path to write the graph as JSON")
     args = parser.parse_args(argv)
 
-    tasks, edges, outputs, missing = extract(args.jsonl, args.work)
+    tasks, edges, outputs, output_details, missing = extract(
+        args.jsonl, args.work)
 
     # A work tree with tasks but no symlinks at all means the inputs were
     # staged by copy or hard link (stageInMode 'copy'/'link', or a cloud
@@ -283,7 +301,8 @@ def main(argv=None):
 
     if args.json_out:
         Path(args.json_out).write_text(
-            json.dumps({"tasks": tasks, "edges": edges, "outputs": outputs}, indent=2)
+            json.dumps({"tasks": tasks, "edges": edges, "outputs": outputs,
+                        "output_details": output_details}, indent=2)
         )
         print(f"\nwrote {args.json_out}")
 
