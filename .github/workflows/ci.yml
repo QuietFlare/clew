@@ -23,6 +23,8 @@ jobs:
     uses: QuietFlare/ci-workflows/.github/workflows/python-test.yml@v1
     with:
       test-command: 'python3 -m unittest discover -s tests'
+      # 3.9 is what macOS ships, so it is the floor people actually hit.
+      python-versions: '["3.9", "3.11", "3.13"]'
 
   log-storage:
     runs-on: ubuntu-latest

@@ -74,7 +74,7 @@ It answers three questions, one per audience, then crosses a run boundary —
 all from the same engine, over a real graph that ships with the package:
 an nf-core/sarek run with 5 synthetic donors, 81 tasks, 344 edges.
 
-The base install has no dependencies beyond Python 3.11 — the demo, the
+The base install has no dependencies beyond Python 3.9 — the demo, the
 extractors and `clew impact` are stdlib-only and stay that way. Only the
 event log needs a database driver: `pip install 'clew-lineage[log]'`.
 

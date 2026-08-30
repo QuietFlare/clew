@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clew-lineage"
-version = "0.1.0"
+version = "0.1.1"
 description = "Computes what must happen downstream when something upstream goes bad: rebuilds Nextflow run lineage and produces a remediation plan you can hand to an auditor"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 license = { text = "AGPL-3.0-only" }
 authors = [{ name = "QuietFlare" }]
 keywords = ["lineage", "provenance", "nextflow", "nf-core", "impact-analysis", "compliance"]
@@ -16,6 +16,8 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
