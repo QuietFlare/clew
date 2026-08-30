@@ -163,6 +163,14 @@ staging from object storage, leave nothing for this extractor to read, and
 it refuses with an error rather than returning an empty graph that would
 report every task as clean. Use the lineage store for those runs.
 
+It also loses one kind of edge. When a task re-emits an input unchanged,
+Nextflow stages that file for the next task by pointing at the original
+rather than at the intermediate task's copy, so on disk the hop does not
+exist and this extractor records the consumer as externally fed. Files a
+task genuinely produced are unaffected; only forwarded ones are. The
+lineage store records channel lineage instead of filesystem layout, so it
+keeps that edge — another reason to prefer it when both are available.
+
 On the same sarek pipeline the store and symlink extractors produce
 identical impact numbers, and the test suite enforces that equivalence.
 

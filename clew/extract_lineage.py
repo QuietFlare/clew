@@ -32,6 +32,32 @@ USAGE
     clew extract-work \
         --jsonl /path/to/Petri/logs/<run-id>.jsonl \
         --work  /path/to/Petri/work
+
+HONEST LIMITS
+-------------
+1. STAGING MODE. The trail exists only where inputs were staged as symlinks
+   (stageInMode 'symlink' or 'rellink', the default on local and HPC). Runs
+   staged by copy or hard link, including cloud executors pulling from
+   object storage, leave nothing to read. main() refuses rather than
+   returning an empty graph that would report every task as clean.
+
+2. PASS-THROUGH FILES LOSE THEIR PRODUCER. When a task re-emits an input
+   unchanged, Nextflow stages that file for the next task by pointing at
+   the ORIGINAL, not at the intermediate task's copy. On disk the hop
+   simply is not there:
+
+       QUARTONOTEBOOK   report.qmd -> ~/.nextflow/assets/.../report.qmd
+       MAKE_REPORT      report.qmd -> ~/.nextflow/assets/.../report.qmd
+
+   Both point at the asset, so this extractor calls the second one
+   EXTERNAL. The lineage store, which records channel lineage rather than
+   filesystem layout, attributes it to QUARTONOTEBOOK.
+
+   Files a task genuinely produced are unaffected. The loss is confined to
+   files it forwarded untouched, and it is a FALSE NEGATIVE: an edge that
+   exists logically is missing from the graph, so a task fed only by
+   pass-throughs would look externally fed and its upstream would not be
+   reached. Prefer the lineage store where pass-through is common.
 """
 
 import argparse

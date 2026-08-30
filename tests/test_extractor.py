@@ -183,5 +183,58 @@ class TestOutputSizesAreRecorded(unittest.TestCase):
         self.assertEqual(details["ab/123456"],
                          [{"file": "counts.tsv", "size": 4812}])
 
+class TestPassThroughFilesLoseTheirProducer(unittest.TestCase):
+    """
+    A documented limitation, pinned so it cannot change unnoticed.
+
+    When a task re-emits an input unchanged, Nextflow stages that file for
+    the next task by pointing at the original rather than at the
+    intermediate copy. The hop is absent from the filesystem, so this
+    extractor records the consumer as externally fed. The lineage store,
+    which records channel lineage, keeps the edge.
+
+    If someone teaches the extractor to recover it, this test should fail
+    and be rewritten. It exists so that is a decision, not an accident.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        asset = root / "assets" / "report.qmd"
+        asset.parent.mkdir(parents=True)
+        asset.write_text("template")
+
+        self.work = root / "work"
+        # Producer forwards the asset untouched.
+        forwarder = self.work / "ab" / "123456aaaa0000"
+        forwarder.mkdir(parents=True)
+        os.symlink(asset, forwarder / "report.qmd")
+        (forwarder / "made_here.txt").write_text("real output")
+
+        # Consumer receives it, staged straight from the asset.
+        consumer = self.work / "cd" / "abcdef0000aaaa"
+        consumer.mkdir(parents=True)
+        os.symlink(asset, consumer / "report.qmd")
+        os.symlink(forwarder / "made_here.txt", consumer / "made_here.txt")
+
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text("\n".join(json.dumps(
+            {"trace": {"hash": h, "task_id": i, "name": n, "process": n,
+                       "container": "img", "status": "COMPLETED"}})
+            for i, (h, n) in enumerate(
+                [("ab/123456", "FORWARD"), ("cd/abcdef", "CONSUME")], 1)) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_forwarded_file_reads_as_external_but_real_output_does_not(self):
+        _, edges, _, _, _ = ex.extract(self.jsonl, self.work)
+        by_file = {e["filename"]: e["producer"]
+                   for e in edges if e["consumer"] == "cd/abcdef"}
+        # The limitation: the forwarded file loses its producer.
+        self.assertEqual(by_file["report.qmd"], "EXTERNAL")
+        # Genuinely produced files are unaffected, which bounds the damage.
+        self.assertEqual(by_file["made_here.txt"], "ab/123456")
+
 if __name__ == "__main__":
     unittest.main()
