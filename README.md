@@ -180,6 +180,28 @@ keeps that edge — another reason to prefer it when both are available.
 On the same sarek pipeline the store and symlink extractors produce
 identical impact numbers, and the test suite enforces that equivalence.
 
+### What each source can prove
+
+All three sources yield the same graph shape, verified on one real run that
+produced all three records at once. They differ in how much evidence they
+carry, and evidence is what verdicts are made of:
+
+| | lineage store | RO-Crate | work/ symlinks |
+|---|---|---|---|
+| tasks and edges | yes | yes | yes, minus forwarded files |
+| external inputs | yes | yes | yes |
+| script and container image | yes | no | yes |
+| output sizes | yes | no | yes |
+| storage checkable | `--work-root` | published copies only | `--work-root` |
+| best verdict for a shared, surviving artifact | REGENERATE | QUARANTINE | REGENERATE |
+
+The last row is the practical difference. A crate carries no re-execution
+evidence, so every crate task fails closed to `IRREDUCIBLE`: the blast
+radius is exact, published artifacts still resolve to `NOTIFY_ONLY`, but
+Clew will never recommend re-running from a crate, only blocking. The
+answer stays correct and becomes more expensive to act on. The richer the
+record, the cheaper the remediation.
+
 Capture and computation stay separate on purpose. The engines are getting
 good at recording what happened. Clew's job starts where they stop: whether a
 contribution can be taken back out, and what must happen when it cannot.
