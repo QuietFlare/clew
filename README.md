@@ -135,10 +135,16 @@ knowing it:
 clew extract-crate --crate ro-crate-metadata.json --json-out graph.json
 ```
 
-A crate records what ran, not how to re-run it: no script, no workdir. So
-tasks from a crate classify as `IRREDUCIBLE` and their storage reads
-`DESTROYED` unless published copies are mapped — fail-closed, by design.
-Prefer the lineage store when both exist.
+A crate records what ran, not how to re-run it: no script, no workdir, and
+no container image (its instrument names the module, so version-pinned
+container triggers cannot match a crate graph). So tasks from a crate
+classify as `IRREDUCIBLE` and their storage reads `DESTROYED` unless
+published copies are mapped — fail-closed, by design. Prefer the lineage
+store when both exist.
+
+Validated against a real nf-prov crate: on the same sarek run, the crate
+and the lineage store produce identical graphs (81 tasks, 334 edges) and
+identical impact numbers for every trigger.
 
 **Fallback: the `work/` symlink extractor**, for runs that already happened
 without lineage enabled. With the default stage-in mode on local and HPC

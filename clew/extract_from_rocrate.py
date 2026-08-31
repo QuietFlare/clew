@@ -16,11 +16,22 @@ THE CRATE, AS WRITTEN BY nf-prov (wrroc format)
       CreateAction  @id "#task/<32-hex>"      one per task
                     name "ALIGN (sample_beta)"  the nf-core tag convention
                     object[]  inputs:  "#task/<producer-hash>/<file>"
-                                       or "file:///..." (external)
+                                       or, for externals, whatever id the
+                                       file arrived under: file:///path,
+                                       https://... URLs, relative results/
+                                       paths, #tmp entries. Verified against
+                                       a real nf-prov crate; only #param
+                                       references are not artifacts.
                     result[]  outputs: "#task/<own-hash>/<file>"
                     instrument -> SoftwareApplication (container), when run
                     with one
       CreateAction  "Nextflow workflow run <uuid>"   run-level; skipped
+
+    Note the instrument: in real crates it names the MODULE (a
+    SoftwareApplication like "bwa_index" with a source URL), not a container
+    image. No image appears anywhere in a crate, so version-pinned container
+    triggers ("gatk4:4.2.1") cannot match a crate graph; module-name matching
+    still works.
 
 Task hashes are the same 32-hex values the lineage store uses, abbreviated
 identically, so graphs from either source are comparable node for node.
@@ -109,15 +120,23 @@ def extract(crate_path):
                     "filename": filename,
                     "target": oid,
                 })
-            elif oid.startswith(FILE_SCHEME):
-                path = oid[len(FILE_SCHEME):]
+            elif oid and not oid.startswith("#param"):
+                # Anything that is not another task's output came from outside
+                # the run. Real nf-prov crates reference such inputs by
+                # whatever id the file arrived under: file:// paths, https://
+                # URLs for remote test data or references, relative results/
+                # paths, or #tmp entries. Dropping the unrecognised ones is
+                # how the first real crate lost all 117 external inputs — a
+                # reference-update trigger then finds nothing and reads as
+                # clean, which is the false negative this project exists to
+                # avoid. Unknown ids fail open to EXTERNAL instead.
+                path = oid[len(FILE_SCHEME):] if oid.startswith(FILE_SCHEME) else oid
                 edges.append({
                     "consumer": abbrev,
                     "producer": "EXTERNAL",
-                    "filename": Path(path).name,
+                    "filename": Path(path.split("?", 1)[0]).name,
                     "target": path,
                 })
-            # anything else (parameters, PropertyValues) is not an artifact
 
         produced = []
         for res in entity.get("result", []):

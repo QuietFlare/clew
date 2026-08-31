@@ -8,6 +8,8 @@ consequences of what a crate does NOT record.
 """
 
 import sys
+import tempfile
+import json
 import unittest
 from pathlib import Path
 
@@ -82,6 +84,37 @@ class TestRoCrateAdapter(unittest.TestCase):
         self.assertEqual(external,
                          {"ref.fa", "sample_alpha.fq", "sample_beta.fq"})
 
+
+class TestRealCrateExternalForms(unittest.TestCase):
+    """
+    The first real nf-prov crate recorded external inputs as https:// URLs,
+    relative results/ paths and #tmp entries — not the file:/// form the
+    fixture taught this extractor to expect. All 117 were silently dropped,
+    so a reference-update trigger found nothing and read as clean. Any
+    object that is not another task's output must become an EXTERNAL edge.
+    """
+
+    def test_non_task_objects_become_external_edges(self):
+        crate = {"@graph": [
+            {"@id": "#task/aaaabbbbccccddddaaaabbbbccccdddd",
+             "@type": "CreateAction", "name": "ALIGN (s1)",
+             "object": [
+                 {"@id": "https://example.org/ref/genome.fasta"},
+                 {"@id": "results/prior_run/counts.tsv"},
+                 {"@id": "#tmp/workflow_summary_mqc.yaml"},
+                 {"@id": "#param/vep_version"},
+             ],
+             "result": []},
+        ]}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ro-crate-metadata.json"
+            path.write_text(json.dumps(crate))
+            graph = rc.extract(str(path))
+        externals = {e["filename"]: e["target"]
+                     for e in graph["edges"] if e["producer"] == "EXTERNAL"}
+        self.assertEqual(set(externals), {"genome.fasta", "counts.tsv",
+                                          "workflow_summary_mqc.yaml"})
+        self.assertEqual(externals["counts.tsv"], "results/prior_run/counts.tsv")
 
 if __name__ == "__main__":
     unittest.main()
