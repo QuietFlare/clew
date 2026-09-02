@@ -183,6 +183,7 @@ def extract(run_dir):
             "process": task.get("definition_id") or task.get("id"),
             "container": environment_of(record),
             "status": (task.get("status") or "").upper(),
+            "target": (record.get("target") or {}).get("location_id") or "",
             "workdir": record.get("working_dir") or "",
             "script": script_of(record),
         }
