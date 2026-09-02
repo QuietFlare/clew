@@ -52,6 +52,7 @@ from clew.core import contribution
 from clew.core import policy
 from clew.core.policy import UNDETERMINED
 from clew.domains import rnaseq, sarek, viralrecon
+from clew.core import triggers
 from clew.core.contribution import classify
 from clew.core.graph import (
     container_entry_nodes,
@@ -254,6 +255,13 @@ def main(argv=None):
              "one is belongs to the domain adapter, not here. --donor "
              "is the former name and still works.")
     trigger.add_argument("--container", help="flag every task run in a matching container")
+    trigger.add_argument(
+        "--trigger",
+        help="kind:value, for example container:gatk4, script:prep.py, "
+             "input:genome.fa or subject:batch_017. An unknown kind is "
+             "read as a label key, so a graph that carries "
+             "labels: {tissue: liver} answers tissue:liver with no "
+             "adapter and no new flag.")
     trigger.add_argument("--input", dest="input_file",
                          help="invalidate an external input file by basename")
     parser.add_argument("--mode", choices=("remove", "distrust"),
@@ -311,7 +319,11 @@ def main(argv=None):
     published = load_assertions(args.assertions)
 
     # --- doubt triggers: single subject, nothing exclusive -------------------
-    if args.container or args.input_file:
+    if args.trigger:
+        kind, value = triggers.parse(args.trigger)
+        args.container = args.container or (
+            value if kind == "container" else None)
+    if args.trigger or args.container or args.input_file:
         if args.mode == "remove":
             # Removal needs an owner: "exclusive" only means something when
             # other subjects exist to compare against. A retracted upstream
@@ -321,7 +333,15 @@ def main(argv=None):
                 "--mode remove requires a subject trigger (--subject); "
                 "container and input triggers cast doubt, they do not remove "
                 "an owned source.")
-        if args.container:
+        if args.trigger:
+            kind, value = triggers.parse(args.trigger)
+            subjects = triggers.resolve(graph, kind, value)
+            if not next(iter(subjects.values())):
+                raise SystemExit(
+                    f"no task matches {args.trigger!r}. A trigger kind that "
+                    f"is not built in is read as a label key, so this graph "
+                    f"may simply carry no such label.")
+        elif args.container:
             subjects = container_entry_nodes(graph, args.container)
         else:
             subjects = external_input_entry_nodes(graph, args.input_file)
