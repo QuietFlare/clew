@@ -15,3 +15,6 @@ bundle/
 build/
 dist/
 *.egg-info/
+
+# Local MCP config
+.mcp.json
