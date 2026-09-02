@@ -1,0 +1,142 @@
+{
+  "name": "Impact probe",
+  "tasks": [
+    {
+      "id": "prep",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Prepare rows",
+      "executor": "shell",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "raw",
+          "kind": "file",
+          "path": "data/raw.csv"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "prepared",
+          "kind": "file",
+          "path": "prepared.json"
+        }
+      ]
+    },
+    {
+      "id": "analyse",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Analyse prepared rows",
+      "executor": "shell",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "prepared",
+          "kind": "file",
+          "path": "prepared.json"
+        },
+        {
+          "id": "calibration",
+          "kind": "file",
+          "path": "data/calibration.txt"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "analysed",
+          "kind": "file",
+          "path": "analysed.json"
+        }
+      ]
+    },
+    {
+      "id": "qc",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Quality check",
+      "executor": "shell",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "prepared",
+          "kind": "file",
+          "path": "prepared.json"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "qc_report",
+          "kind": "file",
+          "path": "qc.json"
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Render report",
+      "executor": "shell",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "analysed",
+          "kind": "file",
+          "path": "analysed.json"
+        },
+        {
+          "id": "qc_report",
+          "kind": "file",
+          "path": "qc.json"
+        },
+        {
+          "id": "reference",
+          "kind": "file",
+          "path": "data/reference.txt"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "report",
+          "kind": "file",
+          "path": "report.json"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "prep",
+      "source_output": "prepared",
+      "target": "analyse",
+      "target_input": "prepared",
+      "transfer": true
+    },
+    {
+      "source": "prep",
+      "source_output": "prepared",
+      "target": "qc",
+      "target_input": "prepared",
+      "transfer": true
+    },
+    {
+      "source": "analyse",
+      "source_output": "analysed",
+      "target": "report",
+      "target_input": "analysed",
+      "transfer": true
+    },
+    {
+      "source": "qc",
+      "source_output": "qc_report",
+      "target": "report",
+      "target_input": "qc_report",
+      "transfer": true
+    }
+  ]
+}

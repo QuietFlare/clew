@@ -1,0 +1,58 @@
+{
+  "format": "horus-lineage/v1",
+  "run": "6955f6195e06ce5e",
+  "execution": "aadb5468a2a04173a8ba977a1debcdc2",
+  "definition_sha256": "5d13310afad6ddb4c937fea60203760190283d28a8dd562275224e27a908d6f4",
+  "recorded_at": "2026-09-02T09:01:34.085882+00:00",
+  "task": {
+    "id": "qc",
+    "definition_id": null,
+    "kind": "horus_task",
+    "name": "Quality check",
+    "status": "skipped",
+    "skip_reason": "complete",
+    "runs": 0
+  },
+  "target": {
+    "kind": "local",
+    "location_id": "local://Seemas-MacBook-Pro-2.local"
+  },
+  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/qc/aadb5468a2a04173a8ba977a1debcdc2",
+  "command": null,
+  "environment": {
+    "executor": {
+      "kind": "shell",
+      "sha256": "6fa3b9ca39d6f52c325cd7668bea883e571e3092b9261f03820c8dbbfe49f9c3"
+    },
+    "runtime": {
+      "kind": "python_script",
+      "sha256": "d15ef357dbaadf311de5c9a9ccdb24ce6a216b3940ffb4d5d77550ce0c9e8791"
+    },
+    "config_sha256": "477258e458b48c7488777a2519195e22ac9d829647cc01b4e636c3ead71fddc1"
+  },
+  "code": [
+    {
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/qc.py",
+      "size": 236,
+      "sha256": "9786d59c6c52924066c63889fd68bf7c54a6bfa3149d9fda5898ab60c67422ea",
+      "role": "script"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "prepared",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prepared.json",
+      "size": 101,
+      "sha256": "5d4f9de9f8227245b364edd15918861976c5573ffee9a945c9d9c23c3b62a6eb"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "qc_report",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/qc.json",
+      "size": 14,
+      "sha256": "6be9fd7b507835859340615ecefe438360285057c821cda96d549216c91cb02d"
+    }
+  ],
+  "incomplete": []
+}

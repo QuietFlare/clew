@@ -1,0 +1,64 @@
+{
+  "format": "horus-lineage/v1",
+  "run": "6955f6195e06ce5e",
+  "execution": "d28ea6e166cc4b16a2ee4f8bd99a9700",
+  "definition_sha256": "5d13310afad6ddb4c937fea60203760190283d28a8dd562275224e27a908d6f4",
+  "recorded_at": "2026-09-02T09:01:34.089927+00:00",
+  "task": {
+    "id": "analyse",
+    "definition_id": null,
+    "kind": "horus_task",
+    "name": "Analyse prepared rows",
+    "status": "skipped",
+    "skip_reason": "complete",
+    "runs": 0
+  },
+  "target": {
+    "kind": "local",
+    "location_id": "local://Seemas-MacBook-Pro-2.local"
+  },
+  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/analyse/d28ea6e166cc4b16a2ee4f8bd99a9700",
+  "command": null,
+  "environment": {
+    "executor": {
+      "kind": "shell",
+      "sha256": "6fa3b9ca39d6f52c325cd7668bea883e571e3092b9261f03820c8dbbfe49f9c3"
+    },
+    "runtime": {
+      "kind": "python_script",
+      "sha256": "11f5c3c5a40f04d201e2bd602cb68527c4c4711b746609e9c1111b8b94f3d726"
+    },
+    "config_sha256": "2620f37668a273ffa8a77804402afd68210dba9ea72d2d7bc09ec391b1d8b769"
+  },
+  "code": [
+    {
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/analyse.py",
+      "size": 353,
+      "sha256": "5789d4f6a64a0b366e1619bc260ae5c61f104b5c6e0b0bc1138834e3b6eeabbe",
+      "role": "script"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "prepared",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prepared.json",
+      "size": 101,
+      "sha256": "5d4f9de9f8227245b364edd15918861976c5573ffee9a945c9d9c23c3b62a6eb"
+    },
+    {
+      "id": "calibration",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/data/calibration.txt",
+      "size": 9,
+      "sha256": "2b2949e96701dfd64bbf09dd034d2d3b5516e57cdc96eaeff2782eeb0e932687"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "analysed",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/analysed.json",
+      "size": 16,
+      "sha256": "07489a18790c7d989f548fcfae21950a35b6ab43df31582931761451b77178a9"
+    }
+  ],
+  "incomplete": []
+}

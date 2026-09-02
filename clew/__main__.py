@@ -34,6 +34,8 @@ COMMANDS = {
                       "build a graph from a Workflow Run RO-Crate"),
     "extract-work": ("clew.extract_lineage",
                      "build a graph from work/ symlinks, any engine version"),
+    "extract-horus": ("clew.extract_from_horus",
+                      "build a graph from a horus-lineage run directory"),
 }
 
 

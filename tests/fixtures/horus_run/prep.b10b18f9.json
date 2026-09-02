@@ -1,0 +1,58 @@
+{
+  "format": "horus-lineage/v1",
+  "run": "6955f6195e06ce5e",
+  "execution": "ba236cbbbdff477cab36123153dc3670",
+  "definition_sha256": "5d13310afad6ddb4c937fea60203760190283d28a8dd562275224e27a908d6f4",
+  "recorded_at": "2026-09-02T09:01:34.066688+00:00",
+  "task": {
+    "id": "prep",
+    "definition_id": null,
+    "kind": "horus_task",
+    "name": "Prepare rows",
+    "status": "skipped",
+    "skip_reason": "complete",
+    "runs": 0
+  },
+  "target": {
+    "kind": "local",
+    "location_id": "local://Seemas-MacBook-Pro-2.local"
+  },
+  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prep/ba236cbbbdff477cab36123153dc3670",
+  "command": null,
+  "environment": {
+    "executor": {
+      "kind": "shell",
+      "sha256": "6fa3b9ca39d6f52c325cd7668bea883e571e3092b9261f03820c8dbbfe49f9c3"
+    },
+    "runtime": {
+      "kind": "python_script",
+      "sha256": "f514fa9b2752efe92c600100e6047628d94ab38df7768a5c210ecd9759dbb497"
+    },
+    "config_sha256": "ef50d5384faff8d54494fb3515dbed120991c3d729010f38b97b1484a827ebac"
+  },
+  "code": [
+    {
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/prep.py",
+      "size": 274,
+      "sha256": "804bff67db6b272d67b6bf3c5f9ef77de0bbeec2f0e446144467d4588711a508",
+      "role": "script"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "raw",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/data/raw.csv",
+      "size": 21,
+      "sha256": "1d78d465cb8790be791c5bb0c90e24feb81265747299146414654ca6de1186fc"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "prepared",
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prepared.json",
+      "size": 101,
+      "sha256": "5d4f9de9f8227245b364edd15918861976c5573ffee9a945c9d9c23c3b62a6eb"
+    }
+  ],
+  "incomplete": []
+}
