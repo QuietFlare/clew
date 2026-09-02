@@ -4,7 +4,7 @@ Clew — what must happen downstream when something upstream turns out invalid.
 Three triggers, one engine:
 
     # consent withdrawal (a source is removed)
-    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --donor donor_003
+    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --subject donor_003
 
     # tool defect (every artifact a container touched is suspect)
     clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --container gatk4
@@ -13,7 +13,7 @@ Three triggers, one engine:
     clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --input genome.fasta
 
     # externally-asserted facts (publication) change the verdicts
-    ... --donor donor_003 --assertions assertions.json
+    ... --subject donor_003 --assertions assertions.json
 
 Wires the sarek domain adapter to the core traversal. All this file does is
 translate between them and print the result; it holds no logic of its own.
@@ -52,6 +52,14 @@ from clew.core import contribution
 from clew.core import policy
 from clew.core.policy import UNDETERMINED
 from clew.domains import rnaseq, sarek, viralrecon
+from clew.core.contribution import classify
+from clew.core.graph import (
+    container_entry_nodes,
+    describe,
+    external_input_entry_nodes,
+    load_assertions,
+    outputs_for,
+)
 from clew.domains.nfcore import index_results, published_copies
 
 # Which adapter translates between this pipeline's vocabulary and core's.
@@ -77,7 +85,7 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
 
     plan = []
     for task_hash in sorted(affected):
-        facts = domain.classify(
+        facts = classify(
             graph, task_hash, task_hash in exclusive_set, published=published,
             work_root=work_root,
         )
@@ -126,7 +134,7 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
             print(f"    rule {rows[0][2]['rule']}: {rows[0][2]['because']}")
         for task_hash, facts, _ in rows:
             scope = "exclusive" if facts["exclusive"] else "shared"
-            print(f"    {task_hash}  {domain.describe(graph, task_hash):<26} "
+            print(f"    {task_hash}  {describe(graph, task_hash):<26} "
                   f"{facts['contribution']:<12} {scope}")
             copies = published_copies(graph, task_hash, results_index)
             if copies:
@@ -141,7 +149,7 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
                 # claim is checkable rather than merely asserted.
                 for path in core.paths_to(entry_nodes, task_hash, forward, limit=1):
                     hops = " -> ".join(
-                        f"{h}[{domain.describe(graph, h)}]" for h in path
+                        f"{h}[{describe(graph, h)}]" for h in path
                     )
                     print(f"        via {hops}")
     return plan
@@ -173,7 +181,7 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
         action = decision["action"]
         item = {
             "task": task_hash,
-            "process": domain.describe(graph, task_hash),
+            "process": describe(graph, task_hash),
             "name": task.get("name", ""),
             # None when undetermined. A consumer treating a falsy action as
             # "nothing to do" is the exact failure this guards against, so
@@ -233,11 +241,18 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Compute a blast radius and remediation plan.")
     parser.add_argument("--graph", required=True, help="graph JSON from an extractor")
-    parser.add_argument("--samplesheet", required=True, help="nf-core samplesheet CSV")
+    parser.add_argument(
+        "--samplesheet",
+        help="nf-core samplesheet CSV. Needed only for --subject:\n"
+             "is the one thing a domain has to resolve.")
     parser.add_argument("--pipeline", choices=sorted(DOMAINS), default="sarek",
                         help="which domain adapter reads the samplesheet and names")
     trigger = parser.add_mutually_exclusive_group()
-    trigger.add_argument("--donor", help="withdraw a donor")
+    trigger.add_argument(
+        "--subject", "--donor", dest="subject",
+        help="withdraw a subject: a donor, a batch, a specimen. What "
+             "one is belongs to the domain adapter, not here. --donor "
+             "is the former name and still works.")
     trigger.add_argument("--container", help="flag every task run in a matching container")
     trigger.add_argument("--input", dest="input_file",
                          help="invalidate an external input file by basename")
@@ -282,8 +297,18 @@ def main(argv=None):
         print("note: this graph records no output sizes, so published "
               "copies cannot be mapped. Graphs extracted before sizes were "
               "recorded look like this; re-extract to fix.\n")
-    donors = domain.load_subjects(args.samplesheet)
-    published = domain.load_assertions(args.assertions)
+    # Only a subject trigger needs a domain to resolve one. Container and
+    # input triggers are graph questions, so asking one should not require
+    # naming a pipeline or producing its samplesheet.
+    if args.subject:
+        if not args.samplesheet:
+            raise SystemExit(
+                "--subject needs --samplesheet: resolving a subject to the "
+                "nodes it enters at is the one thing a domain does.")
+        donors = domain.load_subjects(args.samplesheet)
+    else:
+        donors = {}
+    published = load_assertions(args.assertions)
 
     # --- doubt triggers: single subject, nothing exclusive -------------------
     if args.container or args.input_file:
@@ -293,13 +318,13 @@ def main(argv=None):
             # dataset is a real remove-shaped input trigger, but computing
             # its exclusive set needs multi-root traversal we don't do yet.
             raise SystemExit(
-                "--mode remove requires a subject trigger (--donor); "
+                "--mode remove requires a subject trigger (--subject); "
                 "container and input triggers cast doubt, they do not remove "
                 "an owned source.")
         if args.container:
-            subjects = domain.container_entry_nodes(graph, args.container)
+            subjects = container_entry_nodes(graph, args.container)
         else:
-            subjects = domain.external_input_entry_nodes(graph, args.input_file)
+            subjects = external_input_entry_nodes(graph, args.input_file)
 
         subject, entry_nodes = next(iter(subjects.items()))
         if not entry_nodes:
@@ -325,7 +350,7 @@ def main(argv=None):
     entry = domain.subject_entry_nodes(graph, donors)
     radius = core.blast_radius(graph, entry)
 
-    if not args.donor:
+    if not args.subject:
         print(f"{len(graph['tasks'])} tasks, {len(graph['edges'])} edges, "
               f"{len(donors)} donors\n")
         print(f"{'donor':<12} {'entry':>6} {'affected':>9} {'exclusive':>10} {'shared':>7}")
@@ -335,31 +360,31 @@ def main(argv=None):
                   f"{len(r['exclusive']):>10} {len(r['shared']):>7}")
         return
 
-    if args.donor not in radius:
-        raise SystemExit(f"unknown donor {args.donor!r}; known: {', '.join(sorted(radius))}")
+    if args.subject not in radius:
+        raise SystemExit(f"unknown subject {args.subject!r}; known: {', '.join(sorted(radius))}")
 
-    result = radius[args.donor]
+    result = radius[args.subject]
     mode = args.mode or "remove"
     if mode == "remove":
         # Withdrawal: the subject's exclusive artifacts have nothing left to
         # serve and can be destroyed.
-        label = f"withdrawal of {args.donor}"
+        label = f"withdrawal of {args.subject}"
         exclusive = result["exclusive"]
     else:
         # Contamination / swap / QC failure: the subject's data is WRONG, not
         # withdrawn. Every artifact is still wanted once the cause is fixed,
         # so nothing is owned-and-destroyable; worst case is quarantine.
-        label = f"distrust of {args.donor}"
+        label = f"distrust of {args.subject}"
         exclusive = set()
-    plan = print_plan(domain, graph, label, entry[args.donor],
+    plan = print_plan(domain, graph, label, entry[args.subject],
                       result["affected"], exclusive, published,
                       results_index=results_index, active_policy=active_policy,
                       work_root=args.work_root)
 
     if args.files:
-        exclusive_files = domain.outputs_for(graph, result["exclusive"])
-        shared_files = domain.outputs_for(graph, result["shared"])
-        print(f"\nFILES exclusive to {args.donor}: {len(exclusive_files)}")
+        exclusive_files = outputs_for(graph, result["exclusive"])
+        shared_files = outputs_for(graph, result["shared"])
+        print(f"\nFILES exclusive to {args.subject}: {len(exclusive_files)}")
         for path in exclusive_files[:20]:
             print(f"    {path}")
         if len(exclusive_files) > 20:
@@ -374,7 +399,7 @@ def main(argv=None):
                   undetermined=count_undetermined(plan))
     # Last on stdout on purpose: with --json -, a consumer can split at the
     # final '{' and parse cleanly.
-    write_json(args.json_out, domain, graph, label, entry[args.donor], plan,
+    write_json(args.json_out, domain, graph, label, entry[args.subject], plan,
                results_index, active_policy)
 
 

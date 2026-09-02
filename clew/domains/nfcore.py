@@ -18,6 +18,9 @@ core/ may not.
 """
 
 import csv
+
+from clew.core import contribution
+from clew.core import graph as core_graph
 import re
 from pathlib import Path
 
@@ -99,131 +102,17 @@ def subject_entry_nodes(graph, subjects):
     return {subject: sorted(nodes) for subject, nodes in entry.items()}
 
 
-def container_entry_nodes(graph, needle):
-    """Entry nodes for a tool-defect trigger: tasks whose container matches."""
-    subject = f"container:{needle}"
-    nodes = sorted(
-        h for h, t in graph["tasks"].items() if needle in (t.get("container") or "")
-    )
-    return {subject: nodes}
-
-
-def external_input_entry_nodes(graph, filename):
-    """
-    Entry nodes for an upstream-input trigger: tasks that consumed an
-    EXTERNAL file with this basename. This is the reference-update /
-    load-bearing-input case.
-    """
-    subject = f"input:{filename}"
-    nodes = set()
-    for edge in graph["edges"]:
-        if edge["producer"] != "EXTERNAL":
-            continue
-        if Path(edge["filename"]).name == filename:
-            nodes.add(edge["consumer"])
-    return {subject: sorted(nodes)}
-
-
-def load_assertions(path):
-    """
-    Externally-asserted facts the pipeline cannot know about itself
-    (publication, so far). Returns {task_hash: assertion_record}; a missing
-    path honestly means "publication status unknown".
-    """
-    if not path:
-        return {}
-    import json
-
-    data = json.loads(Path(path).read_text())
-    return {rec["task"]: rec for rec in data.get("published", [])}
-
-
-def outputs_for(graph, task_hashes):
-    """Every file produced by the given tasks, as 'hash/filename'."""
-    files = []
-    for task_hash in sorted(task_hashes):
-        for filename in graph["outputs"].get(task_hash, []):
-            files.append(f"{task_hash}/{filename}")
-    return files
-
-
-def describe(graph, task_hash):
-    """Short human label for a task: the process name without its full path."""
-    task = graph["tasks"].get(task_hash, {})
-    return (task.get("process", "") or "?").split(":")[-1]
-
-
-def storage_state(workdir, work_root=None):
-    """
-    Whether the task's artifacts are still on disk — or None for "not checked".
-
-    NONE IS NOT A THIRD OUTCOME, IT IS THE ABSENCE OF ONE. Storage is a live
-    property of the world, and the person asking Clew a question is often not
-    standing where the pipeline ran: a different host, a CI runner, a laptop
-    reading a graph someone emailed them. Guessing there is not conservative
-    in either direction, so this refuses.
-
-    In particular DESTROYED is now only ever returned after actually looking
-    and not finding. It used to be returned whenever `is_dir()` was false,
-    which fired identically when the path was never recorded, when the volume
-    was not mounted, when the graph came from another machine, and when the
-    fixtures were anonymised for publication. All of those became
-    ALREADY_GONE — "no longer exists; nothing to do" — which is the one error
-    direction this project exists not to make. A false negative that silences
-    an obligation is worth more care than a false positive that wastes work.
-
-    `work_root` is the caller saying where to look. The recorded path is from
-    whichever machine ran the pipeline, so only its last two components — the
-    two-character prefix and the full task hash, which is how the engine lays
-    out a work directory — are joined onto the root given here. That makes a
-    graph portable between hosts without pretending the recorded absolute
-    path means anything locally.
-    """
-    if not workdir or not work_root:
-        return None
-    parts = Path(workdir).parts
-    if len(parts) < 2:
-        return None
-    local = Path(work_root, *parts[-2:])
-    return "WRITABLE" if local.is_dir() else "DESTROYED"
-
-
-def classify(graph, task_hash, exclusive, published=None, work_root=None):
-    """
-    Contribution class and storage for one affected task, from pipeline
-    evidence alone: a task whose script and container were recorded can be
-    re-executed (REGENERABLE); one without fails closed to IRREDUCIBLE.
-    Publication arrives as an external assertion and sets `terminal`.
-
-    `storage` is None unless `work_root` says where to look. See storage_state.
-    """
-    task = graph["tasks"].get(task_hash, {})
-    storage = storage_state(task.get("workdir", ""), work_root)
-
-    reproducible = bool(task.get("script")) and bool(task.get("container"))
-    klass = "REGENERABLE" if reproducible else "IRREDUCIBLE"
-
-    assertion = (published or {}).get(task_hash)
-    if assertion:
-        reason = (
-            f"published ({assertion.get('what', 'unspecified')}), asserted by "
-            f"{assertion.get('asserted_by', '?')} on {assertion.get('date', '?')}"
-        )
-    elif reproducible:
-        reason = "script and container recorded; task can be re-executed"
-    else:
-        reason = "script or container missing; task cannot be reproduced"
-
-    if storage is None:
-        reason += "; storage not checked (no --work-root given)"
-
-    return {
-        "contribution": klass,
-        "storage": storage,
-        "exclusive": exclusive,
-        "terminal": assertion is not None,
-        "reason": reason,
-    }
+# ---------------------------------------------------------------------------
+# Moved to core: none of these read anything nf-core specific, they only read
+# the graph schema. Re-exported here so existing callers keep working.
+# ---------------------------------------------------------------------------
+container_entry_nodes = core_graph.container_entry_nodes
+external_input_entry_nodes = core_graph.external_input_entry_nodes
+load_assertions = core_graph.load_assertions
+outputs_for = core_graph.outputs_for
+describe = core_graph.describe
+storage_state = contribution.storage_state
+classify = contribution.classify
 
 
 def index_results(results_dir):
