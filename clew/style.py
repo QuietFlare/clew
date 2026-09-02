@@ -54,10 +54,12 @@ TOKENS = """
   --card: 0 0% 100%;
   --muted: 210 40% 96%;
 
-  --ok: 142 71% 29%;
-  --ok-tint: 140 60% 96%;
-  --destructive: 0 74% 47%;
-  --destructive-tint: 0 86% 97%;
+  /* Rotated away from the accent (hue 25): a state must never read as
+     a second brand colour. */
+  --ok: 175 77% 26%;
+  --ok-tint: 175 45% 96%;
+  --destructive: 344 82% 39%;
+  --destructive-tint: 344 60% 97%;
 
   --radius: .5rem;
 
