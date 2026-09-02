@@ -15,9 +15,9 @@
   },
   "target": {
     "kind": "local",
-    "location_id": "local://Seemas-MacBook-Pro-2.local"
+    "location_id": "local://workstation-01"
   },
-  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prep/ba236cbbbdff477cab36123153dc3670",
+  "working_dir": "/work/diamond/results/prep/ba236cbbbdff477cab36123153dc3670",
   "command": null,
   "environment": {
     "executor": {
@@ -32,7 +32,7 @@
   },
   "code": [
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/prep.py",
+      "path": "/work/diamond/scripts/prep.py",
       "size": 274,
       "sha256": "804bff67db6b272d67b6bf3c5f9ef77de0bbeec2f0e446144467d4588711a508",
       "role": "script"
@@ -41,7 +41,7 @@
   "inputs": [
     {
       "id": "raw",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/data/raw.csv",
+      "path": "/work/diamond/data/raw.csv",
       "size": 21,
       "sha256": "1d78d465cb8790be791c5bb0c90e24feb81265747299146414654ca6de1186fc"
     }
@@ -49,7 +49,7 @@
   "outputs": [
     {
       "id": "prepared",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prepared.json",
+      "path": "/work/diamond/results/prepared.json",
       "size": 101,
       "sha256": "5d4f9de9f8227245b364edd15918861976c5573ffee9a945c9d9c23c3b62a6eb"
     }

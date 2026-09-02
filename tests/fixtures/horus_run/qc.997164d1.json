@@ -15,9 +15,9 @@
   },
   "target": {
     "kind": "local",
-    "location_id": "local://Seemas-MacBook-Pro-2.local"
+    "location_id": "local://workstation-01"
   },
-  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/qc/aadb5468a2a04173a8ba977a1debcdc2",
+  "working_dir": "/work/diamond/results/qc/aadb5468a2a04173a8ba977a1debcdc2",
   "command": null,
   "environment": {
     "executor": {
@@ -32,7 +32,7 @@
   },
   "code": [
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/qc.py",
+      "path": "/work/diamond/scripts/qc.py",
       "size": 236,
       "sha256": "9786d59c6c52924066c63889fd68bf7c54a6bfa3149d9fda5898ab60c67422ea",
       "role": "script"
@@ -41,7 +41,7 @@
   "inputs": [
     {
       "id": "prepared",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prepared.json",
+      "path": "/work/diamond/results/prepared.json",
       "size": 101,
       "sha256": "5d4f9de9f8227245b364edd15918861976c5573ffee9a945c9d9c23c3b62a6eb"
     }
@@ -49,7 +49,7 @@
   "outputs": [
     {
       "id": "qc_report",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/qc.json",
+      "path": "/work/diamond/results/qc.json",
       "size": 14,
       "sha256": "6be9fd7b507835859340615ecefe438360285057c821cda96d549216c91cb02d"
     }

@@ -15,9 +15,9 @@
   },
   "target": {
     "kind": "local",
-    "location_id": "local://Seemas-MacBook-Pro-2.local"
+    "location_id": "local://workstation-01"
   },
-  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/analyse/d28ea6e166cc4b16a2ee4f8bd99a9700",
+  "working_dir": "/work/diamond/results/analyse/d28ea6e166cc4b16a2ee4f8bd99a9700",
   "command": null,
   "environment": {
     "executor": {
@@ -32,7 +32,7 @@
   },
   "code": [
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/analyse.py",
+      "path": "/work/diamond/scripts/analyse.py",
       "size": 353,
       "sha256": "5789d4f6a64a0b366e1619bc260ae5c61f104b5c6e0b0bc1138834e3b6eeabbe",
       "role": "script"
@@ -41,13 +41,13 @@
   "inputs": [
     {
       "id": "prepared",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/prepared.json",
+      "path": "/work/diamond/results/prepared.json",
       "size": 101,
       "sha256": "5d4f9de9f8227245b364edd15918861976c5573ffee9a945c9d9c23c3b62a6eb"
     },
     {
       "id": "calibration",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/data/calibration.txt",
+      "path": "/work/diamond/data/calibration.txt",
       "size": 9,
       "sha256": "2b2949e96701dfd64bbf09dd034d2d3b5516e57cdc96eaeff2782eeb0e932687"
     }
@@ -55,7 +55,7 @@
   "outputs": [
     {
       "id": "analysed",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/analysed.json",
+      "path": "/work/diamond/results/analysed.json",
       "size": 16,
       "sha256": "07489a18790c7d989f548fcfae21950a35b6ab43df31582931761451b77178a9"
     }

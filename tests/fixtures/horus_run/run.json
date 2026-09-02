@@ -2,7 +2,7 @@
   "format": "horus-lineage/v1",
   "run": "6955f6195e06ce5e",
   "run_scope": null,
-  "run_directory": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results",
+  "run_directory": "/work/diamond/results",
   "workflow": {
     "id": "6c967e13-e5d4-4760-af95-08e9047c3ae5",
     "slug": null,
@@ -18,25 +18,25 @@
   "source": null,
   "code": [
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/analyse.py",
+      "path": "/work/diamond/scripts/analyse.py",
       "size": 353,
       "sha256": "5789d4f6a64a0b366e1619bc260ae5c61f104b5c6e0b0bc1138834e3b6eeabbe",
       "role": "script"
     },
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/prep.py",
+      "path": "/work/diamond/scripts/prep.py",
       "size": 274,
       "sha256": "804bff67db6b272d67b6bf3c5f9ef77de0bbeec2f0e446144467d4588711a508",
       "role": "script"
     },
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/qc.py",
+      "path": "/work/diamond/scripts/qc.py",
       "size": 236,
       "sha256": "9786d59c6c52924066c63889fd68bf7c54a6bfa3149d9fda5898ab60c67422ea",
       "role": "script"
     },
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/report.py",
+      "path": "/work/diamond/scripts/report.py",
       "size": 428,
       "sha256": "482598a8660cbca724e237910b670d159685769e00ab80bc0651a327d9011f2c",
       "role": "script"
