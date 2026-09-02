@@ -15,9 +15,9 @@
   },
   "target": {
     "kind": "local",
-    "location_id": "local://Seemas-MacBook-Pro-2.local"
+    "location_id": "local://workstation-01"
   },
-  "working_dir": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/report/9c9c3f12c43348898abdb6a1b8737a91",
+  "working_dir": "/work/diamond/results/report/9c9c3f12c43348898abdb6a1b8737a91",
   "command": null,
   "environment": {
     "executor": {
@@ -32,7 +32,7 @@
   },
   "code": [
     {
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/scripts/report.py",
+      "path": "/work/diamond/scripts/report.py",
       "size": 428,
       "sha256": "482598a8660cbca724e237910b670d159685769e00ab80bc0651a327d9011f2c",
       "role": "script"
@@ -41,19 +41,19 @@
   "inputs": [
     {
       "id": "analysed",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/analysed.json",
+      "path": "/work/diamond/results/analysed.json",
       "size": 16,
       "sha256": "07489a18790c7d989f548fcfae21950a35b6ab43df31582931761451b77178a9"
     },
     {
       "id": "qc_report",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/qc.json",
+      "path": "/work/diamond/results/qc.json",
       "size": 14,
       "sha256": "6be9fd7b507835859340615ecefe438360285057c821cda96d549216c91cb02d"
     },
     {
       "id": "reference",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/data/reference.txt",
+      "path": "/work/diamond/data/reference.txt",
       "size": 13,
       "sha256": "271b940fce8f33fa836a2685638dcdc1a5425148f5bb5aee432287392cacf78f"
     }
@@ -61,7 +61,7 @@
   "outputs": [
     {
       "id": "report",
-      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-horus-lineage/2a20a426-13c1-4117-bf4a-8626ad9da7c7/scratchpad/impact/results/report.json",
+      "path": "/work/diamond/results/report.json",
       "size": 43,
       "sha256": "eddd4a46ce4126448fc52c945e961a22099df3a715a948e6a7c9c246db1be885"
     }

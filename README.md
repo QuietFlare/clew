@@ -7,6 +7,8 @@ delete, re-run, or disclose, with a plan you can hand to an auditor.
 
 A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
+![An impact report: how much of the run a bad container reaches, and what to do about each task it touches](docs/impact.png)
+
 ## The problem
 
 Something upstream is invalidated after the fact. It was already aligned,

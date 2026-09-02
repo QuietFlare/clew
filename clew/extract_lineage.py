@@ -101,6 +101,7 @@ def load_run(jsonl_path):
             "process": trace.get("process", ""),
             "container": trace.get("container", ""),
             "status": trace.get("status", ""),
+            "target": "",   # one machine per run; nothing to record
             "workdir": trace.get("workdir", ""),
             # The exact command that ran. Together with `container` this is
             # what makes a task re-executable, and therefore what decides

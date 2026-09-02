@@ -52,6 +52,7 @@ from clew.core import contribution
 from clew.core import policy
 from clew.core.policy import UNDETERMINED
 from clew.domains import rnaseq, sarek, viralrecon
+from clew import report
 from clew.core import triggers
 from clew.core.contribution import classify
 from clew.core.graph import (
@@ -184,6 +185,10 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
             "task": task_hash,
             "process": describe(graph, task_hash),
             "name": task.get("name", ""),
+            # Where it ran. The one cost signal that is a fact rather than
+            # an estimate: a fan-out landing on a cluster is expensive
+            # whatever a clock says. Empty for engines that run one machine.
+            "target": task.get("target", ""),
             # None when undetermined. A consumer treating a falsy action as
             # "nothing to do" is the exact failure this guards against, so
             # `possible` is present precisely when `action` is not.
@@ -278,6 +283,9 @@ def main(argv=None):
                              "this to replay a historical plan under the "
                              "table that was in force when it was computed.")
     parser.add_argument("--files", action="store_true", help="list affected output files")
+    parser.add_argument("--html", dest="html_out", metavar="PATH",
+                        help="write one self-contained HTML page, "
+                             "or - for stdout")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
                         help="also write the plan as JSON ('-' for stdout)")
     parser.add_argument("--work-root", metavar="DIR",
@@ -362,7 +370,7 @@ def main(argv=None):
                       undetermined=count_undetermined(plan))
         # Last on stdout on purpose: with --json -, a consumer can split at
         # the final '{' and parse cleanly.
-        write_json(args.json_out, domain, graph, subject, entry_nodes, plan,
+        write_outputs(args.json_out, args.html_out, domain, graph, subject, entry_nodes, plan,
                    results_index, active_policy)
         return
 
@@ -419,18 +427,29 @@ def main(argv=None):
                   undetermined=count_undetermined(plan))
     # Last on stdout on purpose: with --json -, a consumer can split at the
     # final '{' and parse cleanly.
-    write_json(args.json_out, domain, graph, label, entry[args.subject], plan,
+    write_outputs(args.json_out, args.html_out, domain, graph, label, entry[args.subject], plan,
                results_index, active_policy)
 
 
-def write_json(json_out, domain, graph, subject, entry_nodes, plan,
-               results_index=None, active_policy=None):
+def write_outputs(json_out, html_out, domain, graph, subject, entry_nodes,
+                  plan, results_index=None, active_policy=None):
+    """
+    Render the plan in whichever formats were asked for, building it once.
+    """
+    if not json_out and not html_out:
+        return
+    built = plan_to_dict(domain, graph, subject, entry_nodes, plan,
+                         results_index, active_policy)
+    if html_out:
+        report.write(built, html_out)
+    if json_out:
+        write_json(json_out, built)
+
+
+def write_json(json_out, built):
     if not json_out:
         return
-    payload = json.dumps(
-        plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index,
-                     active_policy),
-        indent=2)
+    payload = json.dumps(built, indent=2)
     if json_out == "-":
         print(payload)
     else:

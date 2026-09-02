@@ -106,6 +106,7 @@ def extract(crate_path):
             "process": process,
             "container": container_of(entity, by_id),
             "status": "",
+            "target": "",   # a crate records no execution host
             "workdir": "",   # not recorded in a crate; storage fails closed
             "script": "",    # likewise: no re-execution evidence
         }

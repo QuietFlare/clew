@@ -222,6 +222,7 @@ def extract(store, run_hash):
             "process": process,
             "container": spec.get("container", ""),
             "status": "",  # the store only records tasks that ran
+            "target": "",   # one machine per run; nothing to record
             "workdir": workdir,
             "script": spec.get("script", ""),
         }
