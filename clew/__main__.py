@@ -36,6 +36,8 @@ COMMANDS = {
                      "build a graph from work/ symlinks, any engine version"),
     "extract-horus": ("clew.extract_from_horus",
                       "build a graph from a horus-lineage run directory"),
+    "extract-dnanexus": ("clew.extract_from_dnanexus",
+                         "build a graph from a DNAnexus analysis"),
 }
 
 

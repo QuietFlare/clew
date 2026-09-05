@@ -1,5 +1,5 @@
 """
-Clew — lineage adapter for Nextflow's native data lineage store (25.04+).
+Clew — lineage adapter for Nextflow's native data lineage store.
 
 WHY THIS EXISTS
 ---------------

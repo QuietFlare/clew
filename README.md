@@ -118,8 +118,9 @@ pipeline.
 
 | Source | Command |
 |---|---|
-| Nextflow native lineage, 25.04 and later, including Seqera Platform | `clew extract-store --store /path/to/.lineage --run <run> --json-out graph.json` |
+| Nextflow native lineage, including Seqera Platform | `clew extract-store --store /path/to/.lineage --run <run> --json-out graph.json` |
 | Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract-horus --run-dir ~/.horus-lineage/<run-id>/ --json-out graph.json` |
+| DNAnexus, read-only over the API | `clew extract-dnanexus --analysis analysis-xxxx --json-out graph.json` |
 | Workflow Run RO-Crate, as written by nf-prov | `clew extract-crate --crate ro-crate-metadata.json --json-out graph.json` |
 | A Nextflow work directory, for runs that already happened | `clew extract-work --jsonl <run>.jsonl --work work/ --json-out graph.json` |
 
@@ -166,12 +167,13 @@ the tests are in [Architecture](docs/architecture.md).
 
 ## Status
 
-Version 0.2. Extraction from four lineage sources, verified on real runs.
-Blast radius for subject, container, input and label triggers. Contribution
-classes with fail-closed defaults, remediation plans, publication
-assertions, the append-only log, versioned policy, sealed bundles that replay
-offline, the CI gate, the dashboard and the MCP server. 333 tests, stdlib
-only.
+Extraction from Nextflow, Horus, RO-Crate and work directories, verified on
+real runs. DNAnexus extraction built from the documented API and awaiting
+its first live analysis. Blast radius for subject, container, input and
+label triggers. Contribution classes with fail-closed defaults, remediation
+plans, publication assertions, the append-only log, versioned policy, sealed
+bundles that replay offline, the CI gate, the dashboard and the MCP server.
+Stdlib only.
 
 Not built: a log identity, and domain adapters beyond nf-core pipelines.
 [CHANGELOG.md](CHANGELOG.md) lists what changed in each release.

@@ -6,7 +6,7 @@ extractors ship today.
 
 ## Nextflow native lineage (preferred)
 
-Nextflow 25.04 and later records lineage when you enable it in the
+Nextflow records lineage when you enable it in the
 configuration, as the
 [Nextflow docs](https://www.nextflow.io/docs/latest/data-lineage.html)
 describe:
@@ -31,8 +31,8 @@ clew extract-store --store /path/to/.lineage --run <run-name> --json-out graph.j
 
 The engine is the best witness of what it ran. Inputs are typed, external
 files carry checksums, and every task names its run, so one store shared
-across many runs is safe by construction. Seqera Platform users on Nextflow
-25.04 or later already have this store. Platform displays it, and Clew reads
+across many runs is safe by construction. Seqera Platform users already
+have this store. Platform displays it, and Clew reads
 the same files.
 
 ## Horus
@@ -51,6 +51,32 @@ Skipped tasks are recorded with their digests, so a cached run gives the
 same graph as a fresh one. A record that says its digests were disabled or
 partial still appears as a node, and its missing edges read as external
 rather than being dropped.
+
+## DNAnexus
+
+DNAnexus records lineage on the platform. A job describe lists inputs and
+outputs as file IDs, a file describe names the job that created it, and
+file IDs are immutable and survive cloning between projects. Edges join
+on file ID, so two analyses stitch with no path matching, even across
+projects.
+
+```bash
+clew extract-dnanexus --analysis analysis-xxxx --json-out graph.json
+```
+
+The token comes from `DX_SECURITY_CONTEXT`, which `dx login` sets, or from
+`--token`. The extractor only lists and describes. It never launches,
+downloads or writes. A VIEW-level share of the project is enough. Saved
+describe output works too, with `--records DIR` pointing at `jobs.json` and
+`files.json`, which is how the tests run.
+
+Two optional task fields carry what DNAnexus knows and Nextflow does not:
+`price`, when the caller has billing access, and `duration_s`.
+
+Not yet verified against a live analysis. The record shapes come from the
+DNAnexus API documentation. Nextflow pipelines on DNAnexus run as a head
+job plus one subjob per process, and whether those subjobs expose their
+files as platform file IDs is one of the things a first real run will show.
 
 ## Workflow Run RO-Crate
 

@@ -9,7 +9,7 @@ logs.
 ```mermaid
 flowchart TB
     subgraph ENG["The engine already writes this"]
-        LS["Nextflow lineage store (25.04+)"]
+        LS["Nextflow lineage store"]
         HL["horus-lineage records"]
         RC["nf-prov RO-Crate"]
         WS["work/ symlinks"]

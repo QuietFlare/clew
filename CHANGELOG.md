@@ -4,6 +4,21 @@ All notable changes to Clew. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- DNAnexus support: `clew extract-dnanexus` builds a graph from an
+  analysis, over the API or from saved describe output. Edges join on
+  file ID. Optional `price` and `duration_s` per task.
+- A graph contract in core, `contract_violations`, run by the tests over
+  every shipped and fixture graph.
+
+### Fixed
+
+- The runtime version now matches the package version. 0.2.0 reported
+  itself as 0.1.1.
+
 ## [0.2.0] - 2026-09-05
 
 ### Added
@@ -63,6 +78,7 @@ First release on PyPI as `clew-lineage`.
 - A CI gate that fails closed on unknown subjects.
 - A self-contained dashboard and a read-only MCP server for auditors.
 
+[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/QuietFlare/clew/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/QuietFlare/clew/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/QuietFlare/clew/releases/tag/v0.1.0
