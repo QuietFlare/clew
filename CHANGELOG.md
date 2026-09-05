@@ -14,6 +14,9 @@ follow [Semantic Versioning](https://semver.org/).
   unknown kind is read as a label key, so engines that record labels answer
   label queries with no adapter.
 - `--html` on `clew impact` writes a self-contained impact report.
+- The lineage store extractor follows resumed runs: tasks cached from an
+  earlier session in the same chain stay in the graph, replaced tasks are
+  marked rather than dropped, and an unknown store version is refused.
 - A comparison of what each lineage source can prove, in the docs.
 - Output sizes in the work-directory extractor.
 
