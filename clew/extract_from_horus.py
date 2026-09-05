@@ -116,6 +116,34 @@ def script_of(record):
     return code[0]["path"] if code else ""
 
 
+def labels_of(entry):
+    """
+    An artifact's labels, keeping only string keys and values.
+
+    The vocabulary is the domain's, never this module's: whatever the
+    workflow author wrote is passed through untouched.
+    """
+    raw = entry.get("labels")
+    if not isinstance(raw, dict):
+        return {}
+    return {k: v for k, v in raw.items()
+            if isinstance(k, str) and isinstance(v, str)}
+
+
+def merged_labels(record):
+    """
+    Every label on everything the task touched, inputs and outputs.
+
+    A later key wins, which only matters when one task's own artifacts
+    disagree, and then either answer is equally arbitrary.
+    """
+    merged = {}
+    for side in ("inputs", "outputs"):
+        for entry in record.get(side, []):
+            merged.update(labels_of(entry))
+    return merged
+
+
 def producers_by_digest(records):
     """
     sha256 -> the node that produced it.
@@ -202,7 +230,12 @@ def extract(run_dir):
                 "producer": producer or "EXTERNAL",
                 "filename": Path(entry.get("path", "")).name,
                 "target": entry.get("path", ""),
+                "labels": labels_of(entry),
             })
+
+        # An output's labels reach the graph through the task, because no
+        # edge carries them when nothing downstream consumes the artifact.
+        tasks[node]["labels"] = merged_labels(record)
 
         outputs[node] = sorted(
             Path(o.get("path", "")).name
