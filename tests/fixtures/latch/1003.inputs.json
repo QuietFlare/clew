@@ -1,0 +1,40 @@
+{
+ "literals": {
+  "bam": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/out/align/sample_1.bam"
+    }
+   }
+  },
+  "reference": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/ref/genome.fa"
+    }
+   }
+  },
+  "bam_again": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/out/align/sample_1.bam"
+    }
+   }
+  }
+ }
+}

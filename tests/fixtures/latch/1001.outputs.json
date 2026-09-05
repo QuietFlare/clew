@@ -1,0 +1,16 @@
+{
+ "literals": {
+  "bam": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/out/align/sample_1.bam"
+    }
+   }
+  }
+ }
+}

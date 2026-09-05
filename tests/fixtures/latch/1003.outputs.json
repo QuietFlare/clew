@@ -1,0 +1,16 @@
+{
+ "literals": {
+  "vcf": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/out/call/sample_1.vcf.gz"
+    }
+   }
+  }
+ }
+}

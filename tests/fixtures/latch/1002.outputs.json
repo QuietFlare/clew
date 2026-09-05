@@ -1,0 +1,16 @@
+{
+ "literals": {
+  "report": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/out/fastqc/sample_1_fastqc.html"
+    }
+   }
+  }
+ }
+}

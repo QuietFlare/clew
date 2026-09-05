@@ -1,0 +1,59 @@
+{
+ "literals": {
+  "variants": {
+   "collection": {
+    "literals": [
+     {
+      "scalar": {
+       "blob": {
+        "metadata": {
+         "type": {
+          "format": ""
+         }
+        },
+        "uri": "latch:///demo/out/call/sample_1.vcf.gz"
+       }
+      }
+     }
+    ]
+   }
+  },
+  "qc": {
+   "collection": {
+    "literals": [
+     {
+      "scalar": {
+       "blob": {
+        "metadata": {
+         "type": {
+          "format": ""
+         }
+        },
+        "uri": "latch:///demo/out/fastqc/sample_1_fastqc.html"
+       }
+      }
+     }
+    ]
+   }
+  },
+  "unknown": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/shared/metadata.csv"
+    }
+   }
+  },
+  "title": {
+   "scalar": {
+    "primitive": {
+     "stringValue": "cohort"
+    }
+   }
+  }
+ }
+}

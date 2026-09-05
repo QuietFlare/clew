@@ -38,6 +38,8 @@ COMMANDS = {
                       "build a graph from a horus-lineage run directory"),
     "extract-dnanexus": ("clew.extract_from_dnanexus",
                          "build a graph from a DNAnexus analysis"),
+    "extract-latch": ("clew.extract_from_latch",
+                      "build a graph from a Latch execution"),
 }
 
 

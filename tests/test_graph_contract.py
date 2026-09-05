@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import clew
 from clew import extract_from_dnanexus as dx
 from clew import extract_from_horus as hz
+from clew import extract_from_latch as lt
 from clew import extract_from_rocrate as rc
 from clew.core.graph import contract_violations
 
@@ -30,6 +31,7 @@ def fixture_graphs():
     yield "horus", hz.extract(FIXTURES / "horus_run")
     yield "rocrate", rc.extract(FIXTURES / "ro-crate-metadata.json")
     yield "dnanexus", dx.extract(dx.load_records(FIXTURES / "dnanexus"))
+    yield "latch", lt.extract(lt.load_records(FIXTURES / "latch"))
 
 
 class ShippedGraphsConform(unittest.TestCase):

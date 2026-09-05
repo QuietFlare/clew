@@ -78,6 +78,31 @@ DNAnexus API documentation. Nextflow pipelines on DNAnexus run as a head
 job plus one subjob per process, and whether those subjobs expose their
 files as platform file IDs is one of the things a first real run will show.
 
+## Latch
+
+Latch keeps one execution graph node per task, with status, timings, cost
+and the Flyte literal maps it ran with. Files in those maps are named by
+`latch://` path, so edges join on path, and two executions stitch at a
+shared path like two Nextflow runs do. The workflow's commit hash and
+image hash identify the code and the environment.
+
+```bash
+clew extract-latch --execution <id> --json-out graph.json
+```
+
+The token is the one `latch login` stores, or `--token`. The extractor
+reads one execution and downloads each task's inputs and outputs record.
+It never launches or writes. Saved records work too, with `--records DIR`
+holding `execution.json` and one literals file per node, which is how the
+tests run.
+
+Optional task fields: `price` and `duration_s`.
+
+Not yet verified against a live execution. The schema comes from
+introspecting the API the Latch SDK uses, which is not a published
+contract, so the extractor pins the fields it reads and fails loudly if
+they change.
+
 ## Workflow Run RO-Crate
 
 The [nf-prov](https://github.com/nextflow-io/nf-prov) plugin writes a

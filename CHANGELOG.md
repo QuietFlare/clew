@@ -11,6 +11,8 @@ follow [Semantic Versioning](https://semver.org/).
 - DNAnexus support: `clew extract-dnanexus` builds a graph from an
   analysis, over the API or from saved describe output. Edges join on
   file ID. Optional `price` and `duration_s` per task.
+- Latch support: `clew extract-latch` builds a graph from an execution,
+  over the API or from saved records. Edges join on `latch://` path.
 - A graph contract in core, `contract_violations`, run by the tests over
   every shipped and fixture graph.
 

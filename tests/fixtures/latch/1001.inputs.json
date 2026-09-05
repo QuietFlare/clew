@@ -1,0 +1,35 @@
+{
+ "literals": {
+  "reads": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/reads/sample_1.fastq.gz"
+    }
+   }
+  },
+  "reference": {
+   "scalar": {
+    "blob": {
+     "metadata": {
+      "type": {
+       "format": ""
+      }
+     },
+     "uri": "latch:///demo/ref/genome.fa"
+    }
+   }
+  },
+  "threads": {
+   "scalar": {
+    "primitive": {
+     "stringValue": "8"
+    }
+   }
+  }
+ }
+}
