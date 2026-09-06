@@ -1,0 +1,324 @@
+{
+  "workflowName": "diamond",
+  "workflowProcessingEvents": [{
+    "cromwellId": "cromid-7cca498",
+    "description": "Finished",
+    "timestamp": "2026-09-06T13:52:34.084Z",
+    "cromwellVersion": "92"
+  }, {
+    "cromwellId": "cromid-7cca498",
+    "description": "PickedUp",
+    "timestamp": "2026-09-06T13:51:57.915Z",
+    "cromwellVersion": "92"
+  }],
+  "actualWorkflowLanguageVersion": "1.0",
+  "submittedFiles": {
+    "workflow": "version 1.0\n\nworkflow diamond {\n  input {\n    File raw\n    File calibration\n    File reference\n    Array[String] samples = [\"s1\", \"s2\"]\n  }\n  call prep { input: raw = raw }\n  call qc { input: prepped = prep.prepped }\n  scatter (s in samples) {\n    call analyse { input: prepped = prep.prepped, calibration = calibration, sample = s }\n  }\n  call report { input: analyses = analyse.analysis, qc = qc.qc, reference = reference }\n  output {\n    File report_out = report.report\n  }\n}\n\ntask prep {\n  input { File raw }\n  command { sort ~{raw} > prepped.csv }\n  output { File prepped = \"prepped.csv\" }\n  \n}\n\ntask qc {\n  input { File prepped }\n  command { wc -l ~{prepped} > qc.txt }\n  output { File qc = \"qc.txt\" }\n}\n\ntask analyse {\n  input {\n    File prepped\n    File calibration\n    String sample\n  }\n  command { cat ~{prepped} ~{calibration} > ~{sample}.analysis.txt; echo sample=~{sample} >> ~{sample}.analysis.txt }\n  output { File analysis = \"~{sample}.analysis.txt\" }\n  \n}\n\ntask report {\n  input {\n    Array[File] analyses\n    File qc\n    File reference\n  }\n  command { cat ~{sep=' ' analyses} ~{qc} ~{reference} > report.txt }\n  output { File report = \"report.txt\" }\n}\n",
+    "root": "",
+    "options": "{\n\n}",
+    "inputs": "{\"diamond.raw\": \"/data/wdl/raw.csv\", \"diamond.calibration\": \"/data/wdl/calibration.txt\", \"diamond.reference\": \"/data/wdl/reference.txt\"}\n",
+    "workflowUrl": "diamond.wdl",
+    "labels": "{}"
+  },
+  "calls": {
+    "diamond.report": [{
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "cat /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/inputs/-1433819300/s1.analysis.txt /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/inputs/1064196637/s2.analysis.txt /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/inputs/875147053/qc.txt /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/inputs/1936395630/reference.txt > report.txt",
+      "shardIndex": -1,
+      "outputs": {
+        "report": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/execution/report.txt"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "reference": "/data/wdl/reference.txt",
+        "analyses": ["/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0/execution/s1.analysis.txt", "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1/execution/s2.analysis.txt"],
+        "qc": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-qc/execution/qc.txt"
+      },
+      "returnCode": 0,
+      "jobId": "41670",
+      "backend": "Local",
+      "end": "2026-09-06T13:52:32.813Z",
+      "start": "2026-09-06T13:52:24.889Z",
+      "stderr": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:52:24.889Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:52:24.890Z"
+      }, {
+        "startTime": "2026-09-06T13:52:27.877Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:52:27.882Z"
+      }, {
+        "startTime": "2026-09-06T13:52:32.813Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:52:32.813Z"
+      }, {
+        "startTime": "2026-09-06T13:52:24.890Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:52:27.877Z"
+      }, {
+        "startTime": "2026-09-06T13:52:27.882Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:52:32.813Z"
+      }, {
+        "startTime": "2026-09-06T13:52:27.877Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:52:27.877Z"
+      }]
+    }],
+    "diamond.qc": [{
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-qc/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "wc -l /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-qc/inputs/1600352520/prepped.csv > qc.txt",
+      "shardIndex": -1,
+      "outputs": {
+        "qc": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-qc/execution/qc.txt"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "prepped": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/execution/prepped.csv"
+      },
+      "returnCode": 0,
+      "jobId": "41599",
+      "backend": "Local",
+      "end": "2026-09-06T13:52:22.821Z",
+      "start": "2026-09-06T13:52:14.691Z",
+      "stderr": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-qc/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-qc",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:52:17.884Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:52:22.820Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.877Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:52:17.877Z"
+      }, {
+        "startTime": "2026-09-06T13:52:22.820Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:52:22.821Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.877Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:52:17.884Z"
+      }, {
+        "startTime": "2026-09-06T13:52:14.692Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:52:17.877Z"
+      }, {
+        "startTime": "2026-09-06T13:52:14.691Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:52:14.692Z"
+      }]
+    }],
+    "diamond.analyse": [{
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "cat /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0/inputs/1600352520/prepped.csv /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0/inputs/1936395630/calibration.txt > s1.analysis.txt; echo sample=s1 >> s1.analysis.txt",
+      "shardIndex": 0,
+      "outputs": {
+        "analysis": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0/execution/s1.analysis.txt"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "calibration": "/data/wdl/calibration.txt",
+        "sample": "s1",
+        "prepped": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/execution/prepped.csv"
+      },
+      "returnCode": 0,
+      "jobId": "41601",
+      "backend": "Local",
+      "end": "2026-09-06T13:52:22.820Z",
+      "start": "2026-09-06T13:52:14.691Z",
+      "stderr": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-0",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:52:17.877Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:52:17.885Z"
+      }, {
+        "startTime": "2026-09-06T13:52:14.692Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:52:14.692Z"
+      }, {
+        "startTime": "2026-09-06T13:52:14.692Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:52:17.876Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.876Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:52:17.877Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.885Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:52:22.820Z"
+      }, {
+        "startTime": "2026-09-06T13:52:22.820Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:52:22.821Z"
+      }]
+    }, {
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "cat /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1/inputs/1600352520/prepped.csv /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1/inputs/1936395630/calibration.txt > s2.analysis.txt; echo sample=s2 >> s2.analysis.txt",
+      "shardIndex": 1,
+      "outputs": {
+        "analysis": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1/execution/s2.analysis.txt"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "calibration": "/data/wdl/calibration.txt",
+        "sample": "s2",
+        "prepped": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/execution/prepped.csv"
+      },
+      "returnCode": 0,
+      "jobId": "41603",
+      "backend": "Local",
+      "end": "2026-09-06T13:52:22.822Z",
+      "start": "2026-09-06T13:52:14.692Z",
+      "stderr": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-analyse/shard-1",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:52:22.820Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:52:22.821Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.887Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:52:22.820Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.877Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:52:17.887Z"
+      }, {
+        "startTime": "2026-09-06T13:52:17.876Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:52:17.877Z"
+      }, {
+        "startTime": "2026-09-06T13:52:14.692Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:52:14.693Z"
+      }, {
+        "startTime": "2026-09-06T13:52:14.693Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:52:17.876Z"
+      }]
+    }],
+    "diamond.prep": [{
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "sort /data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/inputs/1936395630/raw.csv > prepped.csv",
+      "shardIndex": -1,
+      "outputs": {
+        "prepped": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/execution/prepped.csv"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "raw": "/data/wdl/raw.csv"
+      },
+      "returnCode": 0,
+      "jobId": "41572",
+      "backend": "Local",
+      "end": "2026-09-06T13:52:12.856Z",
+      "start": "2026-09-06T13:52:00.403Z",
+      "stderr": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-prep",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:52:00.424Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:52:07.889Z"
+      }, {
+        "startTime": "2026-09-06T13:52:12.856Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:52:12.856Z"
+      }, {
+        "startTime": "2026-09-06T13:52:07.898Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:52:07.936Z"
+      }, {
+        "startTime": "2026-09-06T13:52:07.889Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:52:07.898Z"
+      }, {
+        "startTime": "2026-09-06T13:52:07.936Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:52:12.856Z"
+      }, {
+        "startTime": "2026-09-06T13:52:00.416Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:52:00.424Z"
+      }]
+    }]
+  },
+  "outputs": {
+    "diamond.report_out": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630/call-report/execution/report.txt"
+  },
+  "workflowRoot": "/data/wdl/cromwell-executions/diamond/64d15513-b1f2-4882-b4ed-726fa72d1630",
+  "actualWorkflowLanguage": "WDL",
+  "status": "Succeeded",
+  "end": "2026-09-06T13:52:34.084Z",
+  "start": "2026-09-06T13:51:57.940Z",
+  "id": "64d15513-b1f2-4882-b4ed-726fa72d1630",
+  "inputs": {
+    "raw": "/data/wdl/raw.csv",
+    "reference": "/data/wdl/reference.txt",
+    "samples": ["s1", "s2"],
+    "calibration": "/data/wdl/calibration.txt"
+  },
+  "labels": {
+    "cromwell-workflow-id": "cromwell-64d15513-b1f2-4882-b4ed-726fa72d1630"
+  },
+  "submission": "2026-09-06T13:51:57.898Z"
+}

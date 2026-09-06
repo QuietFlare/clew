@@ -40,6 +40,10 @@ COMMANDS = {
                          "build a graph from a DNAnexus analysis"),
     "extract-latch": ("clew.extract_from_latch",
                       "build a graph from a Latch execution"),
+    "extract-cromwell": ("clew.extract_from_cromwell",
+                         "build a graph from Cromwell workflow metadata"),
+    "extract-snakemake": ("clew.extract_from_snakemake",
+                          "build a graph from Snakemake's metadata store"),
 }
 
 
