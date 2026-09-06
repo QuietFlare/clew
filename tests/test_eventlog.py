@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import eventlog as el
+from clew.ledger import eventlog as el
 
 T0 = "2026-01-01T00:00:00+00:00"
 

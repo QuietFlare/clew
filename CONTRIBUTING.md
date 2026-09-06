@@ -20,7 +20,7 @@ After that, in rough order:
   of bug here, above all one that reports something as unaffected when it
   is not. Attach the graph JSON if you can share it.
 - An extractor for another engine or provenance format. Every extractor
-  emits the same graph JSON, so `clew/extract_from_horus.py` is a good
+  emits the same graph JSON, so `clew/extract/horus.py` is a good
   model.
 
 ## Ground rules for code
@@ -29,9 +29,10 @@ After that, in rough order:
 - Clear, boring code over clever abstractions.
 - Stdlib first. Clew has no runtime dependencies and intends to keep it
   that way.
-- `clew/core/` holds no domain vocabulary. No samples, donors, consent, or
-  workflow engines. Those live in `clew/domains/`, and
-  `tests/test_core_boundary.py` enforces it.
+- `clew/graph/` and `clew/ledger/` hold no domain vocabulary. No samples,
+  donors, consent, or workflow engines. Those live in `clew/domains/`.
+- Packages import downward only. `clew/graph/` imports nothing from clew.
+  `tests/test_core_boundary.py` enforces both rules.
 - New behaviour comes with a test. Regression fixtures from real runs are
   preferred over synthetic ones where the data can be shared.
 - No AI in the decision path. Models may propose. The deterministic core

@@ -1,8 +1,8 @@
 # For auditors: a dashboard and an MCP server
 
 Everything else in Clew produces evidence. These two surfaces read it. Both
-go through the same core layer, `core/bundlestore.py` to load bundles and
-`core/query.py` to answer, because two surfaces answering the same question
+go through the same ledger layer, `ledger/bundlestore.py` to load bundles and
+`ledger/query.py` to answer, because two surfaces answering the same question
 two different ways would eventually disagree, and on that day nobody could
 say which was wrong. A test asserts that neither surface imports the other.
 

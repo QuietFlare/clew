@@ -6,6 +6,13 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Modules are grouped by layer: `clew.graph`, `clew.ledger`,
+  `clew.extract`, `clew.questions`, `clew.views`. `clew.core` is gone. The public API is
+  `clew.load_graph`, `blast_radius`, `classify`, `parse_trigger` and
+  `resolve_trigger`. Commands are unchanged.
+
 ### Added
 
 - DNAnexus support: `clew extract-dnanexus` builds a graph from an

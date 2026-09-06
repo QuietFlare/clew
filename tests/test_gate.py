@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import gate
+from clew.ledger import gate
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -156,7 +156,7 @@ class TestCliFailsClosed(unittest.TestCase):
 
     def run_gate(self, *args):
         return subprocess.run(
-            [sys.executable, "-m", "clew.gate", *args],
+            [sys.executable, "-m", "clew.questions.gate", *args],
             capture_output=True, text=True)
 
     def test_no_blocking_types_is_refused(self):
@@ -167,7 +167,7 @@ class TestCliFailsClosed(unittest.TestCase):
 
     def test_no_connection_string_is_refused(self):
         env_free = subprocess.run(
-            [sys.executable, "-m", "clew.gate",
+            [sys.executable, "-m", "clew.questions.gate",
              "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"), "--block-on", "X"],
             capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})
         self.assertNotEqual(env_free.returncode, 0)

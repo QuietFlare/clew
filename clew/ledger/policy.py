@@ -90,7 +90,7 @@ verdicts back into core.
 import hashlib
 import json
 
-from clew.core import contribution
+from clew.graph import contribution
 
 # The dimensions a rule may test. A rule naming anything else is rejected at
 # load time rather than silently never matching.

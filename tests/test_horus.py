@@ -21,8 +21,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import extract_from_horus as hz
-from clew.core import blast_radius as core
+from clew.extract import horus as hz
+from clew.graph import blast_radius as core
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 RUN_DIR = FIXTURES / "horus_run"

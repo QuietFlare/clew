@@ -36,8 +36,8 @@ import sys
 from pathlib import Path
 
 
-from clew.core import evidence
-from clew.core import policy as policy_module
+from clew.ledger import bundle
+from clew.ledger import policy as policy_module
 
 SEALED = "BundleSealed"
 
@@ -48,7 +48,7 @@ def load_json(path):
 
 def open_log(dsn):
     """Connect, or fail with something an operator can act on."""
-    from clew.core import eventlog
+    from clew.ledger import eventlog
     try:
         return eventlog.connect(dsn)
     except ImportError:
@@ -92,7 +92,7 @@ def cmd_build(args):
 
     events, log_head = [], {"seq": 0, "hash": "0" * 64}
     if args.dsn:
-        from clew.core import eventlog
+        from clew.ledger import eventlog
         conn = open_log(args.dsn)
         log_head = eventlog.head(conn)
         events = eventlog.raw(conn, since=args.since)
@@ -101,14 +101,14 @@ def cmd_build(args):
     for path in args.input or []:
         inputs[Path(path).name] = {
             "path": str(path),
-            "sha256": evidence.sha256_file(path),
+            "sha256": bundle.sha256_file(path),
             "bytes": Path(path).stat().st_size,
         }
 
     previous = None
     if args.previous:
-        previous_manifest = load_json(Path(args.previous) / evidence.MANIFEST)
-        previous = evidence.bundle_hash(previous_manifest)
+        previous_manifest = load_json(Path(args.previous) / bundle.MANIFEST)
+        previous = bundle.bundle_hash(previous_manifest)
 
     # Coverage, stated rather than implied. Everything here is a limit of
     # what the bundle witnesses, and a reader should not have to infer any
@@ -137,7 +137,7 @@ def cmd_build(args):
         "events.json": events,
         "inputs.json": inputs,
     }
-    manifest, digest = evidence.build(
+    manifest, digest = bundle.build(
         args.out, documents, log_head=log_head, previous_bundle=previous,
         coverage=coverage,
         description=f"Clew evidence bundle for trigger: {plan.get('trigger')}")
@@ -157,7 +157,7 @@ def cmd_build(args):
     if args.seal_into_log:
         if not args.dsn:
             raise SystemExit("--seal-into-log needs --dsn")
-        from clew.core import eventlog
+        from clew.ledger import eventlog
         conn = open_log(args.dsn)
         entry = eventlog.append(
             conn, event_type=SEALED, subject=digest, actor=args.actor,
@@ -178,28 +178,28 @@ def cmd_build(args):
 def cmd_verify(args):
     directory = Path(args.bundle)
     try:
-        manifest = load_json(directory / evidence.MANIFEST)
+        manifest = load_json(directory / bundle.MANIFEST)
     except OSError:
-        raise SystemExit(f"{directory}/{evidence.MANIFEST} not readable; "
+        raise SystemExit(f"{directory}/{bundle.MANIFEST} not readable; "
                          "this does not look like a bundle")
 
-    checks = [evidence.verify_files(directory, manifest)]
+    checks = [bundle.verify_files(directory, manifest)]
     sealed = set(manifest["files"])
 
     # Only read the bundled documents once the files are known to be intact;
     # parsing a tampered file and reporting on its contents would be reporting
     # on something we have just been told not to believe.
     if not checks[0]["ok"]:
-        checks.append(evidence._check(
+        checks.append(bundle._check(
             "contents", None,
             "not checked: the files themselves do not verify"))
     else:
-        from clew.core import eventlog
+        from clew.ledger import eventlog
 
         events = load_json(directory / "events.json") \
             if "events.json" in sealed else []
         if "events.json" in sealed:
-            checks.append(evidence.verify_log(events, manifest, eventlog))
+            checks.append(bundle.verify_log(events, manifest, eventlog))
 
         # A bundle seals one kind of answer or the other. Checking for the
         # documents rather than assuming a shape means a gate result gets the
@@ -208,21 +208,21 @@ def cmd_verify(args):
         if "plan.json" in sealed:
             plan = load_json(directory / "plan.json")
             policy_document = load_json(directory / "policy.json")
-            checks.append(evidence.verify_policy(plan, policy_document))
-            checks.append(evidence.verify_replay(plan, policy_document))
+            checks.append(bundle.verify_policy(plan, policy_document))
+            checks.append(bundle.verify_replay(plan, policy_document))
         elif "gate.json" in sealed:
             result = load_json(directory / "gate.json")
             gate_policy = load_json(directory / "gate-policy.json")
-            checks.append(evidence.verify_gate(result, gate_policy, events))
+            checks.append(bundle.verify_gate(result, gate_policy, events))
         else:
-            checks.append(evidence._check(
+            checks.append(bundle._check(
                 "contents", False,
                 "this bundle seals neither a plan nor a gate result, so there "
                 "is nothing in it to re-derive"))
 
     checks.append(check_signature(directory, args.allowed_signers))
 
-    digest = evidence.bundle_hash(manifest)
+    digest = bundle.bundle_hash(manifest)
     print(f"bundle {digest}")
     print(f"  covers log head seq {manifest['anchors']['log_head']['seq']}")
     if manifest["anchors"]["previous_bundle"]:
@@ -259,9 +259,9 @@ def cmd_witness(args):
     folding it into `verify` would make the credential-free property look
     optional when it is the whole design.
     """
-    from clew.core import eventlog
+    from clew.ledger import eventlog
 
-    manifest = load_json(Path(args.bundle) / evidence.MANIFEST)
+    manifest = load_json(Path(args.bundle) / bundle.MANIFEST)
     conn = open_log(args.dsn)
 
     def hash_at_seq(seq):
@@ -270,8 +270,8 @@ def cmd_witness(args):
         except LookupError:
             return None
 
-    check = evidence.verify_against_log(manifest, hash_at_seq)
-    digest = evidence.bundle_hash(manifest)
+    check = bundle.verify_against_log(manifest, hash_at_seq)
+    digest = bundle.bundle_hash(manifest)
     mark = "ok  " if check["ok"] else ("FAIL" if check["ok"] is False else "-   ")
     print(f"bundle {digest}")
     print(f"  {mark} {check['check']:<10} {check['detail']}")
@@ -279,19 +279,19 @@ def cmd_witness(args):
 
 
 def check_signature(directory, allowed_signers):
-    signature = Path(directory) / evidence.SIGNATURE
+    signature = Path(directory) / bundle.SIGNATURE
     if not signature.exists():
-        return evidence._check(
+        return bundle._check(
             "signature", None,
             "no signature present; the seal is intact but nothing attests to "
             "who produced it")
     if not allowed_signers:
-        return evidence._check(
+        return bundle._check(
             "signature", None,
             "a signature is present but no --allowed-signers file was given, "
             "so it was not checked")
     if not shutil.which("ssh-keygen"):
-        return evidence._check("signature", None,
+        return bundle._check("signature", None,
                                "ssh-keygen not available to check it")
 
     # Ask the signature who signed it, then check that claim against the
@@ -303,7 +303,7 @@ def check_signature(directory, allowed_signers):
          "-f", str(allowed_signers)],
         capture_output=True, text=True)
     if found.returncode != 0 or not found.stdout.strip():
-        return evidence._check(
+        return bundle._check(
             "signature", False,
             "the signing key is not listed in the allowed_signers file, so "
             "the signature is by someone this reader has no reason to trust")
@@ -314,13 +314,13 @@ def check_signature(directory, allowed_signers):
         result = subprocess.run(
             ["ssh-keygen", "-Y", "verify", "-f", str(allowed_signers),
              "-I", principal, "-n", "clew-evidence", "-s", str(signature)],
-            stdin=open(Path(directory) / evidence.MANIFEST, "rb"),
+            stdin=open(Path(directory) / bundle.MANIFEST, "rb"),
             capture_output=True, text=True)
         if result.returncode == 0:
-            return evidence._check("signature", True,
+            return bundle._check("signature", True,
                                    f"sealed by {principal}")
         failures.append((result.stderr or result.stdout).strip())
-    return evidence._check("signature", False,
+    return bundle._check("signature", False,
                            f"{', '.join(principals)}: {failures[0]}")
 
 
@@ -335,7 +335,7 @@ def cmd_sign(args):
     """
     if not shutil.which("ssh-keygen"):
         raise SystemExit("ssh-keygen not found; it ships with OpenSSH")
-    manifest = Path(args.bundle) / evidence.MANIFEST
+    manifest = Path(args.bundle) / bundle.MANIFEST
     if not manifest.exists():
         raise SystemExit(f"{manifest} not found")
     result = subprocess.run(

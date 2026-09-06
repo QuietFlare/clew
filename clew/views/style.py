@@ -37,7 +37,7 @@ rather than amber. That is also truer to what UNDETERMINED means: not
 alarming, unanswered.
 """
 
-from clew.fonts import FACES
+from clew.views.fonts import FACES
 
 TOKENS = """
 :root {

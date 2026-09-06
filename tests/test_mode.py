@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def run_blast(*extra):
-    cmd = [sys.executable, "-m", "clew.impact",
+    cmd = [sys.executable, "-m", "clew.questions.impact",
            "--pipeline", "viralrecon",
            "--graph", str(ROOT / "clew" / "data" / "graph_vr.json"),
            "--samplesheet", str(ROOT / "clew" / "data" / "samplesheets" / "viralrecon_coguk.csv"),

@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import triggers
+from clew.graph import triggers
 
 GRAPH = {
     "tasks": {

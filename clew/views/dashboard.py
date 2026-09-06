@@ -43,9 +43,9 @@ import sys
 from pathlib import Path
 
 
-from clew.core import bundlestore
-from clew.core import policy as policy_module
-from clew.core import query
+from clew.ledger import bundlestore
+from clew.ledger import policy as policy_module
+from clew.ledger import query
 
 STYLE = """
 :root {

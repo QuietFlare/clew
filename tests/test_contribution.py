@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import contribution as c
+from clew.graph import contribution as c
 
 
 class TestFailClosed(unittest.TestCase):

@@ -30,7 +30,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-from clew.core.graph import EXTERNAL
+from clew.graph.graph import EXTERNAL
 
 API = "https://vacuole.latch.bio/graphql"
 TOKEN_FILE = Path.home() / ".latch" / "token"

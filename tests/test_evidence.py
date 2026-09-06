@@ -21,9 +21,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import evidence
-from clew.core import eventlog
-from clew.core import policy as policy_module
+from clew.ledger import bundle
+from clew.ledger import eventlog
+from clew.ledger import policy as policy_module
 
 ROOT = Path(__file__).resolve().parent.parent
 T0 = "2026-01-01T00:00:00+00:00"
@@ -91,7 +91,7 @@ class BundleTestCase(unittest.TestCase):
             log_head = ({"seq": events[-1]["seq"], "hash": events[-1]["hash"]}
                         if events else {"seq": 0, "hash": eventlog.GENESIS})
         destination = destination or Path(self.tmp) / "bundle"
-        return evidence.build(
+        return bundle.build(
             destination,
             {"plan.json": plan, "policy.json": policy_document,
              "events.json": events, "inputs.json": {}},
@@ -115,8 +115,8 @@ class TestSealing(BundleTestCase):
     def test_the_manifest_never_lists_itself_or_its_signature(self):
         # It cannot hash itself, and the signature is made over it afterwards.
         manifest, _ = self.seal()
-        self.assertNotIn(evidence.MANIFEST, manifest["files"])
-        self.assertNotIn(evidence.SIGNATURE, manifest["files"])
+        self.assertNotIn(bundle.MANIFEST, manifest["files"])
+        self.assertNotIn(bundle.SIGNATURE, manifest["files"])
 
     def test_sealing_is_clock_free_and_reproducible(self):
         # A timestamp inside would change the hash on every build and quietly
@@ -143,7 +143,7 @@ class TestSealing(BundleTestCase):
         # learn, and it survives tooling that knows nothing about Clew.
         self.seal()
         crate = json.loads(
-            (Path(self.tmp) / "bundle" / evidence.CRATE).read_text())
+            (Path(self.tmp) / "bundle" / bundle.CRATE).read_text())
         self.assertEqual(crate["@context"],
                          "https://w3id.org/ro/crate/1.1/context")
         described = {e["@id"] for e in crate["@graph"]}
@@ -154,20 +154,20 @@ class TestSealing(BundleTestCase):
 class TestFileCheck(BundleTestCase):
     def test_an_intact_bundle_passes(self):
         manifest, _ = self.seal()
-        check = evidence.verify_files(Path(self.tmp) / "bundle", manifest)
+        check = bundle.verify_files(Path(self.tmp) / "bundle", manifest)
         self.assertTrue(check["ok"])
 
     def test_an_edited_file_is_caught(self):
         manifest, _ = self.seal()
         (Path(self.tmp) / "bundle" / "plan.json").write_text('{"plan": []}')
-        check = evidence.verify_files(Path(self.tmp) / "bundle", manifest)
+        check = bundle.verify_files(Path(self.tmp) / "bundle", manifest)
         self.assertFalse(check["ok"])
         self.assertIn("plan.json", check["detail"])
 
     def test_a_removed_file_is_caught(self):
         manifest, _ = self.seal()
         (Path(self.tmp) / "bundle" / "inputs.json").unlink()
-        check = evidence.verify_files(Path(self.tmp) / "bundle", manifest)
+        check = bundle.verify_files(Path(self.tmp) / "bundle", manifest)
         self.assertFalse(check["ok"])
         self.assertIn("missing", check["detail"])
 
@@ -176,7 +176,7 @@ class TestFileCheck(BundleTestCase):
         # it, listed or not, so the manifest has to account for all of them.
         manifest, _ = self.seal()
         (Path(self.tmp) / "bundle" / "note.txt").write_text("trust me")
-        check = evidence.verify_files(Path(self.tmp) / "bundle", manifest)
+        check = bundle.verify_files(Path(self.tmp) / "bundle", manifest)
         self.assertFalse(check["ok"])
         self.assertIn("not listed", check["detail"])
 
@@ -185,13 +185,13 @@ class TestLogCheck(BundleTestCase):
     def test_an_intact_chain_ending_at_the_recorded_head_passes(self):
         events = log_chain(3)
         manifest, _ = self.seal(events=events)
-        self.assertTrue(evidence.verify_log(events, manifest, eventlog)["ok"])
+        self.assertTrue(bundle.verify_log(events, manifest, eventlog)["ok"])
 
     def test_an_edited_entry_is_caught(self):
         events = log_chain(3)
         manifest, _ = self.seal(events=events)
         events[1]["actor"] = "someone-else"
-        check = evidence.verify_log(events, manifest, eventlog)
+        check = bundle.verify_log(events, manifest, eventlog)
         self.assertFalse(check["ok"])
         self.assertIn("seq 2", check["detail"])
 
@@ -201,7 +201,7 @@ class TestLogCheck(BundleTestCase):
         events = log_chain(3)
         manifest, _ = self.seal(events=events)
         events.append(log_entry(4, events[-1]["hash"]))
-        check = evidence.verify_log(events, manifest, eventlog)
+        check = bundle.verify_log(events, manifest, eventlog)
         self.assertFalse(check["ok"])
 
     def test_a_dropped_tail_is_caught_because_the_bundle_remembers(self):
@@ -209,18 +209,18 @@ class TestLogCheck(BundleTestCase):
         # internally consistent, and only an outside witness notices.
         events = log_chain(4)
         manifest, _ = self.seal(events=events)
-        check = evidence.verify_log(events[:3], manifest, eventlog)
+        check = bundle.verify_log(events[:3], manifest, eventlog)
         self.assertFalse(check["ok"])
         self.assertIn("head", check["detail"])
 
     def test_a_bundle_claiming_a_head_with_no_entries_is_caught(self):
         manifest, _ = self.seal(events=log_chain(2))
-        check = evidence.verify_log([], manifest, eventlog)
+        check = bundle.verify_log([], manifest, eventlog)
         self.assertFalse(check["ok"])
 
     def test_an_empty_log_is_legitimately_empty(self):
         manifest, _ = self.seal(events=[])
-        self.assertTrue(evidence.verify_log([], manifest, eventlog)["ok"])
+        self.assertTrue(bundle.verify_log([], manifest, eventlog)["ok"])
 
 
 class TestWitness(BundleTestCase):
@@ -240,7 +240,7 @@ class TestWitness(BundleTestCase):
     def test_an_untouched_log_matches_its_bundle(self):
         events = log_chain(3)
         manifest, _ = self.seal(events=events)
-        check = evidence.verify_against_log(manifest, self.a_log(events))
+        check = bundle.verify_against_log(manifest, self.a_log(events))
         self.assertTrue(check["ok"])
 
     def test_a_truncated_log_is_caught(self):
@@ -248,7 +248,7 @@ class TestWitness(BundleTestCase):
         manifest, _ = self.seal(events=events)
         # The log alone still verifies at this point; that is the whole point.
         self.assertTrue(eventlog.verify_entries(events[:1])["ok"])
-        check = evidence.verify_against_log(manifest, self.a_log(events[:1]))
+        check = bundle.verify_against_log(manifest, self.a_log(events[:1]))
         self.assertFalse(check["ok"])
         self.assertIn("removed from the end", check["detail"])
 
@@ -260,7 +260,7 @@ class TestWitness(BundleTestCase):
             forged.append(log_entry(i, forged[-1]["hash"], subject="forged"))
         # Internally consistent, and entirely different.
         self.assertTrue(eventlog.verify_entries(forged)["ok"])
-        check = evidence.verify_against_log(manifest, self.a_log(forged))
+        check = bundle.verify_against_log(manifest, self.a_log(forged))
         self.assertFalse(check["ok"])
         self.assertIn("rewritten", check["detail"])
 
@@ -271,11 +271,11 @@ class TestWitness(BundleTestCase):
         manifest, _ = self.seal(events=events)
         events.append(log_entry(4, events[-1]["hash"]))
         self.assertTrue(
-            evidence.verify_against_log(manifest, self.a_log(events))["ok"])
+            bundle.verify_against_log(manifest, self.a_log(events))["ok"])
 
     def test_a_bundle_with_no_anchor_witnesses_nothing(self):
         manifest, _ = self.seal(events=[])
-        check = evidence.verify_against_log(manifest, self.a_log([]))
+        check = bundle.verify_against_log(manifest, self.a_log([]))
         self.assertIsNone(check["ok"])
         self.assertIn("cannot detect a truncation", check["detail"])
 
@@ -283,13 +283,13 @@ class TestWitness(BundleTestCase):
 class TestPolicyCheck(BundleTestCase):
     def test_matching_policy_passes(self):
         plan = a_plan()
-        check = evidence.verify_policy(plan, policy_module.DEFAULT)
+        check = bundle.verify_policy(plan, policy_module.DEFAULT)
         self.assertTrue(check["ok"])
 
     def test_a_swapped_policy_is_caught(self):
         # The plan and the table it was decided under cannot drift apart.
         plan = a_plan(policy_module.V2)
-        check = evidence.verify_policy(plan, policy_module.V1)
+        check = bundle.verify_policy(plan, policy_module.V1)
         self.assertFalse(check["ok"])
         self.assertIn("hashes to", check["detail"])
 
@@ -298,13 +298,13 @@ class TestReplay(BundleTestCase):
     """The check most evidence packages do not have."""
 
     def test_a_faithful_plan_replays(self):
-        check = evidence.verify_replay(a_plan(), policy_module.DEFAULT)
+        check = bundle.verify_replay(a_plan(), policy_module.DEFAULT)
         self.assertTrue(check["ok"])
 
     def test_a_changed_verdict_is_caught(self):
         plan = a_plan()
         plan["plan"][0]["action"] = "ALREADY_GONE"
-        check = evidence.verify_replay(plan, policy_module.DEFAULT)
+        check = bundle.verify_replay(plan, policy_module.DEFAULT)
         self.assertFalse(check["ok"])
         self.assertIn("t1", check["detail"])
 
@@ -314,12 +314,12 @@ class TestReplay(BundleTestCase):
         plan = a_plan()
         plan["plan"][1]["storage"] = "WRITABLE"
         self.assertFalse(
-            evidence.verify_replay(plan, policy_module.DEFAULT)["ok"])
+            bundle.verify_replay(plan, policy_module.DEFAULT)["ok"])
 
     def test_a_decorative_rule_citation_is_caught(self):
         plan = a_plan()
         plan["plan"][0]["rule"] = "R1"
-        check = evidence.verify_replay(plan, policy_module.DEFAULT)
+        check = bundle.verify_replay(plan, policy_module.DEFAULT)
         self.assertFalse(check["ok"])
         self.assertIn("rule", check["detail"])
 
@@ -328,7 +328,7 @@ class TestReplay(BundleTestCase):
         # yesterday's plan would produce a bundle that passes for the wrong
         # reason, which is worse than no bundle.
         plan = a_plan(policy_module.V1)
-        self.assertFalse(evidence.verify_replay(plan, policy_module.V2)["ok"])
+        self.assertFalse(bundle.verify_replay(plan, policy_module.V2)["ok"])
 
 
 class TestEndToEnd(BundleTestCase):
@@ -336,7 +336,7 @@ class TestEndToEnd(BundleTestCase):
 
     def run_cli(self, *args):
         return subprocess.run(
-            [sys.executable, "-m", "clew.evidence", *args],
+            [sys.executable, "-m", "clew.ledger.evidence", *args],
             capture_output=True, text=True)
 
     def test_build_then_verify(self):
@@ -360,7 +360,7 @@ class TestEndToEnd(BundleTestCase):
         plan_path.write_text(json.dumps(a_plan()))
         out = Path(self.tmp) / "b"
         self.run_cli("build", "--out", str(out), "--plan", str(plan_path))
-        manifest = json.loads((out / evidence.MANIFEST).read_text())
+        manifest = json.loads((out / bundle.MANIFEST).read_text())
         self.assertTrue(any("no event log" in note
                             for note in manifest["coverage"]))
 
@@ -376,9 +376,9 @@ class TestEndToEnd(BundleTestCase):
         plan["plan"][0]["action"] = "ALREADY_GONE"
         (out / "plan.json").write_text(json.dumps(plan, indent=2,
                                                   sort_keys=True) + "\n")
-        manifest = json.loads((out / evidence.MANIFEST).read_text())
-        manifest["files"]["plan.json"] = evidence.sha256_file(out / "plan.json")
-        (out / evidence.MANIFEST).write_text(
+        manifest = json.loads((out / bundle.MANIFEST).read_text())
+        manifest["files"]["plan.json"] = bundle.sha256_file(out / "plan.json")
+        (out / bundle.MANIFEST).write_text(
             json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
         checked = self.run_cli("verify", str(out))

@@ -12,9 +12,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import blast_radius as core
-from clew.core import contribution as c
-from clew.core import policy
+from clew.graph import blast_radius as core
+from clew.graph import contribution as c
+from clew.ledger import policy
 
 
 def graph_from(edges, tasks=None):

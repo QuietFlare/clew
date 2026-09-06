@@ -19,7 +19,7 @@ flowchart TB
         P["Publication"]
         D["Tool defect"]
     end
-    subgraph CORE["core/: the engine, zero domain vocabulary"]
+    subgraph CORE["graph/ and ledger/: the engine, zero domain vocabulary"]
         T["Traversal<br/>blast radius, classes"]
         POL["Policy<br/>versioned, hashed"]
         LOG["Log + evidence<br/>append-only, replayable"]
@@ -34,18 +34,28 @@ flowchart TB
 ```
 
 ```
-clew/core/      traversal, contribution vocabulary, versioned policy, event log,
-                evidence bundles, the gate, the query surface. Zero domain
-                vocabulary.
-clew/domains/   the layer allowed to know about sarek, samplesheets, donors.
-clew/extract_*  one extractor per lineage source, all emitting the same JSON.
-tests/          stdlib unittest.
+clew/graph/      the one graph: loading, triggers, traversal, contribution
+                 classes. Imports nothing else from clew.
+clew/ledger/     versioned policy, event log, evidence bundles, the gate
+                 decision, the query surface, and their commands.
+clew/domains/    the layer allowed to know about sarek, samplesheets, donors.
+clew/extract/    one extractor per lineage source, all emitting the same
+                 JSON, plus stitch.
+clew/questions/  one module per question asked of the graph: impact, gate.
+clew/views/      dashboard, report, MCP server.
+tests/           stdlib unittest.
 ```
 
-The boundary is enforced by a grep. `clew/core/` must never mention a
-sample, a donor, a consent, or a workflow engine, and must import nothing
-from `domains/`. Adding a new domain, say AI training data with opt-out
-semantics, means adding a directory rather than editing core. That grep is
+Packages import downward only. `graph/` imports nothing from clew, and
+each package above it may reach only the layers below it. A new question
+lives in `questions/` and imports `clew.graph`, which is also the public
+API: `load_graph`, `blast_radius`, `classify`, `parse_trigger`,
+`resolve_trigger`.
+
+The vocabulary boundary is enforced by a grep. `graph/` and `ledger/` must
+never mention a sample, a donor, a consent, or a workflow engine. Adding a
+new domain, say AI training data with opt-out semantics, means adding a
+directory rather than editing the engine. Both rules are
 [tests/test_core_boundary.py](../tests/test_core_boundary.py). An unenforced
 rule stays true right up until it doesn't.
 

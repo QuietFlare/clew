@@ -13,9 +13,9 @@ in it opens a database connection.
 import json
 from pathlib import Path
 
-from clew.core import evidence
-from clew.core import eventlog
-from clew.core import query
+from clew.ledger import bundle as sealed
+from clew.ledger import eventlog
+from clew.ledger import query
 
 
 def load_store(bundle_root):
@@ -29,11 +29,11 @@ def load_store(bundle_root):
     root = Path(bundle_root)
     bundles, entries_by_hash = [], {}
 
-    candidates = [root] if (root / evidence.MANIFEST).is_file() else sorted(
+    candidates = [root] if (root / sealed.MANIFEST).is_file() else sorted(
         p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []
 
     for path in candidates:
-        manifest_path = path / evidence.MANIFEST
+        manifest_path = path / sealed.MANIFEST
         if not manifest_path.is_file():
             continue
         try:
@@ -48,7 +48,7 @@ def load_store(bundle_root):
         bundles.append({
             "path": str(path),
             "name": path.name,
-            "hash": evidence.bundle_hash(manifest),
+            "hash": sealed.bundle_hash(manifest),
             "manifest": manifest,
             "documents": documents,
         })
@@ -120,15 +120,15 @@ def check_integrity(bundle):
     """Run the deterministic verifier and report exactly what it said."""
     manifest = bundle["manifest"]
     path = Path(bundle["path"])
-    checks = [evidence.verify_files(path, manifest)]
+    checks = [sealed.verify_files(path, manifest)]
     events = bundle["documents"].get("events.json", [])
     if "events.json" in manifest["files"]:
-        checks.append(evidence.verify_log(events, manifest, eventlog))
+        checks.append(sealed.verify_log(events, manifest, eventlog))
     if plan_of(bundle):
-        checks.append(evidence.verify_policy(plan_of(bundle), policy_of(bundle)))
-        checks.append(evidence.verify_replay(plan_of(bundle), policy_of(bundle)))
+        checks.append(sealed.verify_policy(plan_of(bundle), policy_of(bundle)))
+        checks.append(sealed.verify_replay(plan_of(bundle), policy_of(bundle)))
     elif "gate.json" in manifest["files"]:
-        checks.append(evidence.verify_gate(
+        checks.append(sealed.verify_gate(
             bundle["documents"]["gate.json"],
             bundle["documents"]["gate-policy.json"], events))
 

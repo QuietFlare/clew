@@ -19,8 +19,8 @@ core/ may not.
 
 import csv
 
-from clew.core import contribution
-from clew.core import graph as core_graph
+from clew.graph import contribution
+from clew.graph import graph as core_graph
 import re
 from pathlib import Path
 

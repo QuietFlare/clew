@@ -18,10 +18,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import mcp_server
-from clew.core import evidence
-from clew.core import eventlog
-from clew.core import policy as policy_module
+from clew.views import mcp_server
+from clew.ledger import bundle
+from clew.ledger import eventlog
+from clew.ledger import policy as policy_module
 
 ROOT = Path(__file__).resolve().parent.parent
 T = "2026-01-01T00:00:00+00:00"
@@ -59,7 +59,7 @@ def seal(directory, events, name="b1"):
     target = Path(directory) / name
     head = ({"seq": events[-1]["seq"], "hash": events[-1]["hash"]}
             if events else {"seq": 0, "hash": eventlog.GENESIS})
-    evidence.build(target, {"plan.json": a_plan(),
+    bundle.build(target, {"plan.json": a_plan(),
                             "policy.json": policy_module.DEFAULT,
                             "events.json": events, "inputs.json": {}},
                    log_head=head)
@@ -85,7 +85,7 @@ class TestProtocol(ServerTestCase):
 
     def converse(self, messages, bundles):
         process = subprocess.Popen(
-            [sys.executable, "-m", "clew.mcp_server", "--bundles", bundles],
+            [sys.executable, "-m", "clew.views.mcp_server", "--bundles", bundles],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True)
         payload = "".join(json.dumps(m) + "\n" for m in messages)
@@ -144,7 +144,7 @@ class TestProtocol(ServerTestCase):
 
     def converse_raw(self, lines, bundles):
         process = subprocess.Popen(
-            [sys.executable, "-m", "clew.mcp_server", "--bundles", bundles],
+            [sys.executable, "-m", "clew.views.mcp_server", "--bundles", bundles],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, text=True)
         out, _ = process.communicate("".join(lines), timeout=30)
@@ -184,7 +184,7 @@ class TestReadOnly(ServerTestCase):
     def test_the_server_never_opens_a_database_connection(self):
         # The auditor surface reads sealed bundles. A connection is a
         # credential, and this process should not hold one.
-        source = (ROOT / "clew" / "mcp_server.py").read_text()
+        source = (ROOT / "clew" / "views" / "mcp_server.py").read_text()
         self.assertNotIn("eventlog.connect", source)
         self.assertNotIn("--dsn", source)
 
@@ -250,7 +250,7 @@ class TestLoading(ServerTestCase):
         seal(self.tmp, self.chain(2), name="good")
         broken = Path(self.tmp) / "broken"
         broken.mkdir()
-        (broken / evidence.MANIFEST).write_text("{ not json")
+        (broken / bundle.MANIFEST).write_text("{ not json")
         bundles, _, _ = mcp_server.load_store(self.tmp)
         self.assertEqual([b["name"] for b in bundles], ["good"])
 
