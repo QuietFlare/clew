@@ -164,6 +164,7 @@ def extract(records, workdir=""):
             digest = checksum_of(record, path)
             if digest:
                 edge["sha256"] = digest
+                edge["digest"] = f"sha256:{digest}"
             edges.append(edge)
 
         outputs[node] = sorted(Path(p).name for p in paths)

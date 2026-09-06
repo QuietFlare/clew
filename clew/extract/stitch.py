@@ -1,50 +1,28 @@
 """
-Clew — stitch per-run graphs into one cross-run lineage graph.
+Clew: stitch per-run graphs into one cross-run lineage graph.
 
-WHY THIS EXISTS
----------------
-The engine's lineage (native store, work/ symlinks, nf-prov) sees exactly
-one launch. But real analyses are chains of launches: rnaseq publishes a
-count matrix, differentialabundance consumes it, a report goes to people.
-The chain's join point — one run's published file becoming the next run's
-"external" input — is precisely what no engine-level record crosses, and
-crossing it is the difference between per-run provenance and an answer to
-"what did this donor's withdrawal reach".
+    clew stitch --graph rna=graph_rna.json --graph da=graph_da.json --out graph_chain.json
 
-HOW THE BRIDGE IS FOUND
------------------------
-An upstream task's outputs are matched to their published copies by
-(basename, size) — see domains/nfcore.py index_results for why not checksums. A
-downstream run's EXTERNAL input records the absolute path it was staged
-from. Where that path IS one of the upstream run's published copies, the
-EXTERNAL edge is rewritten to point at the task that produced it. The
+The engine's lineage sees one launch. Real analyses are chains: rnaseq
+publishes a count matrix, differentialabundance consumes it. The join is
+one run's output becoming the next run's EXTERNAL input, and it is found by
+content digest alone. An EXTERNAL edge whose digest equals an output digest
+in another run is rewritten to point at the task that produced it. The
 original path stays in `target`, so every bridge is checkable.
+
+Graphs without digests do not join. Record them in the engine, or run
+`clew digest` over the run first.
 
 Node ids are prefixed with per-run labels ("rna:0c/8143cf"): abbreviated
 hashes from different runs can collide, and a silent collision would merge
-two unrelated tasks — the false-negative factory. Core does not care; ids
-are opaque to it.
-
-USAGE
------
-    clew stitch \
-        --graph rna=graph_rna.json --results rna=/path/to/rnaseq/results \
-        --graph da=graph_da.json \
-        --out graph_chain.json
-
-Every --graph gets a label. --results attaches a published-results tree to
-the graph with the same label; bridges are found from any labelled results
-tree into any other graph's EXTERNAL inputs.
+two unrelated tasks.
 """
 
 import argparse
 import json
 from pathlib import Path
 
-import sys
-
-
-from clew.domains.nfcore import index_results
+from clew.graph.graph import output_digests
 
 
 def prefix_graph(label, graph):
@@ -65,95 +43,61 @@ def prefix_graph(label, graph):
             "output_details": details}
 
 
-def published_path_map(label, graph, results_dir):
+def stitch(labelled_graphs):
     """
-    {absolute published path: prefixed producing task} for one run.
-
-    Built from the same (basename, size) join the plan output uses. An
-    ambiguous match (two tasks' outputs identical in name and size) maps a
-    path to whichever task claims it last — both would be affected in any
-    traversal that reaches either, so ambiguity here widens the bridge
-    rather than narrowing it.
-    """
-    index = index_results(results_dir)
-    root = Path(results_dir).resolve()
-    mapping = {}
-    for task_hash, details in graph.get("output_details", {}).items():
-        for detail in details:
-            key = (Path(detail["file"]).name, detail.get("size"))
-            for rel in index.get(key, []):
-                mapping[str(root / rel)] = task_hash
-    return mapping
-
-
-def stitch(labelled_graphs, labelled_results):
-    """
-    Merge prefixed graphs and rewrite EXTERNAL edges that cross runs.
-
-    Returns (graph, bridges); each bridge records consumer, producer and
-    the path that joined them — the checkable evidence for the crossing.
+    Merge prefixed graphs and rewrite EXTERNAL edges whose digest another
+    run produced. Returns (graph, bridges).
     """
     merged = {"tasks": {}, "edges": [], "outputs": {}, "output_details": {}}
-    prefixed = {}
-    for label, graph in labelled_graphs.items():
-        prefixed[label] = prefix_graph(label, graph)
+    prefixed = {label: prefix_graph(label, g) for label, g in labelled_graphs.items()}
+    for graph in prefixed.values():
         for key in ("tasks", "outputs", "output_details"):
-            merged[key].update(prefixed[label][key])
+            merged[key].update(graph[key])
 
-    path_to_task = {}
-    for label, results_dir in labelled_results.items():
-        path_to_task.update(
-            published_path_map(label, prefixed[label], results_dir))
+    producers = {}
+    for digest, produced in output_digests(merged).items():
+        producers[digest] = produced[0][0]
 
     bridges = []
     for label, graph in prefixed.items():
         for edge in graph["edges"]:
-            if edge["producer"] == "EXTERNAL":
-                # The store records staged paths as URIs (file:///...);
-                # the published map keys are plain absolute paths.
-                staged = edge["target"].split("#", 1)[0]
-                staged = staged.removeprefix("file://")
-                producer = path_to_task.get(staged)
-                if producer and not producer.startswith(f"{label}:"):
-                    edge = dict(edge, producer=producer)
-                    bridges.append({
-                        "consumer": edge["consumer"],
-                        "producer": producer,
-                        "path": staged,
-                    })
+            producer = producers.get(edge.get("digest")) if edge["producer"] == "EXTERNAL" else None
+            if producer and not producer.startswith(f"{label}:"):
+                edge = dict(edge, producer=producer)
+                bridges.append({"consumer": edge["consumer"], "producer": producer,
+                                "digest": edge["digest"], "path": edge.get("target", "")})
             merged["edges"].append(edge)
-
     return merged, bridges
+
+
+def digest_coverage(labelled_graphs):
+    """label -> (outputs with a digest, external inputs with a digest)."""
+    coverage = {}
+    for label, graph in labelled_graphs.items():
+        outs = sum(1 for ds in graph.get("output_details", {}).values()
+                   for d in ds if d.get("digest"))
+        ins = sum(1 for e in graph["edges"]
+                  if e["producer"] == "EXTERNAL" and e.get("digest"))
+        coverage[label] = (outs, ins)
+    return coverage
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Stitch per-run Clew graphs into one cross-run graph.")
+        description="Stitch per-run Clew graphs into one cross-run graph, by content digest.")
     parser.add_argument("--graph", action="append", required=True,
                         metavar="LABEL=PATH", help="a run's graph, labelled")
-    parser.add_argument("--results", action="append", default=[],
-                        metavar="LABEL=DIR",
-                        help="published results tree for the graph with that label")
     parser.add_argument("--out", required=True, help="stitched graph JSON")
     args = parser.parse_args(argv)
 
-    def parse_pairs(pairs):
-        out = {}
-        for pair in pairs:
-            label, _, value = pair.partition("=")
-            if not label or not value:
-                raise SystemExit(f"expected LABEL=PATH, got {pair!r}")
-            out[label] = value
-        return out
+    graphs = {}
+    for pair in args.graph:
+        label, _, path = pair.partition("=")
+        if not label or not path:
+            raise SystemExit(f"expected LABEL=PATH, got {pair!r}")
+        graphs[label] = json.loads(Path(path).read_text())
 
-    graphs = {label: json.loads(Path(p).read_text())
-              for label, p in parse_pairs(args.graph).items()}
-    results = parse_pairs(args.results)
-    unknown = set(results) - set(graphs)
-    if unknown:
-        raise SystemExit(f"--results labels without a --graph: {', '.join(unknown)}")
-
-    merged, bridges = stitch(graphs, results)
+    merged, bridges = stitch(graphs)
 
     print(f"graphs stitched     : {', '.join(graphs)}")
     print(f"tasks total         : {len(merged['tasks'])}")
@@ -161,24 +105,12 @@ def main(argv=None):
     print(f"cross-run bridges   : {len(bridges)}")
     for b in bridges:
         print(f"  {b['consumer']}  <-  {b['producer']}")
-        print(f"      via {b['path']}")
+        print(f"      {b['digest']}")
     if not bridges:
-        # The join is by absolute path, so the usual cause is that the graph
-        # was recorded on a different machine (or had its paths rewritten)
-        # and no external input can match anything under --results.
-        print("  (none found. The join matches the external inputs recorded "
-              "in one graph against the published files under --results, by "
-              "absolute path. Check that the paths inside the graphs are the "
-              "paths on this machine, and that --results points at the run "
-              "that published the shared file.)")
-        seen = set()
-        for edge in merged["edges"]:
-            label = edge["consumer"].split(":", 1)[0]
-            if (edge["producer"] == "EXTERNAL" and edge.get("target")
-                    and label not in seen):
-                seen.add(label)
-                print(f"      {label} reads e.g. "
-                      f"{edge['target'].split('#', 1)[0]}")
+        print("  (none. A bridge needs an EXTERNAL input in one graph whose "
+              "digest equals an output digest in another.)")
+        for label, (outs, ins) in digest_coverage(graphs).items():
+            print(f"      {label}: {outs} outputs and {ins} external inputs carry a digest")
 
     Path(args.out).write_text(json.dumps(merged, indent=2))
     print(f"\nwrote {args.out}")

@@ -29,6 +29,11 @@ from pathlib import Path
 # is only accepted if it matches a subject from the samplesheet.
 TAG_PATTERN = re.compile(r"\(([^()]+)\)\s*$")
 
+# Outputs every nf-core task writes for bookkeeping. They are collected
+# through a channel rather than consumed as files, so no edge names them
+# and no publishDir copies them one by one.
+BOOKKEEPING = ("versions.yml",)
+
 
 def load_subjects(samplesheet_path, subject_column, member_column=None):
     """

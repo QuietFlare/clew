@@ -220,6 +220,19 @@ def superseded_tasks(selected):
     return stale
 
 
+def digest_of(checksum):
+    """
+    The store's checksum as a Clew digest, or None when it hashes path and
+    time rather than content. 'sha256:<hex>' when the mode is sha256, else
+    'nextflow-deep:<hex>', which compares only with the same mode.
+    """
+    checksum = checksum or {}
+    mode, value = checksum.get("mode", ""), checksum.get("value", "")
+    if not value or mode not in CONTENT_MODES:
+        return None
+    return f"{'sha256' if mode == 'sha256' else 'nextflow-deep'}:{value}"
+
+
 def task_edges(task_hash, spec):
     """
     Turn one TaskRun's input list into edges, in the same backwards
@@ -241,16 +254,20 @@ def task_edges(task_hash, spec):
                 })
             elif isinstance(value, dict) and value.get("path"):
                 # External input: a file the pipeline did not produce. The
-                # store gives us its checksum, which the symlink extractor
-                # never could — kept in `target` for future content identity.
+                # store gives us its checksum, kept in `target`; as `digest`
+                # when it is a content hash.
                 path = value["path"]
                 checksum = (value.get("checksum") or {}).get("value", "")
-                edges.append({
+                edge = {
                     "consumer": consumer,
                     "producer": "EXTERNAL",
                     "filename": Path(path).name,
                     "target": f"{path}#{checksum}" if checksum else path,
-                })
+                }
+                digest = digest_of(value.get("checksum"))
+                if digest:
+                    edge["digest"] = digest
+                edges.append(edge)
     return edges
 
 
@@ -376,10 +393,13 @@ def extract(store, session_id):
 
         edges.extend(task_edges(full_hash, spec))
         outputs[abbrev] = sorted(task_files)
-        output_details[abbrev] = [
-            {"file": rel, "size": task_files[rel].get("size")}
-            for rel in sorted(task_files)
-        ]
+        output_details[abbrev] = []
+        for rel in sorted(task_files):
+            detail = {"file": rel, "size": task_files[rel].get("size")}
+            digest = digest_of(task_files[rel].get("checksum"))
+            if digest:
+                detail["digest"] = digest
+            output_details[abbrev].append(detail)
         for spec_out in task_files.values():
             modes.add((spec_out.get("checksum") or {}).get("mode", ""))
 

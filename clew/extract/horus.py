@@ -199,7 +199,7 @@ def extract(run_dir):
     producers = producers_by_digest(records)
     declared = declared_producers(definition, run)
 
-    tasks, edges, outputs = {}, [], {}
+    tasks, edges, outputs, output_details = {}, [], {}, {}
     for record in records:
         task = record["task"]
         node = node_id(record)
@@ -225,23 +225,33 @@ def extract(run_dir):
                 # A pass-through task copies its input to its output, so
                 # the bytes match its own. It did not produce its input.
                 producer = declared.get((task["id"], entry.get("id")))
-            edges.append({
+            edge = {
                 "consumer": node,
                 "producer": producer or "EXTERNAL",
                 "filename": Path(entry.get("path", "")).name,
                 "target": entry.get("path", ""),
                 "labels": labels_of(entry),
-            })
+            }
+            if digest:
+                edge["digest"] = f"sha256:{digest}"
+            edges.append(edge)
 
         # An output's labels reach the graph through the task, because no
         # edge carries them when nothing downstream consumes the artifact.
         tasks[node]["labels"] = merged_labels(record)
 
-        outputs[node] = sorted(
-            Path(o.get("path", "")).name
-            for o in record.get("outputs", []) if o.get("path"))
+        produced = sorted((o for o in record.get("outputs", []) if o.get("path")),
+                          key=lambda o: Path(o["path"]).name)
+        outputs[node] = [Path(o["path"]).name for o in produced]
+        output_details[node] = []
+        for o in produced:
+            detail = {"file": Path(o["path"]).name, "size": o.get("size")}
+            if o.get("sha256"):
+                detail["digest"] = f"sha256:{o['sha256']}"
+            output_details[node].append(detail)
 
-    return {"tasks": tasks, "edges": edges, "outputs": outputs}
+    return {"tasks": tasks, "edges": edges, "outputs": outputs,
+            "output_details": output_details}
 
 
 def main(argv=None):

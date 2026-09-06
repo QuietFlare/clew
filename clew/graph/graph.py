@@ -67,6 +67,38 @@ def describe(graph, task_hash):
     return (task.get("process", "") or "?").split(":")[-1]
 
 
+def local_workdir(workdir, work_root):
+    """
+    The task directory under work_root, or None. Only the last two path
+    components are joined on, so a graph from another host still resolves.
+    """
+    parts = Path(workdir).parts if workdir else ()
+    if len(parts) < 2 or not work_root:
+        return None
+    return Path(work_root, *parts[-2:])
+
+
+def output_digests(graph):
+    """digest -> [(task, file)] over every output that carries one."""
+    index = {}
+    for task_hash, details in graph.get("output_details", {}).items():
+        for detail in details:
+            digest = detail.get("digest")
+            if digest:
+                index.setdefault(digest, []).append((task_hash, detail["file"]))
+    return index
+
+
+def published_digests(graph):
+    """digest -> [published relative path], from a `clew digest --results` pass."""
+    index = {}
+    for rel, entry in graph.get("published", {}).items():
+        digest = entry.get("digest")
+        if digest:
+            index.setdefault(digest, []).append(rel)
+    return index
+
+
 TASK_FIELDS = ("hash", "name", "process", "container", "status",
                "script", "workdir")
 OPTIONAL_TASK_FIELDS = ("task_id", "target")
@@ -130,4 +162,24 @@ def contract_violations(graph):
         if not (isinstance(names, list)
                 and all(isinstance(n, str) for n in names)):
             problems.append(f"outputs {key}: not a list of strings")
+
+    def bad_digest(value):
+        return value is not None and not (
+            isinstance(value, str) and ":" in value and value.split(":", 1)[1])
+
+    for key, details in (graph.get("output_details") or {}).items():
+        if key not in tasks:
+            problems.append(f"output_details: {key!r} is not a task")
+        for detail in details if isinstance(details, list) else []:
+            if not isinstance(detail, dict) or not isinstance(detail.get("file"), str):
+                problems.append(f"output_details {key}: entry without a file name")
+            elif bad_digest(detail.get("digest")):
+                problems.append(f"output_details {key}/{detail['file']}: "
+                                "digest is not '<algorithm>:<value>'")
+    for i, edge in enumerate(graph["edges"]):
+        if isinstance(edge, dict) and bad_digest(edge.get("digest")):
+            problems.append(f"edge {i}: digest is not '<algorithm>:<value>'")
+    for rel, entry in (graph.get("published") or {}).items():
+        if not isinstance(entry, dict) or bad_digest(entry.get("digest")):
+            problems.append(f"published {rel}: digest is not '<algorithm>:<value>'")
     return problems
