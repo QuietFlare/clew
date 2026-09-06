@@ -1,4 +1,4 @@
-"""Clew computes what must happen downstream when something upstream goes bad."""
+"""Clew rebuilds what pipeline runs derived from what, and answers questions over it."""
 
 from clew.graph.blast_radius import blast_radius, load_graph
 from clew.graph.contribution import classify

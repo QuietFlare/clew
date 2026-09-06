@@ -3,6 +3,41 @@
 Clew computes over a lineage graph. Every extractor emits the same JSON, so
 everything downstream is identical whichever engine ran the work.
 
+## The line: content digests
+
+Two files with the same name and size are evidence of the same bytes, not
+proof. Engine checksums are computed over path and time and change on
+copy. Clew therefore takes content digests from the engine as the first
+source of identity, and reads files only where the engine recorded none.
+
+That draws a line through the sources.
+
+| Tier | Sources | What the record supports |
+|---|---|---|
+| Digests on every output | Nextflow lineage store with `cache 'deep'`, Horus through horus-lineage | Impact, reclaim by comparing digests, exact joins across runs, duplicates |
+| Digests on inputs only | Snakemake, Nextflow lineage store in standard mode | Impact, reclaim by reading files, joins by name and size |
+| No digests | Cromwell, DNAnexus, Latch, RO-Crate, work symlinks | Impact, reclaim by reading files where they are reachable |
+
+Digests travel in the graph as `digest` fields, `<algorithm>:<value>`, on
+output details, on edges, and on published files. Only equal strings
+match, so a Nextflow deep-mode hash compares with another deep-mode hash
+and never with a SHA-256. `clew reclaim` and `clew stitch` compare digests
+and nothing else. A graph without them answers impact and is kept whole
+by reclaim, with the reason on every directory.
+
+For runs recorded without digests, `clew digest` reads each file once and
+writes SHA-256 into the graph:
+
+```bash
+clew digest --graph graph.json --work-root work/ --results results/
+```
+
+Outputs under the work root fill their `digest`, and files under the
+published tree land in a `published` map the graph carries from then on.
+DNAnexus exposes a file MD5 through its API that the extractor does not
+read yet. Latch is unconfirmed. None of this replaces the engine hashing
+at write time, which is the only cheap moment to do it.
+
 ## Nextflow native lineage (preferred)
 
 Nextflow records lineage when you enable it in the
@@ -14,11 +49,16 @@ describe:
 lineage {
     enabled = true
 }
+process.cache = 'deep'
 ```
 
 Nextflow then writes every task, output file and link into a `.lineage`
-store with content-addressed `lid://` identifiers. Clew has no opinion on
-where that setting lives. It reads the store the engine writes.
+store with content-addressed `lid://` identifiers. The second line makes
+the checksums it records content hashes rather than path and time, which
+is what puts a store in the top tier above. Without it the store still
+extracts and impact still works, but reclaim has to read files and joins
+fall back to name and size. Clew has no opinion on where either setting
+lives. It reads the store the engine writes.
 
 ```bash
 clew extract-store --store /path/to/.lineage --list-runs
@@ -229,7 +269,7 @@ they carry, and evidence is what verdicts are made of.
 | external inputs | yes | yes | yes | yes | yes | yes |
 | script and container image | yes | yes | yes | yes | no | yes |
 | output sizes | yes | yes | no | no | no | yes |
-| content digests | external inputs | every artifact | no | every consumed input | no | no |
+| content digests | every output with `cache 'deep'`, else external inputs only | every artifact | no | every consumed input | no | no |
 | storage checkable | `--work-root` | `--work-root` | `--work-root` at `cromwell-executions/<workflow>` | no, jobs share one directory | published copies only | `--work-root` |
 | best verdict for a shared, surviving artifact | REGENERATE | REGENERATE | REGENERATE | REGENERATE | QUARANTINE | REGENERATE |
 
@@ -246,14 +286,13 @@ One run publishes a file, a second run consumes it. Clew joins the two
 graphs at that file:
 
 ```bash
-clew stitch --graph rna=rnaseq_run.json --results rna=/path/to/rnaseq/results \
-    --graph da=de_run.json --out graph_chain.json
+clew stitch --graph rna=rnaseq_run.json --graph da=de_run.json --out graph_chain.json
 ```
 
-Give each run a label and point `--results` at the published output of the
-run that produced the shared file. The join is by path, so the paths in the
-graph must be the paths on this machine. The shipped `graph_rna.json` and
-`graph_da.json` cannot be re-stitched for that reason: their paths were
-anonymised before publication, and `clew stitch` reports zero bridges rather
-than inventing one. Horus graphs join by digest instead, which works across
-machines.
+Give each run a label. The join is by content digest: an external input
+of one run whose digest equals an output digest of another. Paths, hosts
+and engines do not matter, so a Snakemake run that consumed a Nextflow
+run's published file joins as readily as two Nextflow runs. Graphs whose
+outputs or external inputs carry no digest report zero bridges, with a
+count per graph of what does, and `clew digest` fills the gap for runs
+the engine recorded without them.

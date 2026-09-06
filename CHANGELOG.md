@@ -12,9 +12,17 @@ follow [Semantic Versioning](https://semver.org/).
   `clew.extract`, `clew.questions`, `clew.views`. `clew.core` is gone. The public API is
   `clew.load_graph`, `blast_radius`, `classify`, `parse_trigger` and
   `resolve_trigger`. Commands are unchanged.
+- `clew stitch` joins runs by content digest. `--results` is gone.
 
 ### Added
 
+- `clew reclaim`: which work directories are safe to delete, with the
+  proof for each. Nothing is removed without `--apply` and a receipt.
+- Content digests in the graph, `digest` fields of the form
+  `<algorithm>:<value>`, recorded by the Horus, Snakemake and Nextflow
+  store extractors where the engine has them.
+- `clew digest`: hash a run's files once, for runs the engine recorded
+  without content digests.
 - DNAnexus support: `clew extract-dnanexus` builds a graph from an
   analysis, over the API or from saved describe output. Edges join on
   file ID. Optional `price` and `duration_s` per task.

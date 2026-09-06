@@ -5,14 +5,16 @@
 [![Tests](https://github.com/QuietFlare/clew/actions/workflows/ci.yml/badge.svg)](https://github.com/QuietFlare/clew/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
-When something upstream of a pipeline goes bad, Clew tells you exactly what
-to delete, re-run, or disclose, with a plan you can hand to an auditor.
+Clew rebuilds what your pipeline runs derived from what, out of the record
+the engine already writes, and answers questions over it that no single run
+can.
 
-A reference update, a buggy container, a contaminated sample, a withdrawn
-consent. Clew rebuilds the lineage of your runs from what the engine already
-recorded, follows the change through every result it reaches, and gives each
-one a verdict with the evidence chain behind it. It reads Nextflow and Horus
-today and has no engine of its own.
+When something upstream goes bad, a reference update, a buggy container, a
+contaminated sample, a withdrawn consent, it tells you exactly what to
+delete, re-run, or disclose, with a plan you can hand to an auditor. When
+nothing is wrong and the disk is full, it tells you which work directories
+are provably redundant, and why. It reads Nextflow, Horus, Cromwell,
+Snakemake, DNAnexus and Latch, and has no engine of its own.
 
 A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
@@ -96,6 +98,19 @@ clew impact --pipeline rnaseq --graph clew/data/graph_chain.json \
     --samplesheet clew/data/samplesheets/rnaseq_yeast.csv --subject SRR10441036_cox4d
 ```
 
+## When nothing is wrong and the disk is full
+
+`clew reclaim` proposes a work directory only when the graph proves its
+bytes are redundant: every output has a published copy with the same
+content digest, or the task was superseded or failed unconsumed.
+
+```bash
+clew reclaim --graph graph.json --work-root work/ --results results/
+```
+
+On the shipped sarek run, 65 of 81 directories can go. Nothing is deleted
+without `--apply` and a receipt. [Reclaim](docs/reclaim.md) has the rest.
+
 ## Every result gets one of three answers
 
 Provenance tools record where data came from. None of them record whether a
@@ -134,8 +149,9 @@ clew impact --graph graph.json --container gatk4
 ```
 
 The sources differ in how much evidence they carry, and evidence is what
-verdicts are made of. [Lineage sources](docs/sources.md) has the comparison
-and the limits of each. Triggers combine a selector, where the problem
+verdicts are made of. Content digests matter most, and `clew digest` fills
+them in where the engine did not. [Lineage sources](docs/sources.md) has
+the comparison and the limits of each. Triggers combine a selector, where the problem
 enters the graph, with a mode, what kind of wrong it is. [Triggers](docs/triggers.md)
 has the full grid, including the generic `--trigger kind:value` form that
 answers label queries on engines that record labels.
@@ -176,7 +192,7 @@ the platform APIs and awaiting their first live runs. Blast radius for subject, 
 label triggers. Contribution classes with fail-closed defaults, remediation
 plans, publication assertions, the append-only log, versioned policy, sealed
 bundles that replay offline, the CI gate, the dashboard and the MCP server.
-Stdlib only.
+Storage reclamation with byte-checked proof and a receipt. Stdlib only.
 
 Not built: a log identity, and domain adapters beyond nf-core pipelines.
 [CHANGELOG.md](CHANGELOG.md) lists what changed in each release.
