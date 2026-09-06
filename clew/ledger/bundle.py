@@ -63,8 +63,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from clew.core import gate as gate_module
-from clew.core import policy as policy_module
+from clew.ledger import gate as gate_module
+from clew.ledger import policy as policy_module
 
 BUNDLE_VERSION = 1
 

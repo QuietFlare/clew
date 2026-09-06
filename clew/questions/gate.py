@@ -43,8 +43,8 @@ import sys
 from pathlib import Path
 
 
-from clew.core import evidence
-from clew.core import gate as core_gate
+from clew.ledger import bundle
+from clew.ledger import gate as core_gate
 from clew.domains import rnaseq, sarek, viralrecon
 
 DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
@@ -127,7 +127,7 @@ def main(argv=None):
             "log there are no facts to check against, and a gate that cannot "
             "check must not pass.")
     try:
-        from clew.core import eventlog
+        from clew.ledger import eventlog
         conn = eventlog.connect(args.dsn)
         entries = eventlog.read(conn)
         log_head = eventlog.head(conn)
@@ -219,7 +219,7 @@ def seal(args, result, policy, entries, log_head):
         "inputs.json": {
             Path(args.samplesheet).name: {
                 "path": str(args.samplesheet),
-                "sha256": evidence.sha256_file(args.samplesheet),
+                "sha256": bundle.sha256_file(args.samplesheet),
                 "bytes": Path(args.samplesheet).stat().st_size,
             }
         },
@@ -232,14 +232,14 @@ def seal(args, result, policy, entries, log_head):
         "the log's coverage bounds this result: facts never recorded cannot "
         "block anything",
     ]
-    manifest, digest = evidence.build(
+    manifest, digest = bundle.build(
         args.out, documents, log_head=log_head, coverage=coverage,
         description=f"Clew gate result for {Path(args.samplesheet).name}")
     print(f"\nsealed {args.out}")
     print(f"  bundle hash  {digest}")
 
     if args.seal_into_log:
-        from clew.core import eventlog
+        from clew.ledger import eventlog
         conn = eventlog.connect(args.dsn)
         entry = eventlog.append(
             conn, event_type=CHECKED, subject=Path(args.samplesheet).name,

@@ -15,9 +15,9 @@ from collections import Counter
 from pathlib import Path
 
 
-from clew.core import blast_radius as core
-from clew.core import contribution
-from clew.core import policy
+from clew.graph import blast_radius as core
+from clew.graph import contribution
+from clew.ledger import policy
 from clew.domains import sarek
 
 ROOT = Path(__file__).resolve().parent

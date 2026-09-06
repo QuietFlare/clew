@@ -23,9 +23,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import extract_from_snakemake as sm
-from clew.core import blast_radius as core
-from clew.core.graph import contract_violations, external_input_entry_nodes
+from clew.extract import snakemake as sm
+from clew.graph import blast_radius as core
+from clew.graph.graph import contract_violations, external_input_entry_nodes
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 WILDCARDS = FIXTURES / "snakemake_wildcards"

@@ -54,8 +54,8 @@ import sys
 from pathlib import Path
 
 
-from clew.core import query
-from clew.core.bundlestore import (check_integrity, conflict_coverage, find_bundle,
+from clew.ledger import query
+from clew.ledger.bundlestore import (check_integrity, conflict_coverage, find_bundle,
                               load_store, plan_of, policy_of, with_conflicts)
 
 PROTOCOL_VERSION = "2025-06-18"

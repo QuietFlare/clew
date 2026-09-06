@@ -13,13 +13,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import clew
-from clew import extract_from_cromwell as cw
-from clew import extract_from_dnanexus as dx
-from clew import extract_from_horus as hz
-from clew import extract_from_latch as lt
-from clew import extract_from_rocrate as rc
-from clew import extract_from_snakemake as sm
-from clew.core.graph import contract_violations
+from clew.extract import cromwell as cw
+from clew.extract import dnanexus as dx
+from clew.extract import horus as hz
+from clew.extract import latch as lt
+from clew.extract import rocrate as rc
+from clew.extract import snakemake as sm
+from clew.graph.graph import contract_violations
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "clew" / "data"

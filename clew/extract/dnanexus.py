@@ -34,7 +34,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-from clew.core.graph import EXTERNAL
+from clew.graph.graph import EXTERNAL
 
 API = "https://api.dnanexus.com"
 

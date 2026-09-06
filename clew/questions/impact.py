@@ -47,15 +47,15 @@ from pathlib import Path
 import sys
 
 
-from clew.core import blast_radius as core
-from clew.core import contribution
-from clew.core import policy
-from clew.core.policy import UNDETERMINED
+from clew.graph import blast_radius as core
+from clew.graph import contribution
+from clew.ledger import policy
+from clew.ledger.policy import UNDETERMINED
 from clew.domains import rnaseq, sarek, viralrecon
-from clew import report
-from clew.core import triggers
-from clew.core.contribution import classify
-from clew.core.graph import (
+from clew.views import report
+from clew.graph import triggers
+from clew.graph.contribution import classify
+from clew.graph.graph import (
     container_entry_nodes,
     describe,
     external_input_entry_nodes,

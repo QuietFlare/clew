@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 
-from clew.core import policy
+from clew.ledger import policy
 
 ADOPTED = "PolicyAdopted"
 
@@ -158,7 +158,7 @@ def cmd_diff(args):
 
 
 def cmd_register(args):
-    from clew.core import eventlog
+    from clew.ledger import eventlog
 
     active = selected(args)
     stamp = policy.identify(active)

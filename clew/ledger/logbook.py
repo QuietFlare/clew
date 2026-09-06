@@ -44,7 +44,7 @@ import sys
 from pathlib import Path
 
 
-from clew.core import eventlog
+from clew.ledger import eventlog
 
 
 def cmd_init(conn, args):

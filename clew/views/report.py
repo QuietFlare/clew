@@ -29,8 +29,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from clew.dashboard import coverage_panel, esc, tag
-from clew.style import STYLE, masthead
+from clew.views.dashboard import coverage_panel, esc, tag
+from clew.views.style import STYLE, masthead
 
 UNKNOWN_TARGET = "not recorded"
 

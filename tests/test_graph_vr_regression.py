@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew.core import blast_radius as core
+from clew.graph import blast_radius as core
 from clew.domains import viralrecon
 
 ROOT = Path(__file__).resolve().parent.parent

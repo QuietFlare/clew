@@ -15,8 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import extract_from_rocrate as rc
-from clew.core import blast_radius as core
+from clew.extract import rocrate as rc
+from clew.graph import blast_radius as core
 from clew.domains import viralrecon  # sample-keyed adapter; the crate has no donors
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"

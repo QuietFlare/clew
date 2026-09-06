@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import extract_from_lineage_store as ls
+from clew.extract import nextflow_store as ls
 
 RUN_A = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 RUN_B = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -296,7 +296,7 @@ class RealStoreEquivalence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-        from clew.core import blast_radius as core
+        from clew.graph import blast_radius as core
         from clew.domains import sarek
 
         runs = ls.load_history(PETRI_STORE)

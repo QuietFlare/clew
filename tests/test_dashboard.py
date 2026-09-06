@@ -27,11 +27,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import dashboard
-from clew import mcp_server
-from clew.core import evidence
-from clew.core import eventlog
-from clew.core import policy as policy_module
+from clew.views import dashboard
+from clew.views import mcp_server
+from clew.ledger import bundle
+from clew.ledger import eventlog
+from clew.ledger import policy as policy_module
 
 T = "2026-01-01T00:00:00+00:00"
 
@@ -81,7 +81,7 @@ class DashboardTestCase(unittest.TestCase):
         events = events if events is not None else self.chain(2)
         head = ({"seq": events[-1]["seq"], "hash": events[-1]["hash"]}
                 if events else {"seq": 0, "hash": eventlog.GENESIS})
-        evidence.build(Path(self.tmp) / name,
+        bundle.build(Path(self.tmp) / name,
                        {"plan.json": plan or a_plan(),
                         "policy.json": policy_module.DEFAULT,
                         "events.json": events, "inputs.json": {}},
@@ -225,7 +225,7 @@ class TestCli(DashboardTestCase):
         empty = Path(self.tmp) / "empty"
         empty.mkdir()
         result = subprocess.run(
-            [sys.executable, "-m", "clew.dashboard",
+            [sys.executable, "-m", "clew.views.dashboard",
              "--bundles", str(empty), "--out", str(Path(self.tmp) / "x.html")],
             capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
@@ -241,8 +241,8 @@ class TestSurfacesShareOneStore(unittest.TestCase):
 
     def test_neither_surface_imports_the_other(self):
         root = Path(__file__).resolve().parent.parent
-        dash = (root / "clew" / "dashboard.py").read_text()
-        served = (root / "clew" / "mcp_server.py").read_text()
+        dash = (root / "clew" / "views" / "dashboard.py").read_text()
+        served = (root / "clew" / "views" / "mcp_server.py").read_text()
         self.assertNotRegex(
             dash, re.compile(r"^\s*(from|import)\s+mcp_server", re.M),
             "dashboard.py imports mcp_server.py")

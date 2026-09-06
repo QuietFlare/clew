@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clew import extract_lineage as ex
+from clew.extract import nextflow_work as ex
 
 
 class TestTargetToHash(unittest.TestCase):
@@ -146,7 +146,7 @@ class TestCopyStagedRunsAreRefused(unittest.TestCase):
 
     def test_cli_exits_nonzero_and_points_at_the_lineage_store(self):
         result = subprocess.run(
-            [sys.executable, "-m", "clew.extract_lineage",
+            [sys.executable, "-m", "clew.extract.nextflow_work",
              "--jsonl", str(self.jsonl), "--work", str(self.work)],
             capture_output=True, text=True,
             cwd=Path(__file__).resolve().parent.parent)
