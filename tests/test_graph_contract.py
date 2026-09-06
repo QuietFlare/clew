@@ -13,10 +13,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import clew
+from clew import extract_from_cromwell as cw
 from clew import extract_from_dnanexus as dx
 from clew import extract_from_horus as hz
 from clew import extract_from_latch as lt
 from clew import extract_from_rocrate as rc
+from clew import extract_from_snakemake as sm
 from clew.core.graph import contract_violations
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,6 +34,10 @@ def fixture_graphs():
     yield "rocrate", rc.extract(FIXTURES / "ro-crate-metadata.json")
     yield "dnanexus", dx.extract(dx.load_records(FIXTURES / "dnanexus"))
     yield "latch", lt.extract(lt.load_records(FIXTURES / "latch"))
+    yield "cromwell", cw.extract(cw.load_metadata(FIXTURES / "cromwell" / "diamond.json"))
+    yield "cromwell-sub", cw.extract(cw.load_metadata(FIXTURES / "cromwell" / "outer.json"))
+    yield "snakemake-files", sm.extract(sm.load_records(FIXTURES / "snakemake_wildcards"))
+    yield "snakemake-db", sm.extract(sm.load_records(FIXTURES / "snakemake_diamond"))
 
 
 class ShippedGraphsConform(unittest.TestCase):

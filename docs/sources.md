@@ -1,8 +1,7 @@
 # Lineage sources
 
 Clew computes over a lineage graph. Every extractor emits the same JSON, so
-everything downstream is identical whichever engine ran the work. Four
-extractors ship today.
+everything downstream is identical whichever engine ran the work.
 
 ## Nextflow native lineage (preferred)
 
@@ -103,6 +102,75 @@ introspecting the API the Latch SDK uses, which is not a published
 contract, so the extractor pins the fields it reads and fails loudly if
 they change.
 
+## Cromwell
+
+Cromwell runs WDL, on its own or behind Terra. Its workflow metadata
+lists, for every call, the inputs it ran with and the outputs it produced
+as paths, so an input that is another call's output is an edge, and a
+path no call produced came from outside.
+
+```bash
+clew extract-cromwell --metadata metadata.json --json-out graph.json
+```
+
+The file is what `cromwell run -m metadata.json` writes. From a server,
+fetch it yourself with subworkflows expanded, or let Clew do it:
+
+```bash
+clew extract-cromwell --server http://localhost:8000 --workflow <id> --json-out graph.json
+```
+
+`--token` sends a bearer token for a server behind auth. The extractor
+only reads. A scattered call becomes one node per shard, named
+`workflow.task/shard-N`. A subworkflow call is a wrapper that runs
+nothing, so its children become the nodes and the wrapper disappears. If
+the metadata came without `expandSubWorkflows=true` the wrapper is kept as
+a node and marked, so the summary can say how much of the run is hidden.
+
+The container is the image digest Cromwell resolved, or the declared image
+when it did not. Cromwell hashes inputs for call caching and never hashes
+outputs, so there are no content digests, and a String input containing a
+slash reads as a file, which errs towards reporting an edge. Optional task
+fields: `duration_s`, and `cached` on a call-cache hit.
+
+Verified on Cromwell 92 with a scatter and an imported subworkflow, on the
+local backend. Terra and the cloud backends record the same metadata with
+`gs://` paths, which join the same way, and a first run there is welcome.
+
+## Snakemake
+
+Snakemake remembers, for every output file, the rule, inputs, command,
+parameters and software environment that produced it, because that is how
+it decides what to rerun. That memory is lineage. Nothing changes in the
+workflow.
+
+```bash
+clew extract-snakemake --workdir /path/to/workflow --json-out graph.json
+```
+
+Both persistence backends are read: the JSON files under
+`.snakemake/metadata/`, and the SQLite `metadata.db` written with
+`--persistence-backend db`. A database shared by several workflows holds
+one namespace per workflow, and `--namespace` picks one when the extractor
+finds more than one.
+
+Snakemake records a sha256 for every input file it consumed, so each edge
+carries the digest of the file the consumer read. Only inputs are hashed,
+so a digest reaches the graph for a file that some downstream job
+consumed. Directory outputs, piped inputs, and files above Snakemake's
+checksum size limit carry none. The container is the image the rule ran
+in, or `conda@<hash>` for a conda environment. The script is the resolved
+shell command.
+
+The store is a cache, not a history. Every run overwrites the records of
+the outputs it rebuilt and leaves the rest, so after a partial rerun the
+store describes a mix of runs, the same trap as the Nextflow work
+directory. Extract after a run, and read the timestamps when two runs
+might have been mixed.
+
+Verified on Snakemake 9.26 with wildcards, multi-output rules and
+directory outputs, on both backends.
+
 ## Workflow Run RO-Crate
 
 The [nf-prov](https://github.com/nextflow-io/nf-prov) plugin writes a
@@ -155,15 +223,15 @@ identical impact numbers, and the test suite enforces that equivalence.
 All sources yield the same graph shape. They differ in how much evidence
 they carry, and evidence is what verdicts are made of.
 
-| | lineage store | Horus | RO-Crate | work/ symlinks |
-|---|---|---|---|---|
-| tasks and edges | yes | yes | yes | yes, minus forwarded files |
-| external inputs | yes | yes | yes | yes |
-| script and container image | yes | yes | no | yes |
-| output sizes | yes | yes | no | yes |
-| content digests | external inputs | every artifact | no | no |
-| storage checkable | `--work-root` | `--work-root` | published copies only | `--work-root` |
-| best verdict for a shared, surviving artifact | REGENERATE | REGENERATE | QUARANTINE | REGENERATE |
+| | lineage store | Horus | Cromwell | Snakemake | RO-Crate | work/ symlinks |
+|---|---|---|---|---|---|---|
+| tasks and edges | yes | yes | yes | yes | yes | yes, minus forwarded files |
+| external inputs | yes | yes | yes | yes | yes | yes |
+| script and container image | yes | yes | yes | yes | no | yes |
+| output sizes | yes | yes | no | no | no | yes |
+| content digests | external inputs | every artifact | no | every consumed input | no | no |
+| storage checkable | `--work-root` | `--work-root` | `--work-root` at `cromwell-executions/<workflow>` | no, jobs share one directory | published copies only | `--work-root` |
+| best verdict for a shared, surviving artifact | REGENERATE | REGENERATE | REGENERATE | REGENERATE | QUARANTINE | REGENERATE |
 
 The last row is the practical difference. A crate carries no re-execution
 evidence, so every crate task fails closed to `IRREDUCIBLE`. The blast

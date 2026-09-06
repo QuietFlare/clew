@@ -1,0 +1,259 @@
+{
+  "workflowName": "outer",
+  "workflowProcessingEvents": [{
+    "cromwellId": "cromid-4282e5d",
+    "description": "PickedUp",
+    "timestamp": "2026-09-06T13:56:09.092Z",
+    "cromwellVersion": "92"
+  }, {
+    "cromwellId": "cromid-4282e5d",
+    "description": "Finished",
+    "timestamp": "2026-09-06T13:56:55.513Z",
+    "cromwellVersion": "92"
+  }],
+  "actualWorkflowLanguageVersion": "1.0",
+  "submittedFiles": {
+    "workflow": "version 1.0\nimport \"sub.wdl\" as sub\nworkflow outer {\n  input { File raw\n          File calibration }\n  call prep { input: raw = raw }\n  call sub.pair as inner { input: prepped = prep.prepped, calibration = calibration }\n  call finish { input: analysis = inner.analysis }\n  output { File out = finish.out }\n}\ntask prep {\n  input { File raw }\n  command { sort ~{raw} > prepped.csv }\n  output { File prepped = \"prepped.csv\" }\n}\ntask finish {\n  input { File analysis }\n  command { cp ~{analysis} out.txt }\n  output { File out = \"out.txt\" }\n}\n",
+    "root": "",
+    "options": "{\n\n}",
+    "inputs": "{\"outer.raw\": \"/data/wdl/raw.csv\", \"outer.calibration\": \"/data/wdl/calibration.txt\"}\n",
+    "workflowUrl": "outer.wdl",
+    "labels": "{}"
+  },
+  "calls": {
+    "outer.prep": [{
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "sort /data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/inputs/1936395630/raw.csv > prepped.csv",
+      "shardIndex": -1,
+      "outputs": {
+        "prepped": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/execution/prepped.csv"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "raw": "/data/wdl/raw.csv"
+      },
+      "returnCode": 0,
+      "jobId": "41949",
+      "backend": "Local",
+      "end": "2026-09-06T13:56:24.019Z",
+      "start": "2026-09-06T13:56:11.625Z",
+      "stderr": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:56:24.019Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:56:24.019Z"
+      }, {
+        "startTime": "2026-09-06T13:56:19.059Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:56:19.095Z"
+      }, {
+        "startTime": "2026-09-06T13:56:11.644Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:56:19.052Z"
+      }, {
+        "startTime": "2026-09-06T13:56:19.052Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:56:19.059Z"
+      }, {
+        "startTime": "2026-09-06T13:56:19.095Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:56:24.019Z"
+      }, {
+        "startTime": "2026-09-06T13:56:11.635Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:56:11.644Z"
+      }]
+    }],
+    "outer.finish": [{
+      "executionStatus": "Done",
+      "stdout": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-finish/execution/stdout",
+      "backendStatus": "Done",
+      "commandLine": "cp /data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-finish/inputs/329826930/sub.analysis.txt out.txt",
+      "shardIndex": -1,
+      "outputs": {
+        "out": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-finish/execution/out.txt"
+      },
+      "runtimeAttributes": {
+        "maxRetries": "0",
+        "failOnStderr": "false",
+        "continueOnReturnCode": "0"
+      },
+      "callCaching": {
+        "allowResultReuse": false,
+        "effectiveCallCachingMode": "CallCachingOff"
+      },
+      "inputs": {
+        "analysis": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution/sub.analysis.txt"
+      },
+      "returnCode": 0,
+      "jobId": "42027",
+      "backend": "Local",
+      "end": "2026-09-06T13:56:53.981Z",
+      "start": "2026-09-06T13:56:40.192Z",
+      "stderr": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-finish/execution/stderr",
+      "callRoot": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-finish",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:56:49.040Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:56:49.042Z"
+      }, {
+        "startTime": "2026-09-06T13:56:49.042Z",
+        "description": "PreparingJob",
+        "endTime": "2026-09-06T13:56:49.048Z"
+      }, {
+        "startTime": "2026-09-06T13:56:49.048Z",
+        "description": "RunningJob",
+        "endTime": "2026-09-06T13:56:53.981Z"
+      }, {
+        "startTime": "2026-09-06T13:56:40.193Z",
+        "description": "RequestingExecutionToken",
+        "endTime": "2026-09-06T13:56:49.040Z"
+      }, {
+        "startTime": "2026-09-06T13:56:53.981Z",
+        "description": "UpdatingJobStore",
+        "endTime": "2026-09-06T13:56:53.981Z"
+      }, {
+        "startTime": "2026-09-06T13:56:40.192Z",
+        "description": "Pending",
+        "endTime": "2026-09-06T13:56:40.193Z"
+      }]
+    }],
+    "outer.inner": [{
+      "executionStatus": "Done",
+      "subWorkflowMetadata": {
+        "workflowName": "inner",
+        "rootWorkflowId": "629e13b1-e4ca-43c5-ae86-c9811283ae66",
+        "calls": {
+          "pair.analyse": [{
+            "executionStatus": "Done",
+            "stdout": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution/stdout",
+            "backendStatus": "Done",
+            "commandLine": "cat /data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/inputs/921857431/prepped.csv /data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/inputs/1936395630/calibration.txt > sub.analysis.txt",
+            "shardIndex": -1,
+            "outputs": {
+              "analysis": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution/sub.analysis.txt"
+            },
+            "runtimeAttributes": {
+              "maxRetries": "0",
+              "failOnStderr": "false",
+              "continueOnReturnCode": "0"
+            },
+            "callCaching": {
+              "allowResultReuse": false,
+              "effectiveCallCachingMode": "CallCachingOff"
+            },
+            "inputs": {
+              "calibration": "/data/wdl/calibration.txt",
+              "sample": "sub",
+              "prepped": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/execution/prepped.csv"
+            },
+            "returnCode": 0,
+            "jobId": "41979",
+            "backend": "Local",
+            "end": "2026-09-06T13:56:33.992Z",
+            "start": "2026-09-06T13:56:27.963Z",
+            "stderr": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution/stderr",
+            "callRoot": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse",
+            "attempt": 1,
+            "executionEvents": [{
+              "startTime": "2026-09-06T13:56:33.992Z",
+              "description": "UpdatingJobStore",
+              "endTime": "2026-09-06T13:56:33.992Z"
+            }, {
+              "startTime": "2026-09-06T13:56:29.040Z",
+              "description": "PreparingJob",
+              "endTime": "2026-09-06T13:56:29.043Z"
+            }, {
+              "startTime": "2026-09-06T13:56:27.964Z",
+              "description": "RequestingExecutionToken",
+              "endTime": "2026-09-06T13:56:29.039Z"
+            }, {
+              "startTime": "2026-09-06T13:56:29.043Z",
+              "description": "RunningJob",
+              "endTime": "2026-09-06T13:56:33.992Z"
+            }, {
+              "startTime": "2026-09-06T13:56:29.039Z",
+              "description": "WaitingForValueStore",
+              "endTime": "2026-09-06T13:56:29.040Z"
+            }, {
+              "startTime": "2026-09-06T13:56:27.963Z",
+              "description": "Pending",
+              "endTime": "2026-09-06T13:56:27.964Z"
+            }]
+          }]
+        },
+        "outputs": {
+          "pair.analysis": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution/sub.analysis.txt"
+        },
+        "workflowRoot": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66",
+        "status": "Succeeded",
+        "parentWorkflowId": "629e13b1-e4ca-43c5-ae86-c9811283ae66",
+        "end": "2026-09-06T13:56:35.111Z",
+        "start": "2026-09-06T13:56:25.925Z",
+        "id": "9e85b7e0-f8fe-4672-8023-44414edf5646",
+        "inputs": {
+          "calibration": "/data/wdl/calibration.txt",
+          "prepped": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/execution/prepped.csv"
+        }
+      },
+      "shardIndex": -1,
+      "outputs": {
+        "analysis": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution/sub.analysis.txt"
+      },
+      "inputs": {
+        "calibration": "/data/wdl/calibration.txt",
+        "prepped": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-prep/execution/prepped.csv"
+      },
+      "end": "2026-09-06T13:56:38.988Z",
+      "start": "2026-09-06T13:56:25.917Z",
+      "attempt": 1,
+      "executionEvents": [{
+        "startTime": "2026-09-06T13:56:25.919Z",
+        "description": "SubWorkflowPendingState",
+        "endTime": "2026-09-06T13:56:25.923Z"
+      }, {
+        "startTime": "2026-09-06T13:56:25.930Z",
+        "description": "SubWorkflowRunningState",
+        "endTime": "2026-09-06T13:56:35.111Z"
+      }, {
+        "startTime": "2026-09-06T13:56:25.925Z",
+        "description": "SubWorkflowPreparingState",
+        "endTime": "2026-09-06T13:56:25.930Z"
+      }, {
+        "startTime": "2026-09-06T13:56:25.923Z",
+        "description": "WaitingForValueStore",
+        "endTime": "2026-09-06T13:56:25.925Z"
+      }]
+    }]
+  },
+  "outputs": {
+    "outer.out": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66/call-finish/execution/out.txt"
+  },
+  "workflowRoot": "/data/wdl/cromwell-executions/outer/629e13b1-e4ca-43c5-ae86-c9811283ae66",
+  "actualWorkflowLanguage": "WDL",
+  "status": "Succeeded",
+  "end": "2026-09-06T13:56:55.512Z",
+  "start": "2026-09-06T13:56:09.116Z",
+  "id": "629e13b1-e4ca-43c5-ae86-c9811283ae66",
+  "inputs": {
+    "raw": "/data/wdl/raw.csv",
+    "calibration": "/data/wdl/calibration.txt"
+  },
+  "labels": {
+    "cromwell-workflow-id": "cromwell-629e13b1-e4ca-43c5-ae86-c9811283ae66"
+  },
+  "submission": "2026-09-06T13:56:09.070Z"
+}

@@ -13,6 +13,12 @@ follow [Semantic Versioning](https://semver.org/).
   file ID. Optional `price` and `duration_s` per task.
 - Latch support: `clew extract-latch` builds a graph from an execution,
   over the API or from saved records. Edges join on `latch://` path.
+- Cromwell support: `clew extract-cromwell` builds a graph from workflow
+  metadata, from a file or a server. Scatters become one node per shard,
+  subworkflows are flattened, edges join on path. Verified on Cromwell 92.
+- Snakemake support: `clew extract-snakemake` reads the `.snakemake`
+  metadata store, file or SQLite backend, and carries Snakemake's own
+  input checksums onto the edges. Verified on Snakemake 9.26.
 - A graph contract in core, `contract_violations`, run by the tests over
   every shipped and fixture graph.
 

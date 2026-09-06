@@ -122,6 +122,8 @@ pipeline.
 | Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract-horus --run-dir ~/.horus-lineage/<run-id>/ --json-out graph.json` |
 | DNAnexus, read-only over the API | `clew extract-dnanexus --analysis analysis-xxxx --json-out graph.json` |
 | Latch, read-only over the API | `clew extract-latch --execution <id> --json-out graph.json` |
+| Cromwell and WDL, including Terra | `clew extract-cromwell --metadata metadata.json --json-out graph.json` |
+| Snakemake, from its own metadata store | `clew extract-snakemake --workdir /path/to/workflow --json-out graph.json` |
 | Workflow Run RO-Crate, as written by nf-prov | `clew extract-crate --crate ro-crate-metadata.json --json-out graph.json` |
 | A Nextflow work directory, for runs that already happened | `clew extract-work --jsonl <run>.jsonl --work work/ --json-out graph.json` |
 
@@ -168,9 +170,9 @@ the tests are in [Architecture](docs/architecture.md).
 
 ## Status
 
-Extraction from Nextflow, Horus, RO-Crate and work directories, verified on
-real runs. DNAnexus and Latch extraction built from the platform APIs and
-awaiting their first live runs. Blast radius for subject, container, input and
+Extraction from Nextflow, Horus, Cromwell, Snakemake, RO-Crate and work
+directories, verified on real runs. DNAnexus and Latch extraction built from
+the platform APIs and awaiting their first live runs. Blast radius for subject, container, input and
 label triggers. Contribution classes with fail-closed defaults, remediation
 plans, publication assertions, the append-only log, versioned policy, sealed
 bundles that replay offline, the CI gate, the dashboard and the MCP server.
