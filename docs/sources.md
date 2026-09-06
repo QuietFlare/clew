@@ -14,9 +14,9 @@ That draws a line through the sources.
 
 | Tier | Sources | What the record supports |
 |---|---|---|
-| Digests on every output | Nextflow lineage store with `cache 'deep'`, Horus through horus-lineage | Impact, reclaim by comparing digests, exact joins across runs, duplicates |
-| Digests on inputs only | Snakemake, Nextflow lineage store in standard mode | Impact, reclaim by reading files, joins by name and size |
-| No digests | Cromwell, DNAnexus, Latch, RO-Crate, work symlinks | Impact, reclaim by reading files where they are reachable |
+| Digests on every output | Nextflow lineage store with `cache 'deep'`, Horus through horus-lineage | Impact, reclaim and stitch, straight from the record |
+| Digests on inputs only | Snakemake, Nextflow lineage store in standard mode | Impact. Reclaim and stitch after `clew digest` |
+| No digests | Cromwell, DNAnexus, Latch, RO-Crate, work symlinks | Impact. Reclaim and stitch after `clew digest` |
 
 Digests travel in the graph as `digest` fields, `<algorithm>:<value>`, on
 output details, on edges, and on published files. Only equal strings
@@ -56,9 +56,9 @@ Nextflow then writes every task, output file and link into a `.lineage`
 store with content-addressed `lid://` identifiers. The second line makes
 the checksums it records content hashes rather than path and time, which
 is what puts a store in the top tier above. Without it the store still
-extracts and impact still works, but reclaim has to read files and joins
-fall back to name and size. Clew has no opinion on where either setting
-lives. It reads the store the engine writes.
+extracts and impact still works, but reclaim and stitch need `clew digest`
+to run first. Clew has no opinion on where either setting lives. It reads
+the store the engine writes.
 
 ```bash
 clew extract-store --store /path/to/.lineage --list-runs

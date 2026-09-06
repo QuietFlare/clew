@@ -1,48 +1,51 @@
 # Architecture
 
-Two streams meet in the middle. One is machine facts, whatever the engine
-recorded, merged into one graph. The other is human facts, things no engine
-can know, translated by the domain layer into graph terms. The core knows
-nothing about either world. It traverses, applies the versioned policy, and
-logs.
+One graph, several recorders below it, one small tool per question above
+it. Recorders turn what an engine wrote into the same graph JSON. Questions
+read the graph and nothing else. Human facts, a withdrawal, a publication,
+enter through the domain layer, which translates them into graph terms.
+The graph and the ledger know nothing about any field or any engine.
 
 ```mermaid
 flowchart TB
     subgraph ENG["The engine already writes this"]
-        LS["Nextflow lineage store"]
-        HL["horus-lineage records"]
-        RC["nf-prov RO-Crate"]
-        WS["work/ symlinks"]
+        NF["Nextflow"]
+        SM["Snakemake"]
+        CW["Cromwell"]
+        HZ["Horus"]
+        DX["DNAnexus"]
+        LT["Latch"]
     end
     subgraph PA["People assert this"]
         W["Withdrawal"]
         P["Publication"]
         D["Tool defect"]
     end
-    subgraph CORE["graph/ and ledger/: the engine, zero domain vocabulary"]
-        T["Traversal<br/>blast radius, classes"]
-        POL["Policy<br/>versioned, hashed"]
-        LOG["Log + evidence<br/>append-only, replayable"]
-    end
-    ENG -- extractors --> G["One stitched graph<br/>every run, one JSON"]
+    ENG -- extract --> G["One graph<br/>tasks, edges, content digests"]
+    DIG["clew digest<br/>hashes a run once"] --> G
     PA --> DOM["domains/<br/>subject &rarr; graph nodes"]
-    G --> CORE
-    DOM --> CORE
-    CORE --> PLAN["Remediation plan<br/>delete, re-run, disclose"]
-    CORE --> GATE["CI gate<br/>blocks bad inputs"]
-    CORE --> AUD["Dashboard + MCP<br/>answers with citations"]
+    G --> Q
+    DOM --> Q
+    subgraph Q["questions/"]
+        IMP["impact<br/>what a change reached"]
+        REC["reclaim<br/>what can be deleted"]
+        GATE["gate<br/>block a run before it starts"]
+    end
+    Q --> LED["ledger/<br/>policy, log, evidence"]
+    LED --> AUD["Dashboard + MCP<br/>answers with citations"]
 ```
 
 ```
 clew/graph/      the one graph: loading, triggers, traversal, contribution
-                 classes. Imports nothing else from clew.
+                 classes, digest indexes. Imports nothing else from clew.
 clew/ledger/     versioned policy, event log, evidence bundles, the gate
                  decision, the query surface, and their commands.
 clew/domains/    the layer allowed to know about sarek, samplesheets, donors.
-clew/extract/    one extractor per lineage source, all emitting the same
-                 JSON, plus stitch.
-clew/questions/  one module per question asked of the graph: impact, gate.
-clew/views/      dashboard, report, MCP server.
+clew/extract/    one extractor per engine, all emitting the same JSON,
+                 plus stitch and digest.
+clew/questions/  one module per question asked of the graph: impact,
+                 reclaim, gate.
+clew/views/      dashboard, the impact and reclaim pages, MCP server.
 tests/           stdlib unittest.
 ```
 
@@ -59,13 +62,21 @@ directory rather than editing the engine. Both rules are
 [tests/test_core_boundary.py](../tests/test_core_boundary.py). An unenforced
 rule stays true right up until it doesn't.
 
+## Identity
+
+Files are identified by content digest, `<algorithm>:<value>`, carried on
+outputs, on edges and on published files. Reclaim and stitch compare
+digests and nothing else. Engines that hash content at write time supply
+them; `clew digest` supplies them for runs that were recorded without.
+[Sources](sources.md) draws the line between the two.
+
 ## Tests
 
 ```bash
 python3 -m unittest discover -s tests
 ```
 
-308 tests need nothing installed. The other 25 exercise the log's storage
+433 tests need nothing installed. The other 25 exercise the log's storage
 behaviour, the role grants, the triggers and concurrent appends, and skip
 unless you point them at a database you own:
 
@@ -100,4 +111,5 @@ The edges of the model, reported rather than hidden:
 A log identity, so bundles from different logs are detected rather than
 distinguished. A subject-facing transparency log. Domain adapters beyond
 nf-core pipelines, though the generic label trigger covers engines that
-record labels, Horus among them.
+record labels, Horus among them. Storage backends other than a local
+filesystem for reclaim and digest.

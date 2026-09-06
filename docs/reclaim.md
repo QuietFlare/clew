@@ -19,7 +19,7 @@ reclaimable ones.
 
 | Verdict | Proof | Proposed by default |
 |---|---|---|
-| `REDUNDANT` | Every output has a published copy with the same name and size, and exactly one such copy | yes |
+| `REDUNDANT` | Every output has a published copy with the same content digest, still present under `--results` | yes |
 | `SUPERSEDED` | The extractor marked the task replaced by a later run in the resume chain | yes |
 | `FAILED` | The task did not complete and nothing consumed its outputs | yes |
 | `INTERMEDIATE` | Every output is consumed downstream, the script and container were recorded, and every input is still on disk or recomputable | only with `--intermediates` |
