@@ -5,22 +5,19 @@
 [![Tests](https://github.com/QuietFlare/clew/actions/workflows/ci.yml/badge.svg)](https://github.com/QuietFlare/clew/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
-Clew rebuilds what your pipeline runs derived from what, out of the record
-the engine already writes, and answers questions over it that no single run
-can.
+Clew answers questions about workflow runs that the engine cannot: what a
+bad input reached, what can safely be deleted, and what one run took from
+another. It reads the record the engine already writes, for Nextflow,
+Snakemake, Cromwell, Horus, DNAnexus and Latch, and changes nothing in
+your pipeline.
 
-When something upstream goes bad, a reference update, a buggy container, a
-contaminated sample, a withdrawn consent, it tells you exactly what to
-delete, re-run, or disclose, with a plan you can hand to an auditor. When
-nothing is wrong and the disk is full, it tells you which work directories
-are provably redundant, and why. It reads Nextflow, Horus, Cromwell,
-Snakemake, DNAnexus and Latch, and has no engine of its own.
+The examples are from genomics because that is where it was first used.
+The graph underneath is neutral: tasks that read files and write files,
+whatever the field.
 
 A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
-![An impact report: how much of the run a bad container reaches, and what to do about each task it touches](docs/impact.png)
-
-## Try it in two minutes
+## Install
 
 ```bash
 pip install clew-lineage
@@ -30,177 +27,83 @@ pip install clew-lineage
 clew demo
 ```
 
-The demo runs three triggers over a real nf-core/sarek run that ships with
-the package, then crosses a run boundary. The base install has no
-dependencies beyond Python 3.9. Only the event log needs a database driver,
-via `pip install 'clew-lineage[log]'`.
+Python 3.9 or later, no dependencies. The demo runs over a real
+nf-core/sarek run that ships with the package.
 
-## Three questions, one engine
+## Three questions
 
-On the shipped run, five synthetic donors and 81 tasks:
-
-**The pipeline engineer: we bumped the reference genome. What must be re-run?**
-
-```bash
-clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --input genome.fasta
-```
-
-72 of 81 tasks are calibrated against it. The other 9 are provably out of
-scope, and the derivation chain is printed as evidence for every claim.
-
-**QA: a defect was reported in a GATK4 container. What did it produce?**
-
-```bash
-clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --container gatk4
-```
-
-16 tasks ran the container and 68 of 81 are suspect. Nothing is destroyed.
-A defect casts doubt, it does not remove a source, so artifacts are rebuilt
-rather than deleted.
-
-**Compliance: a donor withdrew consent. What happens now?**
-
-```bash
-clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv \
-    --subject donor_003 --assertions clew/data/assertions.json
-```
-
-16 of 81 tasks are affected. The 15 that exist only because of this donor
-are destroyed where the artifacts still exist. The cohort report that also
-serves the other donors, and was cited in a publication, resolves to
-`NOTIFY_ONLY` instead. You cannot unpublish, so the answer there is
-disclosure. One traversal, two verdicts.
-
-Add `--html report.html` to any of these for the page shown above.
-
-## It follows the thread across runs
-
-One withdrawal, two pipelines. A sample was withdrawn after an rnaseq run
-had published a count matrix, and a separate differential expression run
-had consumed it. Clew joins the two graphs at that published file and
-answers across the boundary:
-
-```
-TRIGGER: withdrawal of SRR10441036_cox4d
-AFFECTED: 57 of 183 tasks        (46 in the rnaseq run, 11 in the DE run)
-
-da:29/ae3d99  DESEQ2_DIFFERENTIAL   REGENERABLE  shared
-    via rna:f2/cefd0f[STAR_ALIGN] -> rna:0c/8143cf[SALMON_QUANT]
-     -> rna:c9/9a30ba[CUSTOM_TX2GENE] -> rna:8e/b5be55[TXIMETA_TXIMPORT]
-     -> da:e8/91c345[VALIDATOR] -> da:29/ae3d99[DESEQ2_DIFFERENTIAL]
-```
-
-Engine lineage sees each run in isolation. This graph is the part nobody
-else has. It ships stitched:
-
-```bash
-clew impact --pipeline rnaseq --graph clew/data/graph_chain.json \
-    --samplesheet clew/data/samplesheets/rnaseq_yeast.csv --subject SRR10441036_cox4d
-```
-
-## When nothing is wrong and the disk is full
-
-`clew reclaim` proposes a work directory only when the graph proves its
-bytes are redundant: every output has a published copy with the same
-content digest, or the task was superseded or failed unconsumed.
-
-```bash
-clew reclaim --graph graph.json --work-root work/ --results results/
-```
-
-On the shipped sarek run, 65 of 81 directories can go. Nothing is deleted
-without `--apply` and a receipt. [Reclaim](docs/reclaim.md) has the rest.
-
-## Every result gets one of three answers
-
-Provenance tools record where data came from. None of them record whether a
-contribution can be taken back out. That is the difference between a history
-and a recall plan.
-
-| Class | Meaning | Remediation |
-|---|---|---|
-| `SEPARABLE` | The contribution can be removed and the artifact survives | `PURGE` |
-| `REGENERABLE` | It cannot be isolated, but the artifact can be recomputed from the remaining sources | `REGENERATE` |
-| `IRREDUCIBLE` | Neither | `QUARANTINE` |
-
-Anything unknown fails closed to `IRREDUCIBLE`. Telling someone their data is
-clean when it is not is the one error that ends up in front of a regulator.
-
-## Use it on your own runs
-
-Clew reads the record your engine already writes. Nothing changes in the
-pipeline.
-
-| Source | Command |
-|---|---|
-| Nextflow native lineage, including Seqera Platform | `clew extract-store --store /path/to/.lineage --run <run> --json-out graph.json` |
-| Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract-horus --run-dir ~/.horus-lineage/<run-id>/ --json-out graph.json` |
-| DNAnexus, read-only over the API | `clew extract-dnanexus --analysis analysis-xxxx --json-out graph.json` |
-| Latch, read-only over the API | `clew extract-latch --execution <id> --json-out graph.json` |
-| Cromwell and WDL, including Terra | `clew extract-cromwell --metadata metadata.json --json-out graph.json` |
-| Snakemake, from its own metadata store | `clew extract-snakemake --workdir /path/to/workflow --json-out graph.json` |
-| Workflow Run RO-Crate, as written by nf-prov | `clew extract-crate --crate ro-crate-metadata.json --json-out graph.json` |
-| A Nextflow work directory, for runs that already happened | `clew extract-work --jsonl <run>.jsonl --work work/ --json-out graph.json` |
-
-Then ask:
+**Something upstream went bad.** A reference update, a broken container, a
+withdrawn sample.
 
 ```bash
 clew impact --graph graph.json --container gatk4
 ```
 
-The sources differ in how much evidence they carry, and evidence is what
-verdicts are made of. Content digests matter most, and `clew digest` fills
-them in where the engine did not. [Lineage sources](docs/sources.md) has
-the comparison and the limits of each. Triggers combine a selector, where the problem
-enters the graph, with a mode, what kind of wrong it is. [Triggers](docs/triggers.md)
-has the full grid, including the generic `--trigger kind:value` form that
-answers label queries on engines that record labels.
+Every affected task gets a verdict, re-run, quarantine, delete or disclose,
+with the derivation chain as evidence. Nothing unknown is reported as clean.
 
-## Built to be checked by someone who does not trust you
+**The disk is full and nothing is wrong.**
 
-A plan on a terminal is a claim. The rest of Clew exists so that a third
-party can verify the claim without your database, your network, or your
-code being the thing that says so.
+```bash
+clew reclaim --graph graph.json --work-root work/ --results results/
+```
 
-- **Storage is checked, never assumed.** Verdicts that depend on whether
-  bytes still exist come back `UNDETERMINED` until Clew is told where to
-  look. [Storage](docs/storage.md)
-- **Facts nobody can edit afterwards.** An append-only, hash-chained event
-  log on Postgres with two clocks: when a fact became true and when it was
-  learned. [Event log](docs/event-log.md)
-- **Policy as versioned data.** The remediation rules are a content-hashed
-  table. A plan from March replays under the table that produced it.
-  [Policy versioning](docs/policy.md)
-- **Evidence that verifies offline.** A bundle re-derives every verdict from
-  the bundled facts and policy. No database, no credentials. Signed with
-  the OpenSSH keys you already have. [Evidence bundles](docs/evidence.md)
-- **A gate that fails closed.** Before a run starts, every subject is
-  blocked, cleared or unknown, and unknown stops the build.
-  [The CI gate](docs/gate.md)
-- **Auditor surfaces.** A self-contained dashboard with no timestamp, and a
-  read-only MCP server whose every answer carries its citations.
-  [For auditors](docs/auditors.md)
+Proposes only the directories the graph proves redundant, and deletes
+nothing without `--apply` and a receipt.
 
-How the pieces fit, what Clew claims and what it does not, and how to run
-the tests are in [Architecture](docs/architecture.md).
+**One run consumed another's output.**
+
+```bash
+clew stitch --graph a=a.json --graph b=b.json --out chain.json
+```
+
+Joins runs by content digest, so a question follows a change across
+launches, machines and engines.
+
+Add `--html` to `impact` or `reclaim` for a one-page report.
+
+![An impact report: how much of the run a bad container reaches, and what to do about each task it touches](docs/impact.png)
+
+## Your runs
+
+One command per engine turns a run into a graph.
+
+| Engine | Command |
+|---|---|
+| Nextflow, including Seqera Platform | `clew extract-store --store .lineage --run <run> --json-out graph.json` |
+| Snakemake | `clew extract-snakemake --workdir . --json-out graph.json` |
+| Cromwell and WDL, including Terra | `clew extract-cromwell --metadata metadata.json --json-out graph.json` |
+| Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract-horus --run-dir <run> --json-out graph.json` |
+| DNAnexus | `clew extract-dnanexus --analysis <id> --json-out graph.json` |
+| Latch | `clew extract-latch --execution <id> --json-out graph.json` |
+
+Content digests make every answer exact. Horus records them, and Nextflow
+does with `cache 'deep'`. For any other run, `clew digest` reads each file
+once and fills them in. [Sources](docs/sources.md) has what each engine
+records and what that limits.
+
+## Every answer can be checked
+
+Clew is built for the day someone else has to verify what it said. Storage
+is checked, never assumed. Facts go in an append-only log. The rules are
+versioned data, so an old plan replays under the rules that produced it.
+An evidence bundle re-derives every verdict offline, with no database and
+no credentials. A gate can block a run before it starts.
+
+[Storage](docs/storage.md), [event log](docs/event-log.md),
+[policy](docs/policy.md), [evidence](docs/evidence.md), [gate](docs/gate.md),
+[auditor surfaces](docs/auditors.md), [architecture](docs/architecture.md).
 
 ## Status
 
-Extraction from Nextflow, Horus, Cromwell, Snakemake, RO-Crate and work
-directories, verified on real runs. DNAnexus and Latch extraction built from
-the platform APIs and awaiting their first live runs. Blast radius for subject, container, input and
-label triggers. Contribution classes with fail-closed defaults, remediation
-plans, publication assertions, the append-only log, versioned policy, sealed
-bundles that replay offline, the CI gate, the dashboard and the MCP server.
-Storage reclamation with byte-checked proof and a receipt. Stdlib only.
-
-Not built: a log identity, and domain adapters beyond nf-core pipelines.
+Verified on real Nextflow, Snakemake, Cromwell and Horus runs. DNAnexus and
+Latch are built from the platform APIs and await their first live runs.
 [CHANGELOG.md](CHANGELOG.md) lists what changed in each release.
 
 ## Contributing
 
 Issues and pull requests are welcome, especially from people who run
-pipelines for a living and can say where the model is wrong. See
+workflows for a living and can say where the model is wrong. See
 [CONTRIBUTING.md](CONTRIBUTING.md). No agreement to sign.
 
 ## License
