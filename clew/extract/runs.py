@@ -68,10 +68,27 @@ class Runs:
         else:
             graph = json.loads((self.path / f"{run_id}.json").read_text())
         graph["run"] = {"name": name, "id": run_id}
-        sidecar = self.sidecar_path(run_id)
-        if sidecar.is_file():
-            merge_sidecar(graph, json.loads(sidecar.read_text()))
+        for sidecar in self.sidecar_paths(run_id):
+            if sidecar.is_file():
+                merge_sidecar(graph, json.loads(sidecar.read_text()))
         return graph
+
+    def sidecar_paths(self, run_id):
+        """
+        Every sidecar that may hold this run's digests: the one filed under
+        the current key first, then any filed under a run hash of the same
+        chain by an earlier Clew, so digests already on disk keep counting.
+        """
+        paths = [self.sidecar_path(run_id)]
+        if self.kind == "nextflow":
+            history = nextflow_store.load_history(self.path)
+            session = nextflow_store.pick_run(history, run_id)["session_id"]
+            for run in history:
+                if run["session_id"] == session:
+                    legacy = self.path / SIDECAR_DIR / f"{run['run_hash']}.digests.json"
+                    if legacy not in paths:
+                        paths.append(legacy)
+        return paths
 
     def sidecar_key(self, run_id):
         """

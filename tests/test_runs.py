@@ -110,6 +110,19 @@ class StoreRuns(unittest.TestCase):
         self.assertEqual(again["output_details"]["aa/1"][0]["digest"], "sha256:abc")
         self.assertNotIn("aa/1", runs.Runs(self.root).load("other_run").get("output_details", {}))
 
+    def test_a_sidecar_filed_under_a_run_hash_is_still_read(self):
+        # Sidecars written before the session key existed sit under the
+        # run hash. Digests already on disk must keep counting.
+        legacy = self.root / ".clew"
+        legacy.mkdir()
+        (legacy / f"{self.SECOND}.digests.json").write_text(json.dumps(
+            {"clew_sidecar_version": 1,
+             "outputs": {"aa/1": {"out.txt": "sha256:old"}},
+             "published": {"p.txt": {"digest": "sha256:old", "size": 1}}}))
+        g = runs.Runs(self.root).load("first_run")
+        self.assertEqual(g["output_details"]["aa/1"][0]["digest"], "sha256:old")
+        self.assertEqual(g["published"]["p.txt"]["digest"], "sha256:old")
+
 
 class HorusRuns(unittest.TestCase):
     def test_a_single_run_directory(self):
