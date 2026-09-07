@@ -78,13 +78,16 @@ them; `clew digest` supplies them for runs that were recorded without.
 python3 -m unittest discover -s tests
 ```
 
-449 tests need nothing installed. The other 25 exercise the log's storage
+471 tests need nothing installed. Another 25 exercise the log's storage
 behaviour, the role grants, the triggers and concurrent appends, and skip
 unless you point them at a database you own:
 
 ```bash
 CLEW_TEST_DSN=postgresql://user:pw@localhost:5432/clew python3 -m unittest discover -s tests
 ```
+
+Four more read the sibling Petri project's `.lineage` store and skip when
+it is not on disk.
 
 The log's arithmetic sits on the other side of that line on purpose.
 Hashing and chain verification are pure functions on plain dicts, so an
