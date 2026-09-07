@@ -12,6 +12,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from clew.graph.graph import STATUS_COMPLETED, STATUS_FAILED
+
 EXTERNAL = "EXTERNAL"
 METADATA_DIR = "metadata"
 METADATA_DB = "metadata.db"
@@ -143,7 +145,8 @@ def extract(records, workdir=""):
             "name": f"{rule} ({paths[0]})",
             "process": rule or "",
             "container": environment_of(record),
-            "status": "INCOMPLETE" if record.get("incomplete") else "COMPLETED",
+            "status": STATUS_FAILED if record.get("incomplete") else STATUS_COMPLETED,
+            "engine_status": "incomplete" if record.get("incomplete") else "complete",
             "script": record.get("shellcmd") or record.get("code") or "",
             "workdir": workdir,
         }
@@ -187,7 +190,7 @@ def main(argv=None):
     graph = extract(records, workdir)
     external = [e for e in graph["edges"] if e["producer"] == EXTERNAL]
     hashed = [e for e in graph["edges"] if e.get("sha256")]
-    incomplete = [t for t in graph["tasks"].values() if t["status"] == "INCOMPLETE"]
+    incomplete = [t for t in graph["tasks"].values() if t["status"] == STATUS_FAILED]
 
     print(f"jobs               : {len(graph['tasks'])}")
     print(f"  incomplete       : {len(incomplete)}")

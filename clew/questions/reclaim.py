@@ -8,8 +8,10 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from clew.extract.digest import sha256_file
 from clew.graph import blast_radius as core
-from clew.graph.graph import EXTERNAL, local_workdir, published_digests
+from clew.graph.graph import (EXTERNAL, STATUS_FAILED, STATUS_UNKNOWN, local_workdir,
+                              published_digests, task_status)
 from clew.domains.nfcore import BOOKKEEPING
 from clew.views import reclaim_report
 from clew.views.reclaim_report import human
@@ -34,12 +36,18 @@ ORDER = (REDUNDANT, SUPERSEDED, FAILED, INTERMEDIATE, KEEP, GONE)
 
 
 def dir_bytes(path):
-    """Bytes of regular files under path. Symlinks are staged inputs, not ours."""
+    """
+    Bytes freed by removing path: regular files with one link. Symlinks
+    are staged inputs, and a file with another hard link survives the
+    removal, so neither gives anything back.
+    """
     total = 0
     for child in path.rglob("*"):
         if child.is_symlink() or not child.is_file():
             continue
-        total += child.lstat().st_size
+        stat = child.lstat()
+        if stat.st_nlink == 1:
+            total += stat.st_size
     return total
 
 
@@ -138,25 +146,61 @@ class Reclaimer:
         """
         How the published tree holds this output: ('digest' | 'hardlink',
         [paths]) when it does, ('symlink', [paths]) when it only points into
-        work, ('none', []) when it does not, or ('unverified', [paths]) when
-        --results was not given to check.
+        work, ('changed', [paths]) when a copy is no longer the size that
+        was digested, ('none', []) when it does not, or ('unverified',
+        [paths]) when --results was not given to check.
+
+        Two outputs can share a digest (an empty file, a repeated header),
+        so a copy with the output's own basename is preferred; only when
+        none has it are all copies with that digest considered.
         """
         rels = self.published.get(detail.get("digest") or "", [])
+        named = [rel for rel in rels if Path(rel).name == Path(detail["file"]).name]
+        rels = named or rels
         if not rels:
             return "none", []
         if self.results is None:
             return "unverified", rels
-        held, linked = [], []
+        held, linked, changed = [], [], []
         for rel in rels:
             published = self.results / rel
             kind = link_kind(path / detail["file"], published)
             if kind == "symlink":
                 linked.append(rel)
-            elif kind == "hardlink" or published.is_file():
-                held.append((kind or "digest", rel))
+            elif kind == "hardlink":
+                held.append((kind, rel))
+            elif published.is_file():
+                recorded = self.graph.get("published", {}).get(rel, {}).get("size")
+                if recorded is not None and published.stat().st_size != recorded:
+                    changed.append(rel)
+                else:
+                    held.append(("digest", rel))
         if held:
             return held[0][0], [rel for _, rel in held]
-        return ("symlink", linked) if linked else ("none", [])
+        for how, found in (("changed", changed), ("symlink", linked)):
+            if found:
+                return how, found
+        return "none", []
+
+    def recheck(self, item):
+        """
+        Why a planned removal must not go ahead now, or None. Re-hashes the
+        published copies a REDUNDANT verdict rests on, since the plan only
+        compared sizes and the tree may have moved on since it was digested.
+        """
+        if item["verdict"] != REDUNDANT or self.results is None:
+            return None
+        for copy in item.get("published_copies", []):
+            for rel in copy["published"]:
+                recorded = self.graph.get("published", {}).get(rel, {}).get("digest") or ""
+                published = self.results / rel
+                if not published.is_file():
+                    return f"published copy gone since the plan: {rel}"
+                if not recorded.startswith("sha256:"):
+                    return f"published copy digest is not sha256, cannot re-hash: {rel}"
+                if sha256_file(published) != recorded:
+                    return f"published copy changed since it was digested: {rel}"
+        return None
 
     def verdict(self, task_hash):
         task = self.graph["tasks"][task_hash]
@@ -171,14 +215,18 @@ class Reclaimer:
                    if not any(fnmatch.fnmatch(name, glob) for glob in self.ignore)]
 
         if task.get("superseded"):
-            return SUPERSEDED, "marked superseded by the extractor", []
-        status = (task.get("status") or "").upper()
-        if status and status != "COMPLETED":
             if self.forward.get(task_hash):
-                return KEEP, f"status {status} but downstream tasks consumed it", []
-            return FAILED, f"status {status}", []
+                return KEEP, "marked superseded but downstream tasks consumed it", []
+            return SUPERSEDED, "marked superseded by the extractor", []
+        status, word = task_status(task.get("status")), task.get("status") or ""
+        if status == STATUS_FAILED:
+            if self.forward.get(task_hash):
+                return KEEP, f"status {word} but downstream tasks consumed it", []
+            return FAILED, f"status {word}", []
+        if status == STATUS_UNKNOWN:
+            return KEEP, f"status {word} is not a finished state", []
 
-        copies, settled, linked, unverified, nodigest = [], set(), [], [], []
+        copies, settled, linked, changed, unverified, nodigest = [], set(), [], [], [], []
         for name in outputs:
             detail = details.get(name, {"file": name})
             if not detail.get("digest"):
@@ -188,7 +236,8 @@ class Reclaimer:
             if how == "none":
                 continue
             copies.append({"output": name, "published": sorted(rels), "verified": how})
-            {"symlink": linked, "unverified": unverified}.get(how, []).append(name)
+            {"symlink": linked, "changed": changed,
+             "unverified": unverified}.get(how, []).append(name)
             if how in ("digest", "hardlink"):
                 settled.add(name)
 
@@ -197,6 +246,9 @@ class Reclaimer:
                           + "; record them in the engine or run clew digest"), copies
         if linked:
             return KEEP, "published copy is a symlink into work: " + ", ".join(sorted(linked)), copies
+        if changed:
+            return KEEP, ("published copy is not the size that was digested: "
+                          + ", ".join(sorted(changed))), copies
         if unverified:
             return KEEP, ("published copies recorded but --results not given to "
                           "check they still exist: " + ", ".join(sorted(unverified))), copies
@@ -279,7 +331,8 @@ def print_plan(items, graph, work_root, results, intermediates, ignore=BOOKKEEPI
 def caveats(graph, results, intermediates):
     lines = [
         "Verdicts hold for the graph and disk as they are now. Re-run before applying.",
-        "Sizes count regular files only; staged inputs are symlinks to their producers.",
+        "Sizes count regular files with one link only; staged inputs are symlinks "
+        "to their producers, and a file hard-linked elsewhere survives the removal.",
     ]
     if not graph.get("published"):
         lines.append("No published digests in this graph, so nothing can be REDUNDANT. "
@@ -314,10 +367,14 @@ def plan_to_dict(items, graph, work_root, results, intermediates, ignore=BOOKKEE
     }
 
 
-def apply(items, work_root, receipt_path, verdicts):
-    """Remove each directory in `verdicts`, one receipt line before each removal."""
+def apply(items, work_root, receipt_path, verdicts, recheck=None):
+    """
+    Remove each directory in `verdicts`, one receipt line before each
+    removal. `recheck(item)` may return a reason to leave one alone; those
+    come back as (item, reason) pairs. Returns (removed, refused).
+    """
     root = Path(work_root).resolve()
-    removed = 0
+    removed, refused = 0, []
     with open(receipt_path, "a") as receipt:
         for item in items:
             if item["verdict"] not in verdicts:
@@ -325,12 +382,16 @@ def apply(items, work_root, receipt_path, verdicts):
             target = Path(item["dir"]).resolve()
             if target == root or root not in target.parents:
                 raise SystemExit(f"refusing to remove {target}: outside {root}")
+            reason = recheck(item) if recheck else None
+            if reason:
+                refused.append((item, reason))
+                continue
             entry = {**item, "removed_at": datetime.now(timezone.utc).isoformat()}
             receipt.write(json.dumps(entry) + "\n")
             receipt.flush()
             shutil.rmtree(target)
             removed += 1
-    return removed
+    return removed, refused
 
 
 def main(argv=None):
@@ -403,7 +464,10 @@ def main(argv=None):
         verdicts = {REDUNDANT, SUPERSEDED, FAILED}
         if args.intermediates:
             verdicts.add(INTERMEDIATE)
-        removed = apply(items, args.work_root, args.receipt, verdicts)
+        removed, refused = apply(items, args.work_root, args.receipt, verdicts,
+                                 reclaimer.recheck)
+        for item, reason in refused:
+            print(f"kept {item['dir']}: {reason}")
         print(f"\nremoved {removed} directories; receipt in {args.receipt}")
 
 

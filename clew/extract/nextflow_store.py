@@ -46,11 +46,13 @@ on. Upstream confirmed this is the intended reading
 (nextflow-io/nextflow#7586).
 
 A chain can hold more than one version of the same task, when a resumed run
-invalidated it and ran it again. The newest is live and the older ones are
-history. They are kept and marked `superseded` rather than dropped, because
-their outputs really were produced and may still be on disk: a deletion
-plan that omits them under-reports, which is the one direction that must
-never happen.
+invalidated it and ran it again. The version from the later run is live and
+the older one is history. Older versions are kept and marked `superseded`
+rather than dropped, because their outputs really were produced and may
+still be on disk: a deletion plan that omits them under-reports, which is
+the one direction that must never happen. Two same-named tasks in one run
+are not versions of each other, and a version some task in the session
+still reads from is not history either; neither is marked.
 
 WHAT THIS SOURCE CANNOT SHOW
 ----------------------------
@@ -69,6 +71,8 @@ USAGE
 import argparse
 import json
 from pathlib import Path
+
+from clew.graph.graph import STATUS_UNRECORDED
 
 LID_PREFIX = "lid://"
 
@@ -186,37 +190,46 @@ def check_version(seen):
             f"this adapter reads {FORMAT}")
 
 
-def task_created_at(store, task_hash):
-    """
-    When this task's outputs were recorded, from its TaskOutput record.
-
-    The only timestamp a task carries. Used to order two versions of the
-    same task within a resume chain.
-    """
-    record = read_record(Path(store) / f"{task_hash}#output" / ".data.json")
-    if not record:
-        return ""
-    return (record.get("spec") or {}).get("createdAt") or ""
+def run_of(spec):
+    """The run hash a TaskRun record names, or '' when it names none."""
+    return (spec.get("workflowRun") or "").removeprefix(LID_PREFIX)
 
 
-def superseded_tasks(selected):
+def consumed_hashes(selected):
+    """Full hashes of every task some task in the selection reads from."""
+    consumed = set()
+    for _full_hash, spec in selected:
+        for inp in spec.get("input", []):
+            for value in inp.get("value", []) if inp.get("type") == "path" else []:
+                if isinstance(value, str) and value.startswith(LID_PREFIX):
+                    consumed.add(value.removeprefix(LID_PREFIX).partition("/")[0])
+    return consumed
+
+
+def superseded_tasks(selected, run_order):
     """
     Task hashes replaced by a later version of the same task in this chain.
 
-    Same name, different hash, ordered by when their outputs were recorded.
-    When any version lacks a timestamp nothing is claimed, because guessing
-    which one is live is worse than admitting the order is unknown.
+    A version is superseded only by a same-named task from a later run in
+    `run_order` (run hashes, oldest first). Same run means scatter shards
+    or a repeated process, not a re-run, and a run the history does not
+    list cannot be placed, so nothing is claimed for either. A version
+    that another task in the session still reads from stays live whatever
+    its age: its outputs are inputs somebody relied on.
     """
+    position = {run_hash: i for i, run_hash in enumerate(run_order)}
+    consumed = consumed_hashes(selected)
     by_name = {}
-    for full_hash, spec, created in selected:
-        by_name.setdefault(spec.get("name", ""), []).append((created, full_hash))
+    for full_hash, spec in selected:
+        by_name.setdefault(spec.get("name", ""), []).append((full_hash, run_of(spec)))
 
     stale = set()
     for versions in by_name.values():
-        if len(versions) < 2 or any(not created for created, _ in versions):
+        if len(versions) < 2 or any(run not in position for _, run in versions):
             continue
-        versions.sort()
-        stale.update(full_hash for _, full_hash in versions[:-1])
+        newest = max(position[run] for _, run in versions)
+        stale.update(full_hash for full_hash, run in versions
+                     if position[run] < newest and full_hash not in consumed)
     return stale
 
 
@@ -316,9 +329,9 @@ def coverage_notes(stale, kinds, modes, dangling):
     ]
     if stale:
         notes.append(
-            f"{plural(len(stale), 'task version')} superseded by a later "
-            "run in this resume chain, included and marked `superseded` "
-            "because the outputs may still be on disk.")
+            f"{plural(len(stale), 'task version')} re-run by a later run in "
+            "this resume chain, included and marked `superseded` because "
+            "the outputs may still be on disk.")
     weak = sorted(m for m in modes if m and m not in CONTENT_MODES)
     if weak:
         notes.append(
@@ -360,13 +373,14 @@ def extract(store, session_id):
         spec = record.get("spec", {})
         if spec.get("sessionId") != session_id:
             continue
-        selected.append((name, spec, task_created_at(store, name)))
+        selected.append((name, spec))
 
     check_version(versions)
-    stale = superseded_tasks(selected)
+    run_order = [r["run_hash"] for r in chain_of(load_history(store), session_id)]
+    stale = superseded_tasks(selected, run_order)
 
     tasks, edges, outputs, output_details = {}, [], {}, {}
-    for full_hash, spec, _created in selected:
+    for full_hash, spec in selected:
         abbrev = abbreviate(full_hash)
         task_files, workdir = task_outputs(store, full_hash)
 
@@ -382,7 +396,7 @@ def extract(store, session_id):
             "name": name,
             "process": process,
             "container": spec.get("container", ""),
-            "status": "",  # the store records no exit status, see coverage
+            "status": STATUS_UNRECORDED,  # the store records no exit status, see coverage
             "target": "",   # one machine per run; nothing to record
             "workdir": workdir,
             "script": spec.get("script", ""),

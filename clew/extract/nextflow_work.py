@@ -66,6 +66,8 @@ import os
 import sys
 from pathlib import Path
 
+from clew.graph.graph import task_status
+
 # Nextflow's own bookkeeping files. Not data, never lineage.
 SKIP_PREFIXES = (".command", ".exitcode")
 
@@ -100,7 +102,8 @@ def load_run(jsonl_path):
             "name": trace.get("name", ""),
             "process": trace.get("process", ""),
             "container": trace.get("container", ""),
-            "status": trace.get("status", ""),
+            "status": task_status(trace.get("status")),
+            "engine_status": trace.get("status") or "",
             "target": "",   # one machine per run; nothing to record
             "workdir": trace.get("workdir", ""),
             # The exact command that ran. Together with `container` this is

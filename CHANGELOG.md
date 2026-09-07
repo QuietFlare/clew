@@ -16,6 +16,26 @@ follow [Semantic Versioning](https://semver.org/).
   withheld. Directory outputs are now found under `--results` by name.
 - `clew impact`: a subject that matches no task tag exits non-zero instead
   of reporting zero affected tasks.
+- `clew reclaim`: a task is `FAILED` only when the engine recorded a
+  failure. Every extractor now maps its engine's status word (`Done`,
+  `SUCCEEDED`, `skipped`, `CACHED`) to one of `COMPLETED`, `FAILED`,
+  `CACHED`, `UNKNOWN`, keeps the original as `engine_status`, and reclaim
+  keeps anything it does not recognise instead of proposing it.
+- `clew extract-store`: a task is `superseded` only by a same-named task
+  from a later run in the resume chain, and never while another task in
+  the session reads its outputs. Same-named tasks in one run, such as
+  scatter shards, were all but one marked superseded and proposed for
+  deletion. Reclaim also keeps a superseded task with downstream consumers.
+- `clew reclaim`: a published copy whose size no longer matches the
+  recorded one withholds the directory, and `--apply` re-hashes every copy
+  a `REDUNDANT` verdict rests on before removing anything.
+- `clew stitch`: an input digest produced by more than one task is bridged
+  to every producer and reported, instead of silently taking the first.
+- `clew reclaim`: files with more than one hard link are left out of the
+  reclaimable byte count, and the caveats say so.
+- `clew reclaim`: when two outputs share a digest, the published copy with
+  the output's own file name is the one named in the plan and receipt; all
+  candidates are listed only when none matches.
 
 ## [0.4.0] - 2026-09-07
 

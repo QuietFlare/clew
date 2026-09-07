@@ -13,6 +13,8 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+from clew.graph.graph import task_status
+
 EXTERNAL = "EXTERNAL"
 SCHEMES = ("gs://", "s3://", "drs://", "http://", "https://", "az://", "file://")
 
@@ -95,7 +97,8 @@ def extract(metadata):
             "name": fqn + (f" (shard {shard})" if shard >= 0 else ""),
             "process": fqn,
             "container": container_of(attempt),
-            "status": (attempt.get("executionStatus") or "").upper(),
+            "status": task_status(attempt.get("executionStatus")),
+            "engine_status": attempt.get("executionStatus") or "",
             "script": attempt.get("commandLine") or "",
             "workdir": attempt.get("callRoot") or "",
         }

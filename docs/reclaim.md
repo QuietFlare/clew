@@ -26,8 +26,8 @@ reclaimable ones.
 | Verdict | Proof | Proposed by default |
 |---|---|---|
 | `REDUNDANT` | Every output has a published copy with the same content digest, still present under `--results` | yes |
-| `SUPERSEDED` | The extractor marked the task replaced by a later run in the resume chain | yes |
-| `FAILED` | The task did not complete and nothing consumed its outputs | yes |
+| `SUPERSEDED` | The extractor marked the task re-run by a later run in the resume chain, and nothing consumed its outputs | yes |
+| `FAILED` | The engine recorded a failure and nothing consumed its outputs | yes |
 | `INTERMEDIATE` | Every output is consumed downstream, the script and container were recorded, and every input is still on disk or recomputable | only with `--intermediates` |
 | `KEEP` | None of the above could be shown | no |
 | `GONE` | The directory is not under `--work-root` | nothing to do |
@@ -51,10 +51,23 @@ and a symlink into work is not a copy at all, since deleting the directory
 would break it, so it withholds the directory. Without `--results` a
 recorded copy cannot be confirmed to still exist, and nothing is proposed.
 An output with no digest withholds its directory, and the reason says
-whether to record digests in the engine or run `clew digest`.
+whether to record digests in the engine or run `clew digest`. A recorded
+copy that is no longer the size it was digested at withholds too, and
+`--apply` re-hashes every copy a `REDUNDANT` verdict rests on before the
+directory goes. When two outputs share a digest, the copy with the
+output's own file name is the one named; only when none has it are all
+copies with that digest listed.
 
-Sizes are measured on disk, counting regular files only. Staged inputs are
-symlinks to their producers and are not counted twice.
+Status words differ by engine: Cromwell says `Done`, Latch `SUCCEEDED`,
+Horus `skipped` for a cache hit. Each extractor maps its engine's word to
+`COMPLETED`, `FAILED`, `CACHED` or `UNKNOWN` and keeps the original as
+`engine_status`. Only `FAILED` can be proposed; a word the mapping does
+not know, such as a task still running, is kept with the reason.
+
+Sizes are measured on disk, counting regular files with a single link.
+Staged inputs are symlinks to their producers and are not counted twice,
+and a file hard-linked elsewhere survives the removal, so it is not
+counted either.
 
 A graph without output sizes cannot match published copies, and the command
 says so. Extract from a source that records them; [sources](sources.md) has

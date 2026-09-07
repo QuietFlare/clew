@@ -99,6 +99,36 @@ def published_digests(graph):
     return index
 
 
+STATUS_COMPLETED = "COMPLETED"
+STATUS_FAILED = "FAILED"
+STATUS_CACHED = "CACHED"
+STATUS_UNKNOWN = "UNKNOWN"
+STATUS_UNRECORDED = ""
+STATUSES = (STATUS_COMPLETED, STATUS_FAILED, STATUS_CACHED, STATUS_UNKNOWN,
+            STATUS_UNRECORDED)
+
+# Each engine's own words for the four states. A word not listed here maps
+# to UNKNOWN, never to FAILED: a running or queued task must not read as a
+# failed one, because a failed one is proposed for deletion.
+ENGINE_STATUS_WORDS = {
+    STATUS_COMPLETED: ("COMPLETED", "DONE", "SUCCEEDED", "SUCCESS", "FINISHED"),
+    STATUS_FAILED: ("FAILED", "FAILURE", "ABORTED", "TERMINATED", "INCOMPLETE",
+                    "TIMED_OUT", "RETRYABLEFAILURE", "ERROR"),
+    STATUS_CACHED: ("CACHED", "SKIPPED"),
+}
+
+
+def task_status(engine_word):
+    """The engine's status word in the closed vocabulary above."""
+    word = (engine_word or "").strip().upper()
+    if not word:
+        return STATUS_UNRECORDED
+    for status, words in ENGINE_STATUS_WORDS.items():
+        if word in words:
+            return status
+    return STATUS_UNKNOWN
+
+
 TASK_FIELDS = ("hash", "name", "process", "container", "status",
                "script", "workdir")
 OPTIONAL_TASK_FIELDS = ("task_id", "target")

@@ -30,7 +30,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-from clew.graph.graph import EXTERNAL
+from clew.graph.graph import EXTERNAL, task_status
 
 API = "https://vacuole.latch.bio/graphql"
 TOKEN_FILE = Path.home() / ".latch" / "token"
@@ -108,7 +108,8 @@ def extract(records):
             "name": name,
             "process": task_info.get("displayName") or name,
             "container": container,
-            "status": (node.get("status") or "").upper(),
+            "status": task_status(node.get("status")),
+            "engine_status": node.get("status") or "",
             "script": commit,
             "workdir": "",
         }

@@ -199,10 +199,84 @@ class Run(unittest.TestCase):
     def test_superseded_and_failed_attempts(self):
         self.graph["tasks"]["aa/000001"]["superseded"] = True
         self.graph["tasks"]["bb/000002"]["status"] = "FAILED"
-        self.graph["edges"] = [e for e in self.graph["edges"] if e["consumer"] != "cc/000003"]
+        self.graph["edges"] = [e for e in self.graph["edges"] if e["producer"] == "EXTERNAL"]
         v = self.verdicts()
         self.assertEqual(v["aa/000001"]["verdict"], reclaim.SUPERSEDED)
         self.assertEqual(v["bb/000002"]["verdict"], reclaim.FAILED)
+
+    def test_a_superseded_task_that_is_still_consumed_is_kept(self):
+        self.graph["tasks"]["aa/000001"]["superseded"] = True
+        v = self.verdicts()
+        self.assertEqual(v["aa/000001"]["verdict"], reclaim.KEEP)
+        self.assertIn("consumed", v["aa/000001"]["reason"])
+
+    def test_a_finished_task_in_any_engine_word_is_not_failed(self):
+        """
+        Cromwell says Done, Latch SUCCEEDED, Horus skipped, Nextflow CACHED.
+        None of them failed, and their published directory is redundant.
+        """
+        for word in ("DONE", "SUCCEEDED", "SKIPPED", "CACHED", "COMPLETED", ""):
+            with self.subTest(word=word):
+                self.graph["tasks"]["cc/000003"]["status"] = word
+                v = self.verdicts()
+                self.assertEqual(v["cc/000003"]["verdict"], reclaim.REDUNDANT)
+
+    def test_an_unrecognised_status_is_kept_not_failed(self):
+        for word in ("RUNNING", "QUEUED", "SUBMITTED"):
+            with self.subTest(word=word):
+                self.graph["tasks"]["cc/000003"]["status"] = word
+                v = self.verdicts()
+                self.assertEqual(v["cc/000003"]["verdict"], reclaim.KEEP)
+                self.assertIn(word, v["cc/000003"]["reason"])
+
+    def test_a_published_copy_of_another_size_withholds(self):
+        graph = self.digested()
+        (self.disk.results / "out" / "report.html").write_bytes(b"z" * 71)
+        v = {i["task"]: i for i in reclaim.Reclaimer(graph, self.disk.work, self.disk.results).plan()}
+        self.assertEqual(v["cc/000003"]["verdict"], reclaim.KEEP)
+        self.assertIn("not the size that was digested", v["cc/000003"]["reason"])
+
+    def test_apply_re_hashes_the_published_copy(self):
+        """
+        Same size, different bytes: the plan cannot see it, --apply must.
+        """
+        graph = self.digested()
+        reclaimer = reclaim.Reclaimer(graph, self.disk.work, self.disk.results)
+        items = reclaimer.plan()
+        (self.disk.results / "out" / "report.html").write_bytes(b"w" * 70)
+        receipt = self.disk.root / "receipt.jsonl"
+        removed, refused = reclaim.apply(items, self.disk.work, receipt,
+                                         {reclaim.REDUNDANT}, reclaimer.recheck)
+        self.assertEqual(removed, 0)
+        self.assertEqual(len(refused), 1)
+        self.assertIn("changed since it was digested", refused[0][1])
+        self.assertTrue((self.disk.work / "cc/000003").exists())
+        self.assertFalse(receipt.exists() and receipt.read_text())
+
+    def test_a_shared_digest_names_the_copy_with_the_same_basename(self):
+        """
+        Two outputs with identical bytes, published under two names. The
+        receipt must name this task's own copy, not the other one.
+        """
+        self.disk.publish("other.html", b"z" * 70)
+        v = self.verdicts()
+        self.assertEqual(v["cc/000003"]["verdict"], reclaim.REDUNDANT)
+        self.assertEqual(v["cc/000003"]["published_copies"][0]["published"],
+                         ["out/report.html"])
+
+    def test_a_shared_digest_with_no_basename_match_lists_every_copy(self):
+        (self.disk.results / "out" / "report.html").rename(self.disk.results / "out" / "a.html")
+        self.disk.publish("b.html", b"z" * 70)
+        v = self.verdicts()
+        self.assertEqual(v["cc/000003"]["published_copies"][0]["published"],
+                         ["out/a.html", "out/b.html"])
+
+    def test_hard_linked_files_do_not_count_as_reclaimable(self):
+        os.link(self.disk.work / "aa/000001" / "s.bam", self.disk.root / "elsewhere.bam")
+        v = self.verdicts()
+        self.assertEqual(v["aa/000001"]["bytes"], 1 + len("echo"))
+        self.assertTrue(any("hard-linked" in line
+                            for line in reclaim.caveats(self.graph, self.disk.results, False)))
 
     def test_a_failed_task_that_was_consumed_is_kept(self):
         self.graph["tasks"]["bb/000002"]["status"] = "FAILED"
@@ -212,8 +286,9 @@ class Run(unittest.TestCase):
     def test_apply_writes_a_receipt_line_before_each_removal(self):
         v = self.verdicts()
         receipt = self.disk.root / "receipt.jsonl"
-        removed = reclaim.apply(list(v.values()), self.disk.work, receipt, {reclaim.REDUNDANT})
-        self.assertEqual(removed, 1)
+        removed, refused = reclaim.apply(list(v.values()), self.disk.work, receipt,
+                                         {reclaim.REDUNDANT})
+        self.assertEqual((removed, refused), (1, []))
         self.assertFalse((self.disk.work / "cc/000003").exists())
         self.assertTrue((self.disk.work / "aa/000001").exists())
         lines = [json.loads(l) for l in receipt.read_text().splitlines()]

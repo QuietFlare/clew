@@ -72,8 +72,9 @@ class Extraction(unittest.TestCase):
         self.assertEqual(self.graph["outputs"][ALIGN], ["sample_1.bam"])
         self.assertEqual(self.graph["outputs"][REPORT], ["report.html"])
 
-    def test_status_is_upper_case_state(self):
-        self.assertEqual(self.graph["tasks"][CALL]["status"], "DONE")
+    def test_status_is_the_core_word_for_the_job_state(self):
+        self.assertEqual(self.graph["tasks"][CALL]["status"], "COMPLETED")
+        self.assertEqual(self.graph["tasks"][CALL]["engine_status"], "done")
 
     def test_container_names_the_executable(self):
         self.assertEqual(self.graph["tasks"][CALL]["container"],

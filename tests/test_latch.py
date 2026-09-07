@@ -73,7 +73,8 @@ class Extraction(unittest.TestCase):
         self.assertEqual(task["process"], "gatk_haplotypecaller")
         self.assertTrue(task["container"].startswith("wf.wgs@sha256:"))
         self.assertEqual(task["script"], "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678")
-        self.assertEqual(task["status"], "SUCCEEDED")
+        self.assertEqual(task["status"], "COMPLETED")
+        self.assertEqual(task["engine_status"], "SUCCEEDED")
 
     def test_price_prefers_cost_then_price(self):
         self.assertEqual(self.graph["tasks"][ALIGN]["price"], 0.12)
