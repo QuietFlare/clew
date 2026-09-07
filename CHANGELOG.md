@@ -11,6 +11,8 @@ follow [Semantic Versioning](https://semver.org/).
 - `clew impact --pipeline snakemake`: a subject adapter that attributes a
   job to a sample named in its output path.
 - ADR 0007: extractors translate, core never interprets an engine string.
+- ADR 0008: a bundle verifies against something it does not control.
+- ADR 0009: an effective date is an instant, and the gate has a now.
 
 ### Fixed
 
