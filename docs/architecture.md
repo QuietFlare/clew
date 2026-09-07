@@ -43,7 +43,8 @@ clew/ledger/     versioned policy, event log, evidence bundles, the gate
                  decision, the query surface, and their commands.
 clew/domains/    the layer allowed to know about sarek, samplesheets, donors.
 clew/extract/    one extractor per engine, all emitting the same JSON,
-                 plus stitch and digest.
+                 plus stitch, digest, and runs, which reads the engine's
+                 record directly.
 clew/questions/  one module per question asked of the graph: impact,
                  reclaim, drift, gate.
 clew/views/      dashboard, one page per question, MCP server.

@@ -1,12 +1,4 @@
-"""
-Clew: one self-contained HTML page for a drift plan.
-
-    clew drift --before a.json --after b.json --html drift.html
-
-Same rules as the other pages: one file, no scripts, no network, no
-generation timestamp. The roots come first, with their causes, because
-that is the finding; the reproduced tasks are the proof and fold away.
-"""
+"""One self-contained HTML page for a drift plan."""
 
 import argparse
 import json

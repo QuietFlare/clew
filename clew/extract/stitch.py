@@ -1,22 +1,4 @@
-"""
-Clew: stitch per-run graphs into one cross-run lineage graph.
-
-    clew stitch --graph rna=graph_rna.json --graph da=graph_da.json --out graph_chain.json
-
-The engine's lineage sees one launch. Real analyses are chains: rnaseq
-publishes a count matrix, differentialabundance consumes it. The join is
-one run's output becoming the next run's EXTERNAL input, and it is found by
-content digest alone. An EXTERNAL edge whose digest equals an output digest
-in another run is rewritten to point at the task that produced it. The
-original path stays in `target`, so every bridge is checkable.
-
-Graphs without digests do not join. Record them in the engine, or run
-`clew digest` over the run first.
-
-Node ids are prefixed with per-run labels ("rna:0c/8143cf"): abbreviated
-hashes from different runs can collide, and a silent collision would merge
-two unrelated tasks.
-"""
+"""Stitch per-run graphs into one cross-run graph, joined by content digest."""
 
 import argparse
 import json

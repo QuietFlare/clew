@@ -87,6 +87,10 @@ One command per engine turns a run into a graph.
 | DNAnexus | `clew extract-dnanexus --analysis <id> --json-out graph.json` |
 | Latch | `clew extract-latch --execution <id> --json-out graph.json` |
 
+Or skip the file: every question takes `--runs` pointing at the engine's
+own record, a `.lineage` store or a horus-lineage root, and reads the run
+it needs.
+
 Content digests make every answer exact. Horus records them, and Nextflow
 does with `cache 'deep'`. For any other run, `clew digest` reads each file
 once and fills them in. [Sources](docs/sources.md) has what each engine

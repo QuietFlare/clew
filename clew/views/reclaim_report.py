@@ -1,14 +1,4 @@
-"""
-Clew: one self-contained HTML page for a reclaim plan.
-
-    clew reclaim --graph g.json --work-root work/ --results results/ --html plan.html
-
-Same rules as the impact page: one file, no scripts, no network, no
-generation timestamp, so the same plan renders to the same bytes. The
-kept directories and their reasons sit next to the reclaimable ones, in
-the same weight, because a page that shows only what can go reads as a
-clean bill of health it has not earned.
-"""
+"""One self-contained HTML page for a reclaim plan."""
 
 import argparse
 import json

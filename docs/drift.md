@@ -8,6 +8,12 @@ not, where did it start to differ. `clew drift` answers it from two graphs.
 clew drift --before a.json --after b.json
 ```
 
+Or name two runs in the engine's record and skip the graph files:
+
+```bash
+clew drift --runs .lineage --before goofy_nightingale --after wise_hoover
+```
+
 Tasks are paired by name across the two runs and compared by the content
 digests of their outputs. Both graphs need digests; [sources](sources.md)
 says which engines record them and `clew digest` fills them in otherwise.

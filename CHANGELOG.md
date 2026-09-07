@@ -11,6 +11,9 @@ follow [Semantic Versioning](https://semver.org/).
 - `clew drift`: where two runs of the same workflow part ways, and why.
   Tasks paired by name, outputs compared by content digest, the cause of
   each root read from the record.
+- `--runs` on digest, reclaim and drift: read a run straight from a
+  `.lineage` store, a horus-lineage root, or a directory of graphs. The
+  digests `clew digest` computes go to a sidecar under `<runs>/.clew/`.
 
 ## [0.3.0] - 2026-09-06
 

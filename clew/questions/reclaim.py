@@ -1,20 +1,4 @@
-"""
-Clew: which task directories a run can give back, and the proof for each.
-
-    # what is safe to delete, and why; nothing is touched
-    clew reclaim --graph graph.json --work-root work/ --results results/
-
-    # also intermediates that can be recomputed from inputs still on disk
-    clew reclaim ... --intermediates
-
-    # delete, writing one receipt line per directory before it goes
-    clew reclaim ... --apply --receipt receipt.jsonl
-
-Identity is by content digest only. An output is redundant when a file in
-the published tree carries the same digest. The graph gets digests from the
-engine, or from `clew digest` for runs recorded without them. A directory
-whose outputs have no digest is kept, and the reason says so.
-"""
+"""Which task directories a run can give back, and the proof for each. Nothing is removed without --apply."""
 
 import argparse
 import fnmatch
@@ -352,7 +336,11 @@ def apply(items, work_root, receipt_path, verdicts):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Which task directories a run can give back, and why.")
-    parser.add_argument("--graph", required=True, help="graph JSON with content digests")
+    parser.add_argument("--graph", help="graph JSON with content digests")
+    parser.add_argument("--runs", metavar="DIR",
+                        help="the engine's record instead of --graph: a .lineage store, "
+                             "a horus-lineage root, or a directory of graphs")
+    parser.add_argument("--run", help="which run under --runs; default: the latest")
     parser.add_argument("--work-root", required=True, metavar="DIR",
                         help="the run's work directory on this machine")
     parser.add_argument("--results", metavar="DIR",
@@ -384,8 +372,14 @@ def main(argv=None):
         raise SystemExit("--apply needs --receipt: nothing is deleted without a record")
     if not Path(args.work_root).is_dir():
         raise SystemExit(f"--work-root {args.work_root} is not a directory")
+    if bool(args.graph) == bool(args.runs):
+        raise SystemExit("give --graph or --runs, not both")
 
-    graph = core.load_graph(args.graph)
+    if args.runs:
+        from clew.extract.runs import Runs
+        graph = Runs(args.runs).load(args.run)
+    else:
+        graph = core.load_graph(args.graph)
     ignore = tuple(args.ignore) if args.ignore else BOOKKEEPING
     reclaimer = Reclaimer(graph, args.work_root, args.results, args.intermediates,
                           ignore, args.target)

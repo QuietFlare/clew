@@ -34,6 +34,22 @@ clew digest --graph graph.json --work-root work/ --results results/
 
 Outputs under the work root fill their `digest`, and files under the
 published tree land in a `published` map the graph carries from then on.
+
+The engine's record is the record. Every question also takes `--runs`,
+pointing at a `.lineage` store, a horus-lineage root, or a directory of
+extracted graphs for engines that keep no store, and reads the run it
+needs when it needs it, so no graph file has to be kept:
+
+```bash
+clew digest  --runs .lineage --run wise_hoover --work-root work/ --results results/
+clew reclaim --runs .lineage --run wise_hoover --work-root work/ --results results/
+clew drift   --runs .lineage --before goofy_nightingale --after wise_hoover
+```
+
+With `--runs`, `clew digest` writes what it computed to a sidecar under
+`<runs>/.clew/`, one small file per run holding only the digests the
+engine could not, and every later load merges it back. Nothing the engine
+already says is copied.
 DNAnexus exposes a file MD5 through its API that the extractor does not
 read yet. Latch is unconfirmed. None of this replaces the engine hashing
 at write time, which is the only cheap moment to do it.
