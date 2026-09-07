@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `clew drift`: where two runs of the same workflow part ways, and why.
+  Tasks paired by name, outputs compared by content digest, the cause of
+  each root read from the record.
+
 ## [0.3.0] - 2026-09-06
 
 ### Changed

@@ -324,7 +324,9 @@ def coverage_notes(stale, kinds, modes, dangling):
         notes.append(
             f"Checksums use Nextflow {', '.join(repr(m) for m in weak)} "
             "mode, which hashes path and metadata rather than content, so "
-            "they cannot identify a copy of a file.")
+            "no output carries a content digest. Run clew digest on this "
+            "graph before reclaim, drift or stitch, or record the next run "
+            "with cache 'deep'.")
     unknown = sorted(k for k in kinds if k and k not in KNOWN_KINDS)
     if unknown:
         notes.append(

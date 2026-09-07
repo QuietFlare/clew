@@ -18,6 +18,8 @@ COMMANDS = {
              "block a run whose inputs the log says are not usable"),
     "reclaim": ("clew.questions.reclaim",
                 "which work directories are safe to delete, with proof"),
+    "drift": ("clew.questions.drift",
+              "where two runs of the same workflow part ways, and why"),
     "log": ("clew.ledger.logbook",
             "the append-only event log: init, append, verify"),
     "rulebook": ("clew.ledger.rulebook",
