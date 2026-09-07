@@ -81,6 +81,21 @@ class TestFiveDonorRun(unittest.TestCase):
         radius = core.blast_radius(self.graph, subjects)
         self.assertEqual(len(radius["container:gatk4"]["affected"]), 68)
 
+    def test_a_versioned_needle_reaches_every_samtools_task(self):
+        # Substring matching found 15 of the 26 samtools tasks: the other
+        # 11 run in Wave images whose tag is a hash, not a version. They
+        # match on name and are reported as such.
+        from clew.graph.graph import container_matches
+        matches = container_matches(self.graph, "samtools:1.21")
+        self.assertEqual(len(matches), 26)
+        name_only = {h for h, how in matches.items() if how == "name-only"}
+        self.assertEqual(len(name_only), 11)
+        self.assertTrue(all("_samtools" in self.graph["tasks"][h]["container"]
+                            for h in name_only))
+        subjects = sarek.container_entry_nodes(self.graph, "samtools:1.21")
+        radius = core.blast_radius(self.graph, subjects)
+        self.assertEqual(len(radius["container:samtools:1.21"]["affected"]), 72)
+
     def test_donor_reference_asymmetry(self):
         # Withdrawing a donor must NOT pull in the reference-only tasks:
         # one withdrawal must never poison every sample ever aligned.
