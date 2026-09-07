@@ -24,6 +24,7 @@ follow [Semantic Versioning](https://semver.org/).
   withheld. Directory outputs are now found under `--results` by name.
 - `clew impact`: a subject that matches no task tag exits non-zero instead
   of reporting zero affected tasks.
+<<<<<<< HEAD
 - `clew reclaim`: a task is `FAILED` only when the engine recorded a
   failure. Every extractor now maps its engine's status word (`Done`,
   `SUCCEEDED`, `skipped`, `CACHED`) to one of `COMPLETED`, `FAILED`,
@@ -91,6 +92,42 @@ follow [Semantic Versioning](https://semver.org/).
   are skipped by the bundle store.
 - `eventlog.append`: `recorded_at` is the database server's clock, read in
   the appending transaction. Callers can no longer supply it.
+=======
+- `clew extract-work`: refuses when any task's work directory is missing,
+  naming them; `--allow-partial` writes the graph with the gap as a
+  `coverage` note. A cleaned tree used to give an empty graph and exit 0.
+- `--container` and `container:` triggers read the needle and each image as
+  name and version. Wave, digest-pinned, Singularity and conda images no
+  longer miss; a versioned needle against a versionless image matches on
+  name and is reported as such.
+- `--input` and `input:` triggers also reach companions such as
+  `genome.fasta.fai`, and list them.
+- nf-core attribution tries samplesheet ids longest first, so `donor` no
+  longer claims `donor_003-L1`.
+- A samplesheet with one sample id under two subjects is refused by name
+  instead of the last row silently taking the tasks.
+- `--trigger subject:X` with `--samplesheet` resolves through the domain
+  adapter like `--subject X`; without one it says the graph carries no
+  subject labels.
+- Latch and Cromwell join a file read from inside another task's directory
+  output to that task.
+- DNAnexus resolves job-based and stage references to the producing job,
+  reads `runInput` and `originalInput` as fallbacks, and counts what it
+  cannot resolve in a `coverage` note instead of dropping it.
+- `clew drift`: same-named tasks pair on input digests, superseded
+  versions are left out, unpaired tasks are `UNVERIFIED`, and a task whose
+  only differing upstream is unverified is `UNSETTLED` rather than
+  `DOWNSTREAM`. `--runs` refuses two runs of one resume chain.
+- `clew digest` keeps an engine digest of any algorithm.
+- `--runs` orders "latest" by the record's own timestamp, says when it fell
+  back to mtime, and accepts a session-id prefix.
+- `clew extract-store` reads a bare-string path input as one input.
+- `clew impact` prints the graph's `coverage` notes and unexpanded
+  subworkflow count and carries them into the plan's caveats; the
+  donor table without `--subject` now reads the samplesheet.
+- `clew extract-work` refuses a six-character hash prefix that matches two
+  work directories instead of merging them.
+>>>>>>> f360682 (Attribute subjects longest first, surface graph limits in impact)
 
 ## [0.4.0] - 2026-09-07
 

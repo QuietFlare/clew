@@ -18,14 +18,27 @@ Tasks are paired by name across the two runs and compared by the content
 digests of their outputs. Both graphs need digests; [sources](sources.md)
 says which engines record them and `clew digest` fills them in otherwise.
 
+Two runs of one resume chain share a session, and a `.lineage` store
+holds one graph per session, so `--runs` refuses to compare them: there
+is one graph, not two.
+
+## Pairing
+
+One task per name on each side pairs by name. When a name repeats, as a
+per-interval step does, the tasks on each side are told apart by the
+digests of their inputs, and pair where those agree. What that cannot
+settle is reported `UNVERIFIED` rather than paired by hash order, which
+paired shards crosswise. A version a later run superseded is left out.
+
 ## Verdicts
 
 | Verdict | Meaning |
 |---|---|
 | `DRIFTED` | Outputs differ and no upstream task did. This is where a chain diverges, and the reason names the cause. |
+| `UNSETTLED` | Outputs differ and an upstream task could not be verified. The divergence may start here or there; a root can hide behind a missing digest, so this is not filed as downstream. |
 | `DOWNSTREAM` | Outputs differ because an upstream task drifted. Explained, not a finding of its own. |
 | `REPRODUCED` | Every output has the same digest in both runs. When an upstream task drifted and this one still reproduced, the reason says so. |
-| `UNVERIFIED` | An output has no digest on one side. Not compared, and never reported as reproduced. |
+| `UNVERIFIED` | An output has no digest on one side, or same-named tasks could not be paired. Not compared, and never reported as reproduced. |
 | `ADDED`, `REMOVED` | Present in one run only. A renamed process shows as one of each. |
 
 ## Causes

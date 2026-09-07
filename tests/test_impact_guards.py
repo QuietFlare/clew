@@ -122,6 +122,53 @@ class TestCleanedScratch(unittest.TestCase):
         self.assertEqual(index[("sample", nfcore.DIRECTORY)], ["a/sample"])
 
 
+class TestSubjectTrigger(unittest.TestCase):
+    """
+    `--trigger subject:X` is the documented spelling of `--subject X`. It
+    used to bypass the domain adapter, so on an nf-core graph it found
+    nothing while the flag worked.
+    """
+
+    def test_with_a_samplesheet_it_is_the_withdrawal_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            graph, sheet = write_graph(tmp)
+            result = run_impact("--graph", str(graph), "--samplesheet", str(sheet),
+                                "--trigger", "subject:donor_001", "--json", "-")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout[result.stdout.index("{"):])
+        self.assertEqual(payload["trigger"], "withdrawal of donor_001")
+        self.assertEqual(payload["entry_tasks"], ["aa/000001"])
+
+    def test_without_a_samplesheet_the_message_points_at_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            graph, _ = write_graph(tmp)
+            result = run_impact("--graph", str(graph), "--trigger", "subject:donor_001")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("carries a 'subject' label", result.stderr)
+        self.assertIn("--samplesheet", result.stderr)
+
+
+class TestGraphLimitsAreShown(unittest.TestCase):
+    """Coverage notes and unexpanded subworkflows reach the terminal and the plan."""
+
+    def test_coverage_and_unexpanded_calls_are_printed_and_carried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            graph_path, sheet = write_graph(tmp)
+            graph = json.loads(graph_path.read_text())
+            graph["coverage"] = ["the record has a stated gap"]
+            graph["tasks"]["aa/000001"]["unexpanded_subworkflow"] = "wf-1"
+            graph_path.write_text(json.dumps(graph))
+            result = run_impact("--graph", str(graph_path), "--container", "img",
+                                "--json", "-")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("WHAT THIS GRAPH DOES NOT COVER", result.stdout)
+        self.assertIn("the record has a stated gap", result.stdout)
+        self.assertIn("1 subworkflow call(s) were not expanded", result.stdout)
+        payload = json.loads(result.stdout[result.stdout.index("{"):])
+        self.assertIn("the record has a stated gap", payload["caveats"])
+        self.assertTrue(any("not expanded" in c for c in payload["caveats"]))
+
+
 class TestUnattributableSubject(unittest.TestCase):
     def test_subject_with_no_tagged_task_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
