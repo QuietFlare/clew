@@ -698,3 +698,24 @@ class TestEndToEndForgeries(BundleTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPreviousBundle(BundleTestCase):
+    """--previous must name a sealed bundle, and say so when it does not."""
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, "-m", "clew.ledger.evidence", *args],
+            capture_output=True, text=True)
+
+    def test_a_directory_with_no_manifest_is_refused_with_a_message(self):
+        plan_path = Path(self.tmp) / "plan.json"
+        plan_path.write_text(json.dumps(a_plan()))
+        empty = Path(self.tmp) / "not-a-bundle"
+        empty.mkdir()
+        result = self.run_cli("build", "--out", str(Path(self.tmp) / "b"),
+                              "--plan", str(plan_path),
+                              "--previous", str(empty))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("not a sealed bundle", result.stderr)
