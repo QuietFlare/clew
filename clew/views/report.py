@@ -41,9 +41,12 @@ COST_CAVEAT = (
 )
 
 
+# Every action the policy can return. NOTIFY_ONLY and DESTROY are settled
+# verdicts with serious consequences, so they take the serious class, not
+# the "open" one, which is reserved for verdicts the plan could not reach.
 ACTION_KIND = {
     "REGENERATE": "", "PURGE": "", "QUARANTINE": "unknown",
-    "DISCLOSE": "bad", "ALREADY_GONE": "ok",
+    "NOTIFY_ONLY": "bad", "DESTROY": "bad", "ALREADY_GONE": "ok",
 }
 
 CONTRIBUTION_KIND = {

@@ -168,3 +168,30 @@ class TestNoTargetsRecorded(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestActionClasses(unittest.TestCase):
+    """
+    Every action the policy can return has a class of its own. One that
+    falls through to the "open" class reads as an unreached verdict.
+    """
+
+    def render_with(self, action):
+        item = dict(PLAN["plan"][1], action=action)
+        return report.render(dict(PLAN, plan=[item]))
+
+    def test_every_policy_action_has_a_class(self):
+        from clew.graph import contribution
+        for action in (contribution.PURGE, contribution.REGENERATE,
+                       contribution.QUARANTINE, contribution.DESTROY,
+                       contribution.NOTIFY_ONLY, contribution.ALREADY_GONE):
+            self.assertIn(action, report.ACTION_KIND)
+
+    def test_notify_only_is_settled_not_open(self):
+        page = self.render_with("NOTIFY_ONLY")
+        self.assertNotIn('<span class="tag unknown">NOTIFY_ONLY', page)
+        self.assertIn('<span class="tag bad">NOTIFY_ONLY', page)
+
+    def test_destroy_is_settled_not_open(self):
+        page = self.render_with("DESTROY")
+        self.assertNotIn('<span class="tag unknown">DESTROY', page)
