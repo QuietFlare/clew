@@ -156,7 +156,11 @@ def classify(graph, task_hash, exclusive, published=None, work_root=None,
     else:
         storage = storage_state(task, work_root)
 
-    reproducible = bool(task.get("script")) and bool(task.get("container"))
+    # Name what is missing. A reader of an IRREDUCIBLE verdict needs to know
+    # which record to go and find, not that one of two is absent.
+    missing = [field for field in ("script", "container")
+               if not task.get(field)]
+    reproducible = not missing
     klass = "REGENERABLE" if reproducible else "IRREDUCIBLE"
 
     assertion = (published or {}).get(task_hash)
@@ -168,7 +172,8 @@ def classify(graph, task_hash, exclusive, published=None, work_root=None,
     elif reproducible:
         reason = "script and container recorded; task can be re-executed"
     else:
-        reason = "script or container missing; task cannot be reproduced"
+        reason = (f"no {' or '.join(missing)} recorded; "
+                  "task cannot be reproduced")
 
     if storage is None:
         reason += ("; storage not checked (task directory not placed under "

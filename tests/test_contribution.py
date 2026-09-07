@@ -50,3 +50,33 @@ class TestVocabulary(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestClassifyNamesWhatIsMissing(unittest.TestCase):
+    """
+    An IRREDUCIBLE verdict should say which record is absent, so the
+    reader knows what to go and find.
+    """
+
+    def classify(self, **task):
+        graph = {"tasks": {"aa/000001": dict(task, workdir="")}, "edges": []}
+        return c.classify(graph, "aa/000001", exclusive=False)
+
+    def test_missing_container_is_named(self):
+        facts = self.classify(script="run", container="")
+        self.assertEqual(facts["contribution"], c.IRREDUCIBLE)
+        self.assertIn("no container recorded", facts["reason"])
+
+    def test_missing_script_is_named(self):
+        facts = self.classify(script="", container="img")
+        self.assertEqual(facts["contribution"], c.IRREDUCIBLE)
+        self.assertIn("no script recorded", facts["reason"])
+
+    def test_both_missing_names_both(self):
+        facts = self.classify(script="", container="")
+        self.assertIn("no script or container recorded", facts["reason"])
+
+    def test_both_recorded_is_regenerable(self):
+        facts = self.classify(script="run", container="img")
+        self.assertEqual(facts["contribution"], c.REGENERABLE)
+        self.assertIn("script and container recorded", facts["reason"])
