@@ -10,6 +10,12 @@ with the reason.
 clew reclaim --graph graph.json --work-root work/ --results results/
 ```
 
+Or read the run straight from the engine's record, with no graph file:
+
+```bash
+clew reclaim --runs .lineage --run wise_hoover --work-root work/ --results results/
+```
+
 Nothing is touched. The plan lists every task directory under one verdict.
 `--json` writes it as data and `--html` as one self-contained page, with
 the kept directories and their reasons shown in the same weight as the

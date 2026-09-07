@@ -1,13 +1,4 @@
-"""
-Clew: hash a run's files once, for graphs recorded without content digests.
-
-    clew digest --graph graph.json --work-root work/ --results results/ --out graph.json
-
-The engine hashing at write time is the cheap moment. This is the fallback
-for runs that missed it: every output under --work-root and every file under
---results is read once, and the SHA-256 goes into the graph, where reclaim
-and stitch compare strings instead of reading files again.
-"""
+"""Hash a run's files once and record SHA-256 in its graph, for runs the engine hashed by path and time."""
 
 import argparse
 import hashlib
@@ -75,15 +66,28 @@ def digest_results(graph, results):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Hash a run's files once and record the digests in its graph.")
-    parser.add_argument("--graph", required=True, help="graph JSON from an extractor")
+    parser.add_argument("--graph", help="graph JSON from an extractor")
+    parser.add_argument("--runs", metavar="DIR",
+                        help="the engine's record instead of --graph: a .lineage store, "
+                             "a horus-lineage root, or a directory of graphs; digests "
+                             "are kept in a sidecar beside it")
+    parser.add_argument("--run", help="which run under --runs; default: the latest")
     parser.add_argument("--work-root", metavar="DIR", help="the run's work directory")
     parser.add_argument("--results", metavar="DIR", help="the published results tree")
     parser.add_argument("--out", metavar="PATH", help="where to write; default: --graph")
     args = parser.parse_args(argv)
     if not args.work_root and not args.results:
         raise SystemExit("give --work-root, --results, or both")
+    if bool(args.graph) == bool(args.runs):
+        raise SystemExit("give --graph or --runs, not both")
 
-    graph = json.loads(Path(args.graph).read_text())
+    store = None
+    if args.runs:
+        from clew.extract.runs import Runs
+        store = Runs(args.runs)
+        graph = store.load(args.run)
+    else:
+        graph = json.loads(Path(args.graph).read_text())
     if args.work_root:
         c = digest_outputs(graph, args.work_root)
         print(f"outputs: {c['hashed']} hashed ({c['bytes']:,} bytes), "
@@ -92,9 +96,12 @@ def main(argv=None):
         c = digest_results(graph, args.results)
         print(f"published: {c['hashed']} files hashed ({c['bytes']:,} bytes), "
               f"{c['links']} symlinks skipped")
-    out = args.out or args.graph
-    Path(out).write_text(json.dumps(graph, indent=2))
-    print(f"wrote {out}")
+    if store:
+        print(f"wrote {store.save_sidecar(graph)}")
+    else:
+        out = args.out or args.graph
+        Path(out).write_text(json.dumps(graph, indent=2))
+        print(f"wrote {out}")
 
 
 if __name__ == "__main__":

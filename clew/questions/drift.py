@@ -1,16 +1,4 @@
-"""
-Clew: where two runs of the same workflow part ways, and why.
-
-    clew drift --before a.json --after b.json
-    clew drift ... --json plan.json --html plan.html
-
-Tasks are paired by name across the two graphs and compared by the content
-digests of their outputs. The first task on a chain whose outputs differ is
-where the runs diverge, and its cause is read off the record: an input
-whose digest changed, a different container or script, or nothing at all,
-which is its own finding. Everything downstream of a divergence is reached
-by it. Everything else is confirmed reproduced, digest for digest.
-"""
+"""Where two runs of the same workflow part ways, and why."""
 
 import argparse
 import fnmatch
@@ -196,8 +184,14 @@ def plan_to_dict(items, before_path, after_path, ignore):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Where two runs of the same workflow part ways, and why.")
-    parser.add_argument("--before", required=True, help="graph JSON of the earlier run")
-    parser.add_argument("--after", required=True, help="graph JSON of the later run")
+    parser.add_argument("--before", required=True,
+                        help="graph JSON of the earlier run, or its run name under --runs")
+    parser.add_argument("--after", required=True,
+                        help="graph JSON of the later run, or its run name under --runs")
+    parser.add_argument("--runs", metavar="DIR",
+                        help="the engine's record: a .lineage store, a horus-lineage "
+                             "root, or a directory of graphs; --before and --after "
+                             "are then run names")
     parser.add_argument("--ignore", action="append", metavar="GLOB",
                         help="output names never compared; repeatable. "
                              f"Default: {', '.join(BOOKKEEPING)}.")
@@ -207,7 +201,12 @@ def main(argv=None):
                         help="write one self-contained HTML page ('-' for stdout)")
     args = parser.parse_args(argv)
 
-    before, after = core.load_graph(args.before), core.load_graph(args.after)
+    if args.runs:
+        from clew.extract.runs import Runs
+        store = Runs(args.runs)
+        before, after = store.load(args.before), store.load(args.after)
+    else:
+        before, after = core.load_graph(args.before), core.load_graph(args.after)
     ignore = tuple(args.ignore) if args.ignore else BOOKKEEPING
     items = drift(before, after, ignore)
     print_plan(items, args.before, args.after, ignore)
