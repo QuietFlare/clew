@@ -150,6 +150,48 @@ class TestAsOf(unittest.TestCase):
             as_of="2026-05-01")
         self.assertEqual(first["subjects"], later["subjects"])
 
+    def test_a_date_only_as_of_includes_facts_stamped_later_that_day(self):
+        # "As of 20 May" means the day, not the midnight that began it.
+        # Compared as text, "2026-05-20T09:00:00+00:00" > "2026-05-20" and
+        # the reversal would have been missed.
+        entries = [fact(1, "s1", "Contaminated", "2026-04-12"),
+                   fact(2, "s1", "Passed", "2026-05-20T09:00:00+00:00")]
+        result = gate.decide(["s1"], entries, BLOCK, CLEAR, as_of="2026-05-20")
+        self.assertEqual(result["subjects"]["s1"]["status"], gate.CLEARED)
+
+    def test_a_timed_as_of_excludes_facts_later_that_day(self):
+        entries = [fact(1, "s1", "Contaminated", "2026-04-12"),
+                   fact(2, "s1", "Passed", "2026-05-20T09:00:00+00:00")]
+        result = gate.decide(["s1"], entries, BLOCK, CLEAR,
+                             as_of="2026-05-20T08:00:00+00:00")
+        self.assertEqual(result["subjects"]["s1"]["status"], gate.BLOCKED)
+
+    def test_mixed_offsets_order_by_instant_not_by_text(self):
+        # 09:00+02:00 is 07:00 UTC, before 08:00 UTC, though it sorts after
+        # it as text. The later instant is the clearing one.
+        entries = [fact(1, "s1", "Withdrawn", "2026-03-01T09:00:00+02:00"),
+                   fact(2, "s1", "Reinstated", "2026-03-01T08:00:00+00:00")]
+        result = gate.decide(["s1"], entries, BLOCK, CLEAR)
+        self.assertEqual(result["subjects"]["s1"]["status"], gate.CLEARED)
+
+    def test_as_of_defaults_to_now_and_is_recorded(self):
+        result = gate.decide(["s1"], self.entries, BLOCK, CLEAR)
+        self.assertIsNotNone(result["as_of"])
+        self.assertTrue(result["as_of"].endswith("+00:00"))
+        # A fact effective in the future is not in effect now.
+        future = gate.decide(["s1"], self.entries + [
+            fact(3, "s1", "Withdrawn", "2999-01-01")], BLOCK, CLEAR)
+        self.assertEqual(future["subjects"]["s1"]["status"], gate.CLEARED)
+
+    def test_an_unparseable_as_of_is_refused(self):
+        with self.assertRaises(ValueError):
+            gate.decide(["s1"], self.entries, BLOCK, CLEAR, as_of="May 2026")
+
+    def test_an_unparseable_effective_from_is_refused(self):
+        with self.assertRaises(ValueError):
+            gate.decide(["s1"], [fact(1, "s1", "Withdrawn", "soon")],
+                        BLOCK, CLEAR)
+
 
 class TestCliFailsClosed(unittest.TestCase):
     """Every way of not establishing permission must exit non-zero."""

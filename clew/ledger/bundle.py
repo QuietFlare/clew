@@ -61,12 +61,17 @@ Clew's; the attestation of WHO sealed it belongs to your key infrastructure.
 
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 from clew.ledger import gate as gate_module
 from clew.ledger import policy as policy_module
+from clew.ledger.eventlog import GENESIS
 
-BUNDLE_VERSION = 1
+# Version 2 records where the bundled chain starts (anchors.since) and the
+# head of the bundle it continues (anchors.previous_log_head). A version 1
+# manifest has neither and is read as starting at genesis.
+BUNDLE_VERSION = 2
 
 MANIFEST = "manifest.json"
 SIGNATURE = "manifest.json.sig"
@@ -75,6 +80,16 @@ CRATE = "ro-crate-metadata.json"
 # Never listed in the manifest: the manifest cannot hash itself, and the
 # signature is made over the manifest and therefore written after it.
 UNLISTED = {MANIFEST, SIGNATURE}
+
+
+def safe_name(name):
+    """
+    A manifest entry must name a file in the bundle directory and nowhere
+    else. A separator or a parent reference would make the verifier hash a
+    file outside the bundle and report on it as if it were sealed.
+    """
+    return (isinstance(name, str) and bool(name) and name not in (".", "..")
+            and "/" not in name and "\\" not in name and ".." not in name)
 
 
 def canonical(obj):
@@ -143,9 +158,11 @@ independent checks:
   files      every file hashes to what manifest.json records, and no file is
              present that the manifest does not list.
 
-  log        the bundled event entries re-chain: each entry's hash is
-             recomputed from its own content and its predecessor's hash, and
-             the last one matches the log head recorded in the manifest.
+  log        the bundled event entries re-chain: the first one chains from
+             genesis, or from the previous bundle's log head as recorded in
+             the manifest; each entry's hash is recomputed from its own
+             content and its predecessor's hash; and the last one matches
+             the log head recorded in the manifest.
 
   policy     policy.json hashes to the value the plan cites. The plan and the
              table it was decided under cannot have drifted apart.
@@ -172,25 +189,59 @@ reported unknown, never clean.
 
 
 def build(destination, documents, log_head, previous_bundle=None,
-          coverage=None, description="Clew evidence bundle"):
+          previous_log_head=None, since=0, coverage=None,
+          description="Clew evidence bundle", force=False):
     """
     Write a bundle and return its manifest and hash.
 
     `documents` maps a filename to a JSON-serialisable object. Core does not
     know or care what any of them mean; the caller decides what belongs.
 
-    `log_head` is {seq, hash} for the log this bundle witnesses.
-    `previous_bundle` is the hash of the bundle before this one, if any, so a
-    sequence of bundles pins a sequence of log heads.
+    `log_head` is {seq, hash} for the log this bundle witnesses. `since` is
+    the seq the bundled entries start after; the hash they must chain back
+    to is genesis when that is 0 and otherwise the head of the previous
+    bundle, so `previous_log_head` ({seq, hash}) and `previous_bundle` (its
+    hash) are required for a window. A sequence of bundles then pins a
+    sequence of log heads, and each window is verifiable against the one
+    before it rather than against itself.
+
+    A destination that already holds files is refused unless `force`,
+    which empties it first. Building into a directory with leftovers would
+    seal whatever happened to be there, or fail to verify for a reason the
+    builder never saw.
     """
+    for name in documents:
+        if not safe_name(name):
+            raise ValueError(f"refusing to write a document named {name!r}")
+    if since:
+        if not previous_log_head or previous_log_head["seq"] != since:
+            raise ValueError(
+                f"a bundle starting after seq {since} must continue a "
+                "previous bundle whose log head is that seq")
+        if not previous_bundle:
+            raise ValueError("a windowed bundle must name the bundle it "
+                             "continues")
+    if since > log_head["seq"]:
+        raise ValueError(f"since={since} is past the log head "
+                         f"(seq {log_head['seq']})")
+    anchor = previous_log_head["hash"] if since else GENESIS
+
     destination = Path(destination)
+    if destination.exists() and any(destination.iterdir()):
+        if not force:
+            raise FileExistsError(
+                f"{destination} is not empty; pass force to replace its "
+                "contents")
+        for leftover in destination.iterdir():
+            if leftover.is_dir() and not leftover.is_symlink():
+                shutil.rmtree(leftover)
+            else:
+                leftover.unlink()
     destination.mkdir(parents=True, exist_ok=True)
 
-    written = {}
     for name, document in documents.items():
         payload = json.dumps(document, indent=2, sort_keys=True) + "\n"
         (destination / name).write_text(payload)
-        written[name] = payload
 
     (destination / CRATE).write_text(
         json.dumps(_crate(documents, description), indent=2, sort_keys=True)
@@ -208,7 +259,12 @@ def build(destination, documents, log_head, previous_bundle=None,
         "files": files,
         "anchors": {
             "log_head": {"seq": log_head["seq"], "hash": log_head["hash"]},
+            "since": {"seq": since, "hash": anchor},
             "previous_bundle": previous_bundle,
+            "previous_log_head": (
+                {"seq": previous_log_head["seq"],
+                 "hash": previous_log_head["hash"]}
+                if previous_log_head else None),
         },
         "coverage": coverage or [],
     }
@@ -228,6 +284,12 @@ def verify_files(directory, manifest):
     directory = Path(directory)
     recorded = manifest["files"]
 
+    unsafe = [repr(n) for n in recorded if not safe_name(n)]
+    if unsafe:
+        return _check("files", False,
+                      "the manifest names something outside the bundle: "
+                      + ", ".join(sorted(unsafe)))
+
     missing = [n for n in recorded if not (directory / n).is_file()]
     if missing:
         return _check("files", False, f"missing from the bundle: "
@@ -240,11 +302,11 @@ def verify_files(directory, manifest):
                       f"content does not match the manifest: "
                       f"{', '.join(altered)}")
 
-    # An unlisted file is not harmless. A bundle is meant to be exactly what
+    # An unlisted entry is not harmless. A bundle is meant to be exactly what
     # the manifest says it is, and a reader who opens the directory sees
-    # every file in it, listed or not.
-    present = {p.name for p in directory.iterdir()
-               if p.is_file() and p.name not in UNLISTED}
+    # everything in it, listed or not. A subdirectory is the easiest place
+    # to put something a reader will find and the manifest never covered.
+    present = {p.name for p in directory.iterdir() if p.name not in UNLISTED}
     extra = sorted(present - set(recorded))
     if extra:
         return _check("files", False,
@@ -254,26 +316,63 @@ def verify_files(directory, manifest):
     return _check("files", True, f"{len(recorded)} files, all hashes match")
 
 
+def chain_start(manifest):
+    """Where the bundled entries begin: {seq, hash} they must chain from."""
+    since = manifest["anchors"].get("since")
+    if since is None:
+        return {"seq": 0, "hash": GENESIS}
+    return since
+
+
 def verify_log(events, manifest, eventlog):
     """
-    The bundled entries must re-chain and end where the manifest says.
+    The bundled entries must re-chain from the recorded start and end at the
+    recorded head.
+
+    The start is not taken from the entries themselves. A chain checked
+    against its own first prev_hash verifies whatever it was forged to
+    say; it is checked against genesis, or against the head of the bundle
+    it continues, which the manifest names.
 
     `eventlog` is passed in rather than imported so this stays usable in an
     environment with no database driver installed — which is exactly the
     environment an auditor checking a bundle is in.
     """
-    head = manifest["anchors"]["log_head"]
+    anchors = manifest["anchors"]
+    head = anchors["log_head"]
+    start = chain_start(manifest)
+
+    if start["seq"] == 0:
+        if start["hash"] != GENESIS:
+            return _check("log", False,
+                          "a bundle starting at the beginning of the log "
+                          "must chain from genesis, but the manifest records "
+                          "a different start hash")
+    else:
+        previous = anchors.get("previous_log_head")
+        if not previous or not anchors.get("previous_bundle"):
+            return _check("log", False,
+                          f"the entries start after seq {start['seq']} but "
+                          "the manifest does not name the bundle they "
+                          "continue; the chain cannot be anchored")
+        if (previous["seq"], previous["hash"]) != (start["seq"],
+                                                   start["hash"]):
+            return _check("log", False,
+                          "the recorded start does not match the previous "
+                          "bundle's log head")
+
     if not events:
-        if head["seq"] == 0:
-            return _check("log", True, "no entries covered; log was empty")
+        if head["seq"] == start["seq"] and head["hash"] == start["hash"]:
+            return _check("log", True,
+                          "no entries covered; the log had not grown"
+                          if start["seq"] else
+                          "no entries covered; log was empty")
         return _check("log", False,
                       f"manifest claims a log head at seq {head['seq']} but "
                       "the bundle carries no entries")
 
-    start_seq = events[0]["seq"]
     result = eventlog.verify_entries(
-        events, start_seq=start_seq,
-        start_prev=events[0]["prev_hash"])
+        events, start_seq=start["seq"] + 1, start_prev=start["hash"])
     if not result["ok"]:
         return _check("log", False,
                       f"chain broken at seq {result['broken_at']}: "
@@ -384,28 +483,56 @@ def verify_replay(plan, policy_document):
     Not a spot check. If one line of a remediation plan cannot be re-derived,
     the plan is not evidence of anything, so every line is re-derived.
     """
+    items = plan.get("plan", [])
     mismatches = []
-    for item in plan.get("plan", []):
-        decision = policy_module.decide(
-            item["contribution"],
-            storage=item["storage"],
-            exclusive=item["exclusive"],
-            terminal=item["terminal"],
-            policy=policy_document,
-        )
-        if decision["action"] != item["action"]:
+    counts = {}
+    for item in items:
+        try:
+            decision = policy_module.decide(
+                item["contribution"],
+                storage=item.get("storage"),
+                exclusive=item.get("exclusive"),
+                terminal=item.get("terminal"),
+                policy=policy_document,
+            )
+        except ValueError as exc:
+            mismatches.append(f"{item['task']}: {exc}")
+            continue
+        counts[decision["action"] or policy_module.UNDETERMINED] = counts.get(
+            decision["action"] or policy_module.UNDETERMINED, 0) + 1
+        if decision["action"] != item.get("action"):
             mismatches.append(
-                f"{item['task']}: recorded {item['action']}, recomputes to "
-                f"{decision['action']}")
-        elif decision["rule"] != item["rule"]:
+                f"{item['task']}: recorded {item.get('action')}, recomputes "
+                f"to {decision['action']}")
+        elif decision["rule"] != item.get("rule"):
             mismatches.append(
-                f"{item['task']}: recorded rule {item['rule']}, recomputes to "
-                f"{decision['rule']}")
+                f"{item['task']}: recorded rule {item.get('rule')}, "
+                f"recomputes to {decision['rule']}")
+        elif decision.get("possible") != item.get("possible"):
+            # An undetermined item's candidates are its whole content. Left
+            # unchecked, a plan could narrow "one of three" to "one of one"
+            # and read as settled without ever stating a verdict.
+            mismatches.append(
+                f"{item['task']}: recorded possible {item.get('possible')}, "
+                f"recomputes to {decision.get('possible')}")
+
+    # The totals are read before any item is, so they are checked too. A
+    # plan whose header says 16 affected while listing one is not a plan
+    # with a rounding error; it is two documents pretending to be one.
+    if plan.get("tasks_affected") != len(items):
+        mismatches.append(
+            f"header records tasks_affected={plan.get('tasks_affected')}, "
+            f"but the plan lists {len(items)} items")
+    if not mismatches and plan.get("actions") != counts:
+        mismatches.append(
+            f"header records actions={plan.get('actions')}, but the items "
+            f"recompute to {counts}")
 
     if mismatches:
         return _check("replay", False,
-                      f"{len(mismatches)} of {len(plan.get('plan', []))} "
-                      f"verdicts do not reproduce: " + "; ".join(mismatches[:3]))
+                      f"{len(mismatches)} discrepancies across {len(items)} "
+                      f"items; the plan does not reproduce: "
+                      + "; ".join(mismatches[:3]))
     return _check("replay", True,
-                  f"all {len(plan.get('plan', []))} verdicts recompute "
+                  f"all {len(items)} verdicts and their counts recompute "
                   f"identically from the bundled facts and policy")

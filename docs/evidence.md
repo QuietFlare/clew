@@ -34,14 +34,61 @@ hashes match and change only the conclusion, and it still fails:
 
 ```
   ok   files      6 files, all hashes match
-  FAIL replay     1 of 57 verdicts do not reproduce:
+  FAIL replay     1 discrepancies across 57 items; the plan does not reproduce:
                   da:06/31c01f: recorded ALREADY_GONE, recomputes to REGENERATE
 ```
+
+Replay covers the whole plan, not only the settled lines. An undetermined
+item's `possible` map is recomputed, so "one of three" cannot quietly
+become "one of one". The header's `actions` counts and `tasks_affected`
+are recomputed from the items. A fact recorded as `null` on any dimension
+is unverified and evaluated over every value it could take, so a plan with
+`terminal: null` cannot replay to `NOTIFY_ONLY`. A fact outside its
+dimension's possible values, `"writable"` for `"WRITABLE"` say, is a
+discrepancy rather than a silent fall-through.
+
+`files` requires the directory to be exactly what the manifest lists. A
+subdirectory, or any entry the manifest does not name, fails the check, and
+a manifest naming a path outside the directory (`../`, a separator, `..`)
+is refused before anything is hashed. For the same reason `build` refuses
+a non-empty `--out` unless `--force`, which empties it first.
 
 Bundles are clock-free. The same inputs produce the same bundle hash, and a
 test asserts it. A timestamp inside would change the hash on every build and
 destroy the reproducibility claim. Time lives in the log, and sealing is
-itself a logged event.
+itself a logged event. `--input` files are recorded in `inputs.json` by
+content hash with the basename only, so `graph.json` and `./graph.json`
+seal to the same bundle.
+
+## Where the chain starts
+
+The `log` check does not take the chain's starting point from the entries
+themselves. A chain checked against its own first `prev_hash` verifies
+whatever it was forged to say. The manifest records where the bundled
+entries begin under `anchors.since`, and the verifier checks that:
+
+- a bundle starting at seq 0 must chain from the genesis hash;
+- a bundle built with `--since N` must name the bundle it continues with
+  `--previous`, whose log head (seq N and its hash) is recorded under
+  `anchors.previous_log_head`, and the entries must chain from that hash.
+
+```bash
+clew evidence build --out march/ --plan plan.json --dsn "$CLEW_DSN"
+clew evidence build --out april/ --plan plan.json --dsn "$CLEW_DSN" \
+    --since 57 --previous march/
+```
+
+`--since` without `--previous` is refused, and so is a `--previous` whose
+head is not at that seq. At build time the previous head is also checked
+against the live log, so a window sealed from a different log, or after a
+rewrite, is refused rather than sealed into a bundle that can never verify.
+A bundle whose manifest claims a log head but carries no `events.json`
+fails the log check; it is not a bundle with one check fewer.
+
+Manifests written before this (`clew_bundle_version` 1) record no start
+and are read as starting from genesis. A version 1 bundle covering the
+whole log verifies as before; a version 1 window does not, and never
+should have on its own.
 
 ## Closing the log's open gap
 

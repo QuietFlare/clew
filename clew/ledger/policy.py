@@ -89,6 +89,7 @@ verdicts back into core.
 
 import hashlib
 import json
+from itertools import product
 
 from clew.graph import contribution
 
@@ -102,6 +103,8 @@ VALID = {
     "exclusive": {True, False},
     "terminal": {True, False},
 }
+
+TYPES = {"storage": str, "exclusive": bool, "terminal": bool}
 
 ACTIONS = {
     contribution.PURGE, contribution.REGENERATE, contribution.QUARANTINE,
@@ -435,11 +438,19 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
     collects these, and hashing the policy 81 times to say the same thing
     would be waste dressed up as rigour.
 
-    `storage=None` means NOT VERIFIED, which is different from any of the
-    three storage values. See the module docstring: the policy is evaluated
-    against each possible value, and if they disagree no action is returned.
-    An undetermined result has action None and a `possible` map of the
-    candidate actions to the rules that would produce them.
+    `None` on storage, exclusive or terminal means NOT VERIFIED, which is
+    different from any real value. See the module docstring: the policy is
+    evaluated against every combination of the possible values, and if
+    they disagree no action is returned. An undetermined result has action
+    None and a `possible` map of the candidate actions to the rules that
+    would produce them.
+
+    A value that is neither None nor one of the dimension's possible values
+    is an error, not a wildcard. Matching is by equality, so "writable"
+    would silently match no rule and fall through to QUARANTINE with a
+    plausible-looking citation. The contribution class is the exception,
+    by design: an unrecognised class is normalised to IRREDUCIBLE before
+    anything looks at it.
     """
     policy = policy or DEFAULT
 
@@ -451,33 +462,48 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
         "exclusive": exclusive,
         "terminal": terminal,
     }
+    for field in ("storage", "exclusive", "terminal"):
+        value = facts[field]
+        # The type check is not pedantry: bool is a subclass of int, so 1
+        # would otherwise pass as True.
+        if value is not None and (type(value) is not TYPES[field]
+                                  or value not in VALID[field]):
+            raise ValueError(
+                f"{field}={value!r} is not a possible value "
+                f"({sorted(VALID[field], key=str)}); pass None if it was "
+                "not verified")
 
-    if storage is not None:
+    unverified = [f for f in ("storage", "exclusive", "terminal")
+                  if facts[f] is None]
+    if not unverified:
         return _decide_known(facts, policy)
 
     # Unverified. Ask the policy what it would say under each possibility.
     candidates = {}
-    for possible_storage in contribution.STORAGE:
-        outcome = _decide_known(dict(facts, storage=possible_storage), policy)
+    first = None
+    for combination in product(*(sorted(VALID[f], key=str)
+                                 for f in unverified)):
+        assumed = dict(facts, **dict(zip(unverified, combination)))
+        outcome = _decide_known(assumed, policy)
         candidates.setdefault(outcome["action"], outcome["rule"])
+        first = first or outcome
 
+    label = _english(unverified)
     if len(candidates) == 1:
-        # The storage state turns out not to matter here. This is a real
-        # answer, not a guess: it holds whatever the bytes are doing.
+        # The unverified dimensions turn out not to matter here. This is a
+        # real answer, not a guess: it holds whatever the facts are.
         action, rule = next(iter(candidates.items()))
         return {"action": action, "rule": rule,
-                "because": _decide_known(
-                    dict(facts, storage=contribution.WRITABLE),
-                    policy)["because"]
-                + " (storage unverified, but every possible state gives this "
-                  "same answer)"}
+                "because": first["because"]
+                + f" ({label} unverified, but every possible state gives "
+                  "this same answer)"}
 
     return {
         "action": None,
         "rule": None,
         "possible": dict(sorted(candidates.items())),
-        "because": "storage state not verified, and the verdict depends on "
-                   "it. Verifying would decide between "
+        "because": f"{label} not verified, and the verdict depends on it. "
+                   "Verifying would decide between "
                    + _english(sorted(candidates))
                    + ". Refusing to guess: assuming the artifact survives "
                      "over-claims work, and assuming it is gone reports an "

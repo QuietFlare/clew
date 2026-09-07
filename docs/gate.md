@@ -13,6 +13,7 @@ clew gate --pipeline sarek --samplesheet samplesheet.csv \
 CLEW GATE  clew/data/donors.csv
   blocking on     ConsentWithdrawn, QCFailed, SampleContaminated
   cleared by      ConsentReinstated, QCPassed
+  as of           2026-09-07T10:12:44+00:00  (now; no --as-of given)
   log head        seq 5  0a9f436b2c7dca66
 
   BLOCKED  1
@@ -79,6 +80,21 @@ Facts effective after the date asked about are ignored, so a historical
 gate result stays reproducible instead of changing every time someone
 records something new. This is what the log's two clocks are for.
 
+Without `--as-of` the gate evaluates as of now, in UTC, and records the
+instant it used in the result and the sealed bundle. A result that said
+"as of: nothing in particular" could not be re-derived once the log grew,
+because nobody would know which facts were in view when it was decided.
+The report line says which it was. One consequence: a gate bundle sealed
+without `--as-of` carries that instant, so two runs of the same check hash
+differently. Pass `--as-of` when byte-identical bundles matter.
+
+Timestamps are compared as instants, never as text. `--as-of 2026-05-01`
+names the whole day, so a fact stamped `2026-05-01T09:00:00+00:00` is in
+effect; `--as-of 2026-05-01T08:00:00+00:00` is exact and excludes it.
+Mixed offsets order by the moment they name: `09:00+02:00` comes before
+`08:00+00:00`. A value that is not ISO-8601 is refused, and so is an
+`effective_from` that cannot be parsed, at the moment it is appended.
+
 ## It emits its own evidence
 
 `--out` seals the result into a bundle, and `clew evidence verify`
@@ -90,6 +106,10 @@ policy, the same discipline as replaying a remediation plan:
   ok   log        5 entries re-chain to the recorded head (seq 5)
   ok   gate       passed=False; all 5 subject outcomes recompute identically
 ```
+
+`--out` must be an empty or absent directory; pass `--force` to replace
+what is there. A bundle is exactly what its manifest lists, and `verify`
+fails on anything else in the directory.
 
 The shipped workflow at [examples/clew-gate.yml](../examples/clew-gate.yml)
 uploads that bundle with `if: always()`. The evidence of a refusal matters

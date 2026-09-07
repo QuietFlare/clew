@@ -148,6 +148,25 @@ class TestTemporal(unittest.TestCase):
         self.assertIsNone(result["result"]["version"])
         self.assertEqual(result["citations"], [])
 
+    def test_a_date_only_as_of_includes_an_adoption_later_that_day(self):
+        entries = self.entries + [
+            entry(3, "v3", query.POLICY_ADOPTED, "2026-06-01T15:00:00+00:00",
+                  {"policy_hash": "ccc"})]
+        self.assertEqual(
+            query.policy_in_force(entries, "2026-06-01")["result"]["version"],
+            "v3")
+
+    def test_adoptions_order_by_instant_across_offsets(self):
+        entries = [
+            entry(1, "late", query.POLICY_ADOPTED, "2026-06-01T08:00:00+00:00",
+                  {"policy_hash": "a"}),
+            entry(2, "early", query.POLICY_ADOPTED, "2026-06-01T09:00:00+02:00",
+                  {"policy_hash": "b"}),
+        ]
+        self.assertEqual(
+            query.policy_in_force(entries, "2026-06-02")["result"]["version"],
+            "late")
+
     def test_history_is_ordered_by_when_facts_took_effect(self):
         # Entered later, effective earlier: the history reads in world order,
         # because "what happened and when" is the question behind it.

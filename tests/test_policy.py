@@ -415,6 +415,59 @@ class TestUnverifiedStorage(unittest.TestCase):
         self.assertIsNone(p.remediate(c.REGENERABLE, storage=None))
 
 
+class TestEveryDimensionIsChecked(unittest.TestCase):
+    """
+    None on any dimension is unverified, and a value outside the dimension
+    is an error. Matching is by equality, so "writable" would match no rule
+    and fall through to QUARANTINE with a plausible citation; and a null
+    terminal that read as False would settle a verdict that depends on
+    exactly the fact nobody checked.
+    """
+
+    def test_an_unverified_terminal_is_evaluated_like_storage(self):
+        decision = p.decide(c.REGENERABLE, storage=c.WRITABLE, terminal=None)
+        self.assertIsNone(decision["action"])
+        self.assertEqual(sorted(decision["possible"]),
+                         [c.NOTIFY_ONLY, c.REGENERATE])
+        self.assertIn("terminal", decision["because"])
+
+    def test_an_unverified_exclusive_is_evaluated_too(self):
+        decision = p.decide(c.REGENERABLE, storage=c.WRITABLE, exclusive=None)
+        self.assertEqual(sorted(decision["possible"]),
+                         [c.DESTROY, c.REGENERATE])
+
+    def test_several_unverified_dimensions_combine(self):
+        decision = p.decide(c.REGENERABLE, storage=None, exclusive=None,
+                            terminal=None)
+        self.assertIsNone(decision["action"])
+        self.assertIn(c.NOTIFY_ONLY, decision["possible"])
+        self.assertIn(c.ALREADY_GONE, decision["possible"])
+        self.assertIn(c.DESTROY, decision["possible"])
+
+    def test_agreement_over_an_unverified_terminal_is_a_real_answer(self):
+        # Published or not, a DESTROYED artifact under v1 is ALREADY_GONE.
+        decision = p.decide(c.REGENERABLE, storage=c.DESTROYED, terminal=None,
+                            policy=p.V1)
+        self.assertEqual(decision["action"], c.ALREADY_GONE)
+        self.assertIn("terminal unverified", decision["because"])
+
+    def test_a_value_outside_the_dimension_is_an_error(self):
+        with self.assertRaises(ValueError):
+            p.decide(c.REGENERABLE, storage="writable")
+        with self.assertRaises(ValueError):
+            p.decide(c.REGENERABLE, terminal="yes")
+        with self.assertRaises(ValueError):
+            p.decide(c.REGENERABLE, exclusive="no")
+
+    def test_an_int_does_not_pass_as_a_bool(self):
+        with self.assertRaises(ValueError):
+            p.decide(c.REGENERABLE, terminal=1)
+
+    def test_an_unrecognised_class_still_fails_closed_rather_than_erroring(self):
+        # The one dimension with a defined fallback keeps it.
+        self.assertEqual(p.decide("MYSTERY")["action"], c.QUARANTINE)
+
+
 class TestReplay(unittest.TestCase):
     def test_the_same_inputs_under_two_policies_differ_visibly(self):
         # What versioning is for: the verdict changed because the table

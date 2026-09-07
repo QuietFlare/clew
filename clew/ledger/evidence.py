@@ -86,9 +86,49 @@ def resolve_policy_for(plan, override):
     return document
 
 
+def record_inputs(paths):
+    """
+    Source files by content hash, with the basename only.
+
+    Keyed by hash rather than by path so the same inputs give the same
+    bundle whatever directory they were read from: a bundle hash that
+    changed because someone typed ./graph.json instead of graph.json
+    would be a reproducibility claim with a hole in it.
+    """
+    inputs = {}
+    for path in paths or []:
+        digest = bundle.sha256_file(path)
+        name = Path(path).name
+        seen = inputs.get(digest)
+        if seen and seen["name"] != name:
+            raise SystemExit(
+                f"--input {path} has the same content as {seen['name']}; "
+                "record it once")
+        inputs[digest] = {"name": name, "bytes": Path(path).stat().st_size}
+    return inputs
+
+
+def continue_from(previous_dir, since):
+    """The previous bundle's hash and log head, checked against --since."""
+    if not previous_dir:
+        if since:
+            raise SystemExit(
+                f"--since {since} needs --previous: the entries after that "
+                "seq can only be anchored to the bundle that ended there")
+        return None, None
+    manifest = load_json(Path(previous_dir) / bundle.MANIFEST)
+    previous_head = manifest["anchors"]["log_head"]
+    if since and previous_head["seq"] != since:
+        raise SystemExit(
+            f"--since {since} does not match the previous bundle, whose log "
+            f"head is seq {previous_head['seq']}")
+    return bundle.bundle_hash(manifest), previous_head
+
+
 def cmd_build(args):
     plan = load_json(args.plan)
     policy_document = resolve_policy_for(plan, args.policy)
+    previous, previous_head = continue_from(args.previous, args.since)
 
     events, log_head = [], {"seq": 0, "hash": "0" * 64}
     if args.dsn:
@@ -96,19 +136,28 @@ def cmd_build(args):
         conn = open_log(args.dsn)
         log_head = eventlog.head(conn)
         events = eventlog.raw(conn, since=args.since)
+        # Check the window against the live log before sealing it. A
+        # previous bundle from a different log, or a log rewritten since,
+        # would otherwise be sealed into a bundle that can never verify.
+        try:
+            anchor = eventlog.anchor(conn, args.since)
+        except LookupError as exc:
+            raise SystemExit(f"cannot continue from --since {args.since}: "
+                             f"{exc}")
+        if previous_head and args.since and anchor != previous_head["hash"]:
+            raise SystemExit(
+                f"the previous bundle's log head (seq {args.since}) does not "
+                "match this log's entry at that seq; it was sealed from a "
+                "different log, or the log was rewritten since")
+        chain = eventlog.verify_entries(events, start_seq=args.since + 1,
+                                        start_prev=anchor)
+        if not chain["ok"]:
+            raise SystemExit(f"refusing to seal a broken log: seq "
+                             f"{chain['broken_at']}, {chain['reason']}")
+    elif args.since:
+        raise SystemExit("--since needs --dsn; there is no log to window")
 
-    inputs = {}
-    for path in args.input or []:
-        inputs[Path(path).name] = {
-            "path": str(path),
-            "sha256": bundle.sha256_file(path),
-            "bytes": Path(path).stat().st_size,
-        }
-
-    previous = None
-    if args.previous:
-        previous_manifest = load_json(Path(args.previous) / bundle.MANIFEST)
-        previous = bundle.bundle_hash(previous_manifest)
+    inputs = record_inputs(args.input)
 
     # Coverage, stated rather than implied. Everything here is a limit of
     # what the bundle witnesses, and a reader should not have to infer any
@@ -128,8 +177,8 @@ def cmd_build(args):
     elif args.since:
         coverage.append(
             f"log entries 1-{args.since} are not in this bundle; the chain "
-            "here is anchored to the entry before this range, so verifying it "
-            "needs the earlier bundle that covered them.")
+            "here starts from the log head the previous bundle recorded, "
+            "and that earlier bundle is where those entries are witnessed.")
 
     documents = {
         "plan.json": plan,
@@ -137,10 +186,18 @@ def cmd_build(args):
         "events.json": events,
         "inputs.json": inputs,
     }
-    manifest, digest = bundle.build(
-        args.out, documents, log_head=log_head, previous_bundle=previous,
-        coverage=coverage,
-        description=f"Clew evidence bundle for trigger: {plan.get('trigger')}")
+    try:
+        manifest, digest = bundle.build(
+            args.out, documents, log_head=log_head, previous_bundle=previous,
+            previous_log_head=previous_head, since=args.since,
+            coverage=coverage, force=args.force,
+            description=f"Clew evidence bundle for trigger: "
+                        f"{plan.get('trigger')}")
+    except FileExistsError:
+        raise SystemExit(
+            f"{args.out} is not empty. A bundle must be exactly what its "
+            "manifest lists, so it gets a directory of its own; pass --force "
+            "to replace what is there.")
 
     print(f"wrote {args.out}")
     print(f"  bundle hash     {digest}")
@@ -196,10 +253,12 @@ def cmd_verify(args):
     else:
         from clew.ledger import eventlog
 
+        # The log check always runs. A bundle that names a log head and
+        # carries no entries is not a bundle with one check fewer; it is a
+        # bundle whose claim about the log cannot be examined.
         events = load_json(directory / "events.json") \
             if "events.json" in sealed else []
-        if "events.json" in sealed:
-            checks.append(bundle.verify_log(events, manifest, eventlog))
+        checks.append(bundle.verify_log(events, manifest, eventlog))
 
         # A bundle seals one kind of answer or the other. Checking for the
         # documents rather than assuming a shape means a gate result gets the
@@ -225,6 +284,9 @@ def cmd_verify(args):
     digest = bundle.bundle_hash(manifest)
     print(f"bundle {digest}")
     print(f"  covers log head seq {manifest['anchors']['log_head']['seq']}")
+    start = bundle.chain_start(manifest)
+    if start["seq"]:
+        print(f"  entries after   seq {start['seq']}")
     if manifest["anchors"]["previous_bundle"]:
         print(f"  chains to       "
               f"{manifest['anchors']['previous_bundle'][:16]}")
@@ -370,7 +432,10 @@ def main(argv=None):
     build.add_argument("--input", action="append", metavar="PATH",
                        help="a source file to record by hash; repeatable")
     build.add_argument("--previous", metavar="DIR",
-                       help="the previous bundle, to chain to it")
+                       help="the previous bundle, to chain to it; required "
+                            "with --since")
+    build.add_argument("--force", action="store_true",
+                       help="replace the contents of a non-empty --out")
     build.add_argument("--seal-into-log", action="store_true",
                        help="record the bundle hash back into the event log")
     build.add_argument("--actor", default="unknown",
