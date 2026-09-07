@@ -178,17 +178,42 @@ class SyntheticStore(unittest.TestCase):
         self.assertTrue(older.get("superseded"))
         self.assertNotIn("superseded", newer)
 
-    def test_an_unorderable_pair_claims_nothing(self):
+    def test_same_named_tasks_in_one_run_are_not_versions(self):
         """
-        Without timestamps there is no way to tell which version is live,
-        and guessing is worse than admitting it.
+        Scatter shards and repeated processes share a name inside one run.
+        Neither replaced the other, so neither may be proposed for deletion.
         """
-        (self.store / f"{CONSUMER}#output" / ".data.json").unlink()
+        write_record(self.store / CONSUMER_V2, task_run(
+            CHAIN, RUN_A, "PIPE:STATS (subject_1)",
+            input=[{"type": "path", "name": "bam",
+                    "value": [f"lid://{PRODUCER}/out.bam"]}]))
         graph = ls.extract(self.store, CHAIN)
-        self.assertNotIn("superseded",
-                         graph["tasks"][ls.abbreviate(CONSUMER)])
-        self.assertNotIn("superseded",
-                         graph["tasks"][ls.abbreviate(CONSUMER_V2)])
+        self.assertNotIn("superseded", graph["tasks"][ls.abbreviate(CONSUMER)])
+        self.assertNotIn("superseded", graph["tasks"][ls.abbreviate(CONSUMER_V2)])
+        self.assertFalse(any("superseded" in n for n in graph["coverage"]))
+
+    def test_a_run_missing_from_history_claims_nothing(self):
+        """
+        A version whose run the history does not list cannot be placed in
+        the chain, and guessing is worse than admitting the order is unknown.
+        """
+        (self.store / ".history" / RUN_B).unlink()
+        graph = ls.extract(self.store, CHAIN)
+        self.assertNotIn("superseded", graph["tasks"][ls.abbreviate(CONSUMER)])
+        self.assertNotIn("superseded", graph["tasks"][ls.abbreviate(CONSUMER_V2)])
+
+    def test_a_version_still_read_by_a_task_stays_live(self):
+        """
+        Run B re-ran STATS, but a task in the session still reads the old
+        version's output. Its bytes are somebody's input, not history.
+        """
+        reader = "1234123412341234123412341234abcd"
+        write_record(self.store / reader, task_run(
+            CHAIN, RUN_B, "PIPE:PLOT (subject_1)",
+            input=[{"type": "path", "name": "stats",
+                    "value": [f"lid://{CONSUMER}/stats.txt"]}]))
+        graph = ls.extract(self.store, CHAIN)
+        self.assertNotIn("superseded", graph["tasks"][ls.abbreviate(CONSUMER)])
 
     def test_external_input_keeps_checksum(self):
         graph = ls.extract(self.store, CHAIN)

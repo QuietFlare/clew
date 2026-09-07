@@ -19,7 +19,7 @@ from clew.extract import horus as hz
 from clew.extract import latch as lt
 from clew.extract import rocrate as rc
 from clew.extract import snakemake as sm
-from clew.graph.graph import contract_violations
+from clew.graph.graph import STATUSES, contract_violations, task_status
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "clew" / "data"
@@ -90,6 +90,29 @@ class ContractCatchesBreakage(unittest.TestCase):
 
     def test_not_a_graph(self):
         self.assertEqual(len(contract_violations({})), 3)
+
+
+class StatusVocabulary(unittest.TestCase):
+    """
+    Every engine's word lands in one of four states, and a word nobody
+    listed is UNKNOWN rather than FAILED, because FAILED is deletable.
+    """
+
+    def test_engine_words_map_to_core_states(self):
+        for word, status in (("Done", "COMPLETED"), ("SUCCEEDED", "COMPLETED"),
+                             ("completed", "COMPLETED"), ("skipped", "CACHED"),
+                             ("CACHED", "CACHED"), ("Failed", "FAILED"),
+                             ("RetryableFailure", "FAILED"), ("terminated", "FAILED"),
+                             ("RUNNING", "UNKNOWN"), ("waiting_on_input", "UNKNOWN"),
+                             ("", ""), (None, "")):
+            with self.subTest(word=word):
+                self.assertEqual(task_status(word), status)
+
+    def test_every_extractor_emits_the_vocabulary(self):
+        for name, graph in fixture_graphs():
+            with self.subTest(extractor=name):
+                for task in graph["tasks"].values():
+                    self.assertIn(task["status"], STATUSES)
 
 
 class VersionMatchesPackaging(unittest.TestCase):

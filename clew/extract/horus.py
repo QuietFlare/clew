@@ -42,8 +42,9 @@ HONEST LIMITS
 -------------
 Skipped tasks are recorded in full, with digests, so a cached run gives the
 same graph as a fresh one. That is the point of the format, but it means a
-task's `status` is often `skipped` rather than `completed`, and the record
-describes outputs that already existed rather than work just done.
+task's own status is often `skipped` rather than `completed`, kept as
+`engine_status` and mapped to CACHED, and the record describes outputs
+that already existed rather than work just done.
 
 A record whose `incomplete` names `digests_disabled` or `digests_partial`
 has edges this adapter cannot see. Those tasks are still emitted, so they
@@ -54,6 +55,8 @@ being silently dropped.
 import argparse
 import json
 from pathlib import Path
+
+from clew.graph.graph import STATUS_CACHED, task_status
 
 RECORD_FORMAT = "horus-lineage/v1"
 PLAN = "run.json"
@@ -210,7 +213,8 @@ def extract(run_dir):
             "name": task.get("name") or task.get("id"),
             "process": task.get("definition_id") or task.get("id"),
             "container": environment_of(record),
-            "status": (task.get("status") or "").upper(),
+            "status": task_status(task.get("status")),
+            "engine_status": task.get("status") or "",
             "target": (record.get("target") or {}).get("location_id") or "",
             "workdir": record.get("working_dir") or "",
             "script": script_of(record),
@@ -267,7 +271,7 @@ def main(argv=None):
     external = [e for e in graph["edges"] if e["producer"] == "EXTERNAL"]
     dangling = [e for e in graph["edges"]
                 if e["producer"] not in known and e["producer"] != "EXTERNAL"]
-    skipped = [t for t in graph["tasks"].values() if t["status"] == "SKIPPED"]
+    skipped = [t for t in graph["tasks"].values() if t["status"] == STATUS_CACHED]
 
     print(f"tasks in run       : {len(graph['tasks'])}")
     print(f"  skipped (cached) : {len(skipped)}")

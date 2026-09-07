@@ -47,6 +47,15 @@ class TestHorusAdapter(unittest.TestCase):
             sorted(short(n) for n in self.graph["tasks"]),
             ["analyse", "prep", "qc", "report"])
 
+    def test_a_skipped_task_reads_as_cached_not_failed(self):
+        """
+        Every task in this fixture was a cache hit. Reclaim used to read
+        anything but COMPLETED as failed and propose the directory.
+        """
+        for task in self.graph["tasks"].values():
+            self.assertEqual(task["status"], "CACHED")
+            self.assertEqual(task["engine_status"], "skipped")
+
     def test_the_diamond_is_reconstructed_from_digests(self):
         """
         No paths, no work directories: an input joins to the task whose

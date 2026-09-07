@@ -81,7 +81,8 @@ class Scatter(unittest.TestCase):
 
     def test_re_execution_evidence(self):
         task = self.graph["tasks"][REPORT]
-        self.assertEqual(task["status"], "DONE")
+        self.assertEqual(task["status"], "COMPLETED")
+        self.assertEqual(task["engine_status"], "Done")
         self.assertTrue(task["script"].startswith("cat "))
         self.assertTrue(task["workdir"].endswith("/call-report"))
         self.assertEqual(task["name"], "diamond.report")
@@ -139,7 +140,7 @@ class Attempts(unittest.TestCase):
         metadata["calls"]["diamond.prep"][0]["attempt"] = 2
         metadata["calls"]["diamond.prep"].insert(0, first)
         graph = cw.extract(metadata)
-        self.assertEqual(graph["tasks"][PREP]["status"], "DONE")
+        self.assertEqual(graph["tasks"][PREP]["status"], "COMPLETED")
         self.assertEqual(len([t for t in graph["tasks"] if t.startswith(PREP)]), 1)
 
     def test_a_cache_hit_is_marked(self):

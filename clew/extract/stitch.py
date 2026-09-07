@@ -29,6 +29,11 @@ def stitch(labelled_graphs):
     """
     Merge prefixed graphs and rewrite EXTERNAL edges whose digest another
     run produced. Returns (graph, bridges).
+
+    When several tasks in other runs produced the same digest, the edge is
+    bridged to every one of them: the consumer read those bytes, and which
+    task wrote them cannot be told apart by content. Choosing one would
+    drop the others from every blast radius.
     """
     merged = {"tasks": {}, "edges": [], "outputs": {}, "output_details": {}}
     prefixed = {label: prefix_graph(label, g) for label, g in labelled_graphs.items()}
@@ -38,18 +43,36 @@ def stitch(labelled_graphs):
 
     producers = {}
     for digest, produced in output_digests(merged).items():
-        producers[digest] = produced[0][0]
+        producers[digest] = sorted({task for task, _ in produced})
 
     bridges = []
     for label, graph in prefixed.items():
         for edge in graph["edges"]:
-            producer = producers.get(edge.get("digest")) if edge["producer"] == "EXTERNAL" else None
-            if producer and not producer.startswith(f"{label}:"):
-                edge = dict(edge, producer=producer)
+            found = producers.get(edge.get("digest"), []) if edge["producer"] == "EXTERNAL" else []
+            found = [p for p in found if not p.startswith(f"{label}:")]
+            if not found:
+                merged["edges"].append(edge)
+                continue
+            for producer in found:
+                merged["edges"].append(dict(edge, producer=producer))
                 bridges.append({"consumer": edge["consumer"], "producer": producer,
-                                "digest": edge["digest"], "path": edge.get("target", "")})
-            merged["edges"].append(edge)
+                                "digest": edge["digest"], "path": edge.get("target", ""),
+                                "candidates": len(found)})
+    ambiguous = ambiguous_bridges(bridges)
+    if ambiguous:
+        merged["coverage"] = [
+            f"{len(ambiguous)} input digest(s) were produced by more than one task; "
+            "the consumer is bridged to every producer."]
     return merged, bridges
+
+
+def ambiguous_bridges(bridges):
+    """digest -> sorted producers, for every bridge with more than one candidate."""
+    by_digest = {}
+    for bridge in bridges:
+        if bridge.get("candidates", 1) > 1:
+            by_digest.setdefault(bridge["digest"], set()).add(bridge["producer"])
+    return {digest: sorted(found) for digest, found in sorted(by_digest.items())}
 
 
 def digest_coverage(labelled_graphs):
@@ -88,6 +111,12 @@ def main(argv=None):
     for b in bridges:
         print(f"  {b['consumer']}  <-  {b['producer']}")
         print(f"      {b['digest']}")
+    ambiguous = ambiguous_bridges(bridges)
+    if ambiguous:
+        print(f"ambiguous digests   : {len(ambiguous)}, produced by more than one task; "
+              "bridged to every producer")
+        for digest, found in ambiguous.items():
+            print(f"  {digest}  <-  {', '.join(found)}")
     if not bridges:
         print("  (none. A bridge needs an EXTERNAL input in one graph whose "
               "digest equals an output digest in another.)")

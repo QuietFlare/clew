@@ -34,7 +34,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-from clew.graph.graph import EXTERNAL
+from clew.graph.graph import EXTERNAL, task_status
 
 API = "https://api.dnanexus.com"
 
@@ -89,7 +89,8 @@ def extract(records):
             "name": job.get("name") or job.get("executableName") or job_id,
             "process": job.get("executableName") or job.get("name") or job_id,
             "container": executable_of(job),
-            "status": (job.get("state") or "").upper(),
+            "status": task_status(job.get("state")),
+            "engine_status": job.get("state") or "",
             "script": "",
             "workdir": "",
         }
