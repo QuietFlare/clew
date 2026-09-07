@@ -159,6 +159,74 @@ class TestCopyStagedRunsAreRefused(unittest.TestCase):
         self.assertIn("no symlinks", result.stderr)
         self.assertIn("extract-store", result.stderr)
 
+class TestMissingWorkDirectoriesAreRefused(unittest.TestCase):
+    """
+    A task whose directory is gone contributes no edges, so a withdrawal
+    stops short of everything it fed. On the real sarek run against an
+    empty work root this wrote 81 tasks and 0 edges, exit 0, and a
+    withdrawal reported 15 affected instead of 16.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+        self.work.mkdir()
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text("\n".join(json.dumps(
+            {"trace": {"hash": h, "task_id": i, "name": n, "process": n,
+                       "container": "img", "status": "COMPLETED"}})
+            for i, (h, n) in enumerate(
+                [("ab/123456", "ALIGN"), ("cd/abcdef", "STATS")], 1)) + "\n")
+        self.out = root / "graph.json"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_cli(self, *extra):
+        return subprocess.run(
+            [sys.executable, "-m", "clew.extract.nextflow_work",
+             "--jsonl", str(self.jsonl), "--work", str(self.work),
+             "--json-out", str(self.out), *extra],
+            capture_output=True, text=True,
+            cwd=Path(__file__).resolve().parent.parent)
+
+    def test_refused_by_default_naming_the_tasks(self):
+        result = self.run_cli()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("2 of 2 tasks have no work directory", result.stderr)
+        self.assertIn("ab/123456", result.stderr)
+        self.assertIn("--allow-partial", result.stderr)
+        self.assertFalse(self.out.exists())
+
+    def test_allow_partial_records_the_gap_on_the_graph(self):
+        result = self.run_cli("--allow-partial")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ab/123456", result.stdout)
+        graph = json.loads(self.out.read_text())
+        self.assertEqual(len(graph["coverage"]), 1)
+        self.assertIn("2 of the run's tasks have no work directory", graph["coverage"][0])
+        self.assertIn("cd/abcdef", graph["coverage"][0])
+
+
+class TestPrefixCollisionIsRefused(unittest.TestCase):
+    """
+    Two directories sharing the six-character prefix cannot be told apart
+    by the abbreviated hash; every symlink into either would be credited
+    to one task. Refuse rather than merge.
+    """
+
+    def test_two_directories_under_one_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "work"
+            (work / "ab" / "123456aaaa0000").mkdir(parents=True)
+            (work / "ab" / "123456bbbb0000").mkdir(parents=True)
+            with self.assertRaises(SystemExit) as refused:
+                ex.find_workdir(work, "ab/123456")
+            self.assertIn("2 work directories", str(refused.exception))
+            self.assertIn("123456bbbb0000", str(refused.exception))
+
+
 class TestOutputSizesAreRecorded(unittest.TestCase):
     """
     Sizes must be read while the work tree still exists. A published copy

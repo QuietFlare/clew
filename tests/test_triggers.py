@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from clew.graph import triggers
+from clew.graph import graph as core_graph
 
 GRAPH = {
     "tasks": {
@@ -84,6 +85,99 @@ class TestLabelFallthrough(unittest.TestCase):
         """Labels match exactly; only container matching is fuzzy."""
         found = triggers.resolve(GRAPH, "site", "nor")
         self.assertEqual(found, {"site:nor": []})
+
+
+class TestContainerMatching(unittest.TestCase):
+    """
+    A needle and an image are read as (name, version) before they are
+    compared. Substring matching let "samtools:1.21" miss every Wave
+    image, whose tag is a hash, and reported 46 affected tasks instead of
+    72 with no warning.
+    """
+
+    def test_image_forms_parse_to_name_and_version(self):
+        cases = {
+            "quay.io/biocontainers/samtools:1.21--h50ea8bc_0": ("samtools", "1.21--h50ea8bc_0"),
+            "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4":
+                ("bwa_htslib_samtools", None),
+            "quay.io/biocontainers/mulled-v2-093691b47d719890dc19ac0c13c4528e9776897f:"
+            "27211b8c38006480d69eb1be3ef09a7bf0a49d76-0":
+                ("mulled-v2-093691b47d719890dc19ac0c13c4528e9776897f", None),
+            "wf.wgs@sha256:0123abcd": ("wf.wgs", None),
+            "gatk_haplotypecaller@app-gatk": ("gatk_haplotypecaller", None),
+            "conda@1234abcd": ("conda", None),
+            "quay.io-biocontainers-samtools-1.21--h50ea8bc_0.img":
+                ("quay.io-biocontainers-samtools", "1.21--h50ea8bc_0"),
+            "toolkit-2.1": ("toolkit", "2.1"),
+            "ubuntu:latest": ("ubuntu", None),
+            "docker://quay.io/biocontainers/gatk4:4.5.0.0--py36hdfd78af_0@sha256:ff":
+                ("gatk4", "4.5.0.0--py36hdfd78af_0"),
+        }
+        for image, (name, version) in cases.items():
+            with self.subTest(image=image):
+                got_name, _, got_version = core_graph.parse_image(image)
+                self.assertEqual((got_name, got_version), (name, version))
+
+    def test_a_tool_inside_a_wave_image_is_a_component(self):
+        _, components, _ = core_graph.parse_image(
+            "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4")
+        self.assertEqual(components, {"bwa_htslib_samtools", "bwa", "htslib", "samtools"})
+
+    def test_versions_must_agree_when_both_carry_one(self):
+        image = "quay.io/biocontainers/samtools:1.21--h50ea8bc_0"
+        self.assertEqual(core_graph.container_match("samtools:1.21", image), "exact")
+        self.assertEqual(core_graph.container_match("samtools", image), "exact")
+        self.assertIsNone(core_graph.container_match("samtools:1.22", image))
+        # A prefix ending mid-number is not a version match.
+        self.assertIsNone(core_graph.container_match("samtools:1.2", image))
+
+    def test_a_versionless_image_matches_on_name_only(self):
+        image = "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4"
+        self.assertEqual(core_graph.container_match("samtools:1.21", image), "name-only")
+        self.assertEqual(core_graph.container_match("samtools", image), "exact")
+
+    def test_a_different_tool_does_not_match_on_substring(self):
+        self.assertIsNone(core_graph.container_match("gatk", "quay.io/gatk4:4.2.1"))
+        self.assertIsNone(core_graph.container_match("bwa", "quay.io/bwakit:0.7"))
+
+    def test_the_trigger_kind_uses_the_same_rule(self):
+        graph = {"tasks": {
+            "a": {"container": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0"},
+            "b": {"container": "quay.io/biocontainers/samtools:1.16.1--h6899075_1"},
+            "c": {"container": "community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4"},
+        }, "edges": [], "outputs": {}}
+        self.assertEqual(triggers.resolve(graph, "container", "samtools:1.21"),
+                         {"container:samtools:1.21": ["a", "c"]})
+        self.assertEqual(core_graph.container_matches(graph, "samtools:1.21"),
+                         {"a": "exact", "c": "name-only"})
+
+
+class TestInputCompanions(unittest.TestCase):
+    """
+    An index or dictionary is regenerated with the file it belongs to, so
+    "genome.fasta" reaches a task that consumed only "genome.fasta.fai".
+    """
+
+    GRAPH = {"tasks": {"a": {}, "b": {}, "c": {}, "d": {}}, "edges": [
+        {"consumer": "a", "producer": "EXTERNAL", "filename": "genome.fasta"},
+        {"consumer": "b", "producer": "EXTERNAL", "filename": "3/genome.fasta.fai"},
+        {"consumer": "c", "producer": "EXTERNAL", "filename": "genome.dict"},
+        {"consumer": "d", "producer": "EXTERNAL", "filename": "bwa"},
+    ], "outputs": {}}
+
+    def test_exact_and_dotted_companions_are_entry_nodes(self):
+        self.assertEqual(core_graph.external_input_entry_nodes(self.GRAPH, "genome.fasta"),
+                         {"input:genome.fasta": ["a", "b"]})
+        self.assertEqual(triggers.resolve(self.GRAPH, "input", "genome.fasta"),
+                         {"input:genome.fasta": ["a", "b"]})
+
+    def test_the_extra_files_are_named(self):
+        self.assertEqual(core_graph.external_input_matches(self.GRAPH, "genome.fasta"),
+                         {"genome.fasta": ["a"], "genome.fasta.fai": ["b"]})
+
+    def test_a_directory_input_matches_by_its_own_name(self):
+        self.assertEqual(core_graph.external_input_entry_nodes(self.GRAPH, "bwa"),
+                         {"input:bwa": ["d"]})
 
 
 class TestParsing(unittest.TestCase):

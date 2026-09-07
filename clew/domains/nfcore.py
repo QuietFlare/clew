@@ -57,6 +57,23 @@ def load_subjects(samplesheet_path, subject_column, member_column=None):
                 member = (row.get(member_column) or "").strip()
                 if member and member not in subjects[subject]:
                     subjects[subject].append(member)
+    # One id, one owner. The pipeline accepts the same member id under two
+    # subjects; attribution cannot, because whichever subject was read last
+    # would silently take the other's tasks.
+    owners = {}
+    shared = {}
+    for subject, members in subjects.items():
+        for label in [subject] + members:
+            if label in owners and owners[label] != subject:
+                shared.setdefault(label, {owners[label]}).add(subject)
+            owners.setdefault(label, subject)
+    if shared:
+        listing = "; ".join(f"{label!r} under {', '.join(sorted(owners))}"
+                            for label, owners in sorted(shared.items()))
+        raise SystemExit(
+            f"samplesheet {samplesheet_path}: the same id appears under "
+            f"more than one subject, so tasks tagged with it cannot be "
+            f"attributed: {listing}")
     return subjects
 
 
@@ -72,14 +89,15 @@ def owner_of(tag, label_to_subject):
 
     Exact matching is not enough: per-lane steps append the lane
     ("donor_003-L1", "ERR10000000_T1"). Prefixes are only accepted at a
-    separator boundary, so "donor_1" does not swallow "donor_10".
+    separator boundary, so "donor_1" does not swallow "donor_10". Longest
+    label first, so "KO" does not claim "KO_2_T1" when "KO_2" is a label.
     """
     if tag in label_to_subject:
         return label_to_subject[tag]
-    for label, subject in label_to_subject.items():
+    for label in sorted(label_to_subject, key=len, reverse=True):
         for separator in ("-", "_", "."):
             if tag.startswith(label + separator):
-                return subject
+                return label_to_subject[label]
     return None
 
 

@@ -98,6 +98,16 @@ class Drift(unittest.TestCase):
         v = verdicts(run("b", SAME), run("a", SAME, extra_task=True))
         self.assertEqual(v["QC (s1)"]["verdict"], drift.ADDED)
 
+    def test_an_unverified_upstream_gives_unsettled_not_downstream(self):
+        # A root can hide behind a missing digest. DOWNSTREAM said the
+        # cause was known; it was not.
+        after = run("a", ["sha256:bam", "sha256:stats", "sha256:report2"])
+        after["output_details"]["a2"][0].pop("digest")
+        v = verdicts(run("b", SAME), after)
+        self.assertEqual(v["STATS (s1)"]["verdict"], drift.UNVERIFIED)
+        self.assertEqual(v["REPORT (s1)"]["verdict"], drift.UNSETTLED)
+        self.assertIn("upstream a2 not verified", v["REPORT (s1)"]["reason"])
+
     def test_the_page_leads_with_roots(self):
         from clew.views import drift_report
         after = run("a", ["sha256:bam2", "sha256:stats2", "sha256:report2"], ref="sha256:ref2")
@@ -106,6 +116,96 @@ class Drift(unittest.TestCase):
         self.assertIn("Where the runs part ways", page)
         self.assertIn("input changed: ref.fa", page)
         self.assertEqual(page, drift_report.render(built))
+
+
+def shards(prefix, digests, inputs=("sha256:in1", "sha256:in2"), superseded=None):
+    """Two same-named ALIGN shards, each on its own external input."""
+    tasks, edges, outputs, details = {}, [], {}, {}
+    for i, (digest, ref) in enumerate(zip(digests, inputs), 1):
+        h = f"{prefix}{i}"
+        tasks[h] = {"hash": h, "name": "ALIGN (s1)", "process": "ALIGN",
+                    "container": "img:1", "script": "align"}
+        if superseded == i:
+            tasks[h]["superseded"] = True
+        edges.append({"consumer": h, "producer": "EXTERNAL", "filename": f"in{i}.fq",
+                      "target": "", "digest": ref})
+        outputs[h] = ["s.bam"]
+        details[h] = [{"file": "s.bam", "digest": digest}]
+    return {"tasks": tasks, "edges": edges, "outputs": outputs, "output_details": details}
+
+
+class Pairing(unittest.TestCase):
+    """
+    Same-named tasks were paired by sorted hash, so two shards paired
+    crosswise and both read DRIFTED. They pair on input digests now.
+    """
+
+    def test_shards_pair_on_their_inputs_not_their_hash_order(self):
+        # After-run hashes sort the other way round from the before run.
+        before = shards("b", ["sha256:x", "sha256:y"])
+        after = shards("a", ["sha256:y", "sha256:x"], inputs=("sha256:in2", "sha256:in1"))
+        pairs = drift.pair_tasks(before, after)
+        self.assertEqual(pairs, [("b1", "a2", None), ("b2", "a1", None)])
+        self.assertEqual({i["verdict"] for i in drift.drift(before, after)}, {drift.REPRODUCED})
+
+    def test_a_superseded_version_is_left_out(self):
+        before = shards("b", ["sha256:x", "sha256:old"], inputs=("sha256:in1", "sha256:in1"),
+                        superseded=2)
+        after = shards("a", ["sha256:x"], inputs=("sha256:in1",))
+        self.assertEqual(drift.pair_tasks(before, after), [("b1", "a1", None)])
+
+    def test_what_the_inputs_cannot_tell_apart_is_unverified(self):
+        before = shards("b", ["sha256:x", "sha256:y"], inputs=("sha256:same", "sha256:same"))
+        after = shards("a", ["sha256:x", "sha256:y"], inputs=("sha256:same", "sha256:same"))
+        items = {i["task"]: i for i in drift.drift(before, after)}
+        self.assertEqual({i["verdict"] for i in items.values()}, {drift.UNVERIFIED})
+        self.assertIn("share this name", items["a1"]["reason"])
+        self.assertEqual(len(items), 4)
+
+    def test_one_leftover_on_each_side_pairs_by_elimination(self):
+        # Shard 2's input changed. Its partner is the only unclaimed task,
+        # so the changed input is found rather than hidden as unverified.
+        before = shards("b", ["sha256:x", "sha256:y"])
+        after = shards("a", ["sha256:x", "sha256:y2"], inputs=("sha256:in1", "sha256:in2b"))
+        v = {i["task"]: i for i in drift.drift(before, after)}
+        self.assertEqual(v["a1"]["verdict"], drift.REPRODUCED)
+        self.assertEqual(v["a2"]["verdict"], drift.DRIFTED)
+        self.assertIn("input changed: in2.fq", v["a2"]["reason"])
+
+    def test_an_input_without_a_digest_cannot_key_a_pair(self):
+        before = shards("b", ["sha256:x", "sha256:y"])
+        after = shards("a", ["sha256:x", "sha256:y"])
+        for e in after["edges"]:
+            e.pop("digest")
+        self.assertIsNone(drift.input_digests(after, "a1"))
+        verdict = {i["task"]: i["verdict"] for i in drift.drift(before, after)}
+        self.assertEqual(verdict["a1"], drift.UNVERIFIED)
+
+
+class SameChain(unittest.TestCase):
+    """
+    The store holds one graph per resume chain. Two runs of one chain
+    load the same graph, and drift compared it with itself.
+    """
+
+    def test_two_runs_of_one_session_are_refused(self):
+        import contextlib
+        import io
+        import tempfile
+        from tests.test_lineage_store import RUN_A, RUN_B, CHAIN, PRODUCER, task_run, write_record
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Path(tmp)
+            (store / ".history").mkdir()
+            (store / ".history" / RUN_A).write_text(
+                f"2026-08-01 10:00:00 CEST\tfirst_run\t{CHAIN}\tlid://{RUN_A}\n")
+            (store / ".history" / RUN_B).write_text(
+                f"2026-08-02 10:00:00 CEST\tsecond_run\t{CHAIN}\tlid://{RUN_B}\n")
+            write_record(store / PRODUCER, task_run(CHAIN, RUN_A, "PIPE:ALIGN"))
+            with self.assertRaises(SystemExit) as refused, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                drift.main(["--runs", tmp, "--before", "first_run", "--after", "second_run"])
+        self.assertIn("same graph", str(refused.exception))
+        self.assertIn("resume chain", str(refused.exception))
 
 
 if __name__ == "__main__":

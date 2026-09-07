@@ -11,33 +11,129 @@ is; that is the whole of its job.
 """
 
 import json
+import re
 from pathlib import Path
+
+# A tag that is a content hash rather than a version: Wave multi-tool
+# images and mulled containers tag with hex. Read before any `-` build
+# suffix, so "27211b8c...-0" is a hash and "1.21--h50ea8bc_0" a version.
+HEX_TAG = re.compile(r"^[0-9a-f]{12,}$")
+# Where a name-version string splits: the first `-` followed by a digit.
+# Singularity cache names and bare "toolkit-2.1" strings take this shape.
+NAME_DASH_VERSION = re.compile(r"^(.*?)-(\d.*)$")
+MATCH_EXACT = "exact"
+MATCH_NAME_ONLY = "name-only"
+
+
+def parse_image(image):
+    """
+    (name, components, version) of a container reference, version None
+    when the reference carries none.
+
+    Forms read: registry/path/name:tag, name@sha256:..., Wave images
+    (tools joined by `_`, hash tag), Singularity cache names (`:` and `/`
+    turned to `-`, `.img` or `.sif`), conda@hash, and a bare name-version.
+    Components are the pieces a needle can name: the whole name plus its
+    `_` and `-` parts, so "samtools" finds "bwa_htslib_samtools".
+    """
+    text = (image or "").strip()
+    for scheme in ("docker://", "oras://", "library://", "shub://"):
+        text = text.removeprefix(scheme)
+    # A digest pins content, it names no version: drop it and read the rest.
+    text = text.partition("@")[0]
+    if text.endswith((".img", ".sif")):
+        text = Path(text).name.rsplit(".", 1)[0]
+    name = text.rsplit("/", 1)[-1]
+    version = None
+    if ":" in name:
+        name, _, tag = name.rpartition(":")
+        version = tag
+    else:
+        split = NAME_DASH_VERSION.match(name)
+        if split:
+            name, version = split.group(1), split.group(2)
+    if version is not None:
+        first = re.split(r"-+", version, maxsplit=1)[0]
+        if version == "latest" or HEX_TAG.match(first):
+            version = None
+    components = {name} | set(re.split(r"[_-]+", name)) - {""}
+    return name, components, version
+
+
+def version_agrees(wanted, have):
+    """
+    "1.21" agrees with "1.21" and "1.21--build_0" but not with "1.2".
+    A build suffix is not a version, so a prefix ending at a separator
+    is enough.
+    """
+    if have == wanted:
+        return True
+    return have.startswith(wanted) and not have[len(wanted)].isdigit()
+
+
+def container_match(needle, image):
+    """
+    How the needle matches the image: MATCH_EXACT, MATCH_NAME_ONLY when the
+    needle carries a version the image cannot confirm, None otherwise.
+    """
+    want, _, want_version = parse_image(needle)
+    if not want:
+        return None
+    _, components, have_version = parse_image(image)
+    if want not in components:
+        return None
+    if not want_version:
+        return MATCH_EXACT
+    if have_version is None:
+        return MATCH_NAME_ONLY
+    return MATCH_EXACT if version_agrees(want_version, have_version) else None
+
+
+def container_matches(graph, needle):
+    """{task hash: how it matched} for every task whose container matches."""
+    found = {}
+    for task_hash, task in graph["tasks"].items():
+        how = container_match(needle, task.get("container") or "")
+        if how:
+            found[task_hash] = how
+    return found
 
 
 def container_entry_nodes(graph, needle):
-    """Entry nodes for a tool-defect trigger: tasks whose container matches."""
-    subject = f"container:{needle}"
-    nodes = sorted(
-        h for h, t in graph["tasks"].items()
-        if needle in (t.get("container") or "")
-    )
-    return {subject: nodes}
+    """
+    Entry nodes for a tool-defect trigger: tasks whose container matches.
+    Name-only matches are included; container_matches says which.
+    """
+    return {f"container:{needle}": sorted(container_matches(graph, needle))}
+
+
+def external_input_matches(graph, filename):
+    """
+    {basename: [consumer]} over EXTERNAL inputs the name reaches: the exact
+    basename, and companions named `<filename>.<ext>`, since an index or
+    dictionary is regenerated with the file it indexes. A directory input
+    matches by its own basename.
+    """
+    found = {}
+    for edge in graph["edges"]:
+        if edge["producer"] != "EXTERNAL":
+            continue
+        name = Path(edge["filename"]).name
+        if name == filename or name.startswith(filename + "."):
+            found.setdefault(name, set()).add(edge["consumer"])
+    return {name: sorted(nodes) for name, nodes in sorted(found.items())}
 
 
 def external_input_entry_nodes(graph, filename):
     """
     Entry nodes for an upstream-input trigger: tasks that consumed an
-    EXTERNAL file with this basename. This is the reference-update /
-    load-bearing-input case.
+    EXTERNAL file with this basename or a companion of it. This is the
+    reference-update / load-bearing-input case.
     """
-    subject = f"input:{filename}"
     nodes = set()
-    for edge in graph["edges"]:
-        if edge["producer"] != "EXTERNAL":
-            continue
-        if Path(edge["filename"]).name == filename:
-            nodes.add(edge["consumer"])
-    return {subject: sorted(nodes)}
+    for consumers in external_input_matches(graph, filename).values():
+        nodes.update(consumers)
+    return {f"input:{filename}": sorted(nodes)}
 
 
 def load_assertions(path):

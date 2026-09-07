@@ -34,6 +34,8 @@ clew digest --graph graph.json --work-root work/ --results results/
 
 Outputs under the work root fill their `digest`, and files under the
 published tree land in a `published` map the graph carries from then on.
+A digest the engine already recorded is kept whatever its algorithm, since
+a deep-mode hash is what joins the run to another holding the same hash.
 
 The engine's record is the record. Every question also takes `--runs`,
 pointing at a `.lineage` store, a horus-lineage root, or a directory of
@@ -50,6 +52,13 @@ With `--runs`, `clew digest` writes what it computed to a sidecar under
 `<runs>/.clew/`, one small file per run holding only the digests the
 engine could not, and every later load merges it back. Nothing the engine
 already says is copied.
+
+`--run` takes a run name, a run-id prefix, or a session-id prefix, as
+`extract-store --run` does; a session prefix names a resume chain and its
+newest run stands for it. Without `--run` the latest run is read, ordered
+by the timestamp in the engine's record. A graph directory whose files
+carry no timestamp is ordered by file modification time, and the command
+says so, since a copy or a touch reorders those.
 DNAnexus exposes a file MD5 through its API that the extractor does not
 read yet. Latch is unconfirmed. None of this replaces the engine hashing
 at write time, which is the only cheap moment to do it.
@@ -128,6 +137,13 @@ describe output works too, with `--records DIR` pointing at `jobs.json` and
 Two optional task fields carry what DNAnexus knows and Nextflow does not:
 `price`, when the caller has billing access, and `duration_s`.
 
+An input given as another job's output field, or as an analysis stage,
+is an edge to that job when the job belongs to the analysis. One that
+names no job here is counted in the graph's `coverage` note rather than
+dropped, so a consumer is never reported as externally fed by silence.
+`runInput` and `originalInput` are read alongside `input`, and the view
+that resolves the most references to files is the one that counts.
+
 Not yet verified against a live analysis. The record shapes come from the
 DNAnexus API documentation. Nextflow pipelines on DNAnexus run as a head
 job plus one subjob per process, and whether those subjobs expose their
@@ -151,7 +167,9 @@ It never launches or writes. Saved records work too, with `--records DIR`
 holding `execution.json` and one literals file per node, which is how the
 tests run.
 
-Optional task fields: `price` and `duration_s`.
+Optional task fields: `price` and `duration_s`. A file read out of
+another task's directory output joins to the task that produced the
+longest directory above it.
 
 Not yet verified against a live execution. The schema comes from
 introspecting the API the Latch SDK uses, which is not a published
@@ -178,7 +196,8 @@ clew extract-cromwell --server http://localhost:8000 --workflow <id> --json-out 
 
 `--token` sends a bearer token for a server behind auth. The extractor
 only reads. A scattered call becomes one node per shard, named
-`workflow.task/shard-N`. A subworkflow call is a wrapper that runs
+`workflow.task/shard-N`. A file read out of another call's `Directory`
+output joins to the call that produced the longest directory above it. A subworkflow call is a wrapper that runs
 nothing, so its children become the nodes and the wrapper disappears. If
 the metadata came without `expandSubWorkflows=true` the wrapper is kept as
 a node and marked, so the summary can say how much of the run is hidden.
@@ -282,6 +301,11 @@ clew extract-work --jsonl /path/to/weblog/<run-id>.jsonl --work /path/to/work --
 
 Do this during or right after the run. `nextflow clean` removes the
 symlinks, and lineage that was never captured cannot be reconstructed.
+A task whose directory is already gone contributes no edges, so anything
+it fed reads as externally fed and a withdrawal stops short of it. The
+extractor refuses when any task's directory is missing and names them;
+`--allow-partial` writes the graph anyway, with the missing tasks recorded
+as a `coverage` note that travels into every plan and bundle.
 
 Two limits. The trail only exists where inputs really are staged as
 symlinks, which is `stageInMode 'symlink'` or `'rellink'`. Runs staged by

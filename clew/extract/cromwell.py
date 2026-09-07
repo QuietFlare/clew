@@ -38,6 +38,18 @@ def looks_like_file(text):
     return text.startswith("/") or text.startswith(SCHEMES) or "/" in text
 
 
+def producer_of(path, producers):
+    """
+    The call that produced this path, or the one that produced the longest
+    directory above it. A file read out of another call's Directory output
+    has no exact match, and without this it would read as external.
+    """
+    if path in producers:
+        return producers[path]
+    parents = [p for p in producers if path.startswith(p.rstrip("/") + "/")]
+    return producers[max(parents, key=len)] if parents else None
+
+
 def last_attempts(attempts):
     """The final attempt of each shard, in shard order."""
     latest = {}
@@ -124,7 +136,7 @@ def extract(metadata):
         for path in strings_in(attempt.get("inputs")):
             if path in seen:
                 continue
-            producer = producers.get(path)
+            producer = producer_of(path, producers)
             if producer is None and not looks_like_file(path):
                 continue
             seen.add(path)

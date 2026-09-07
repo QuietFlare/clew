@@ -147,6 +147,29 @@ class Subworkflow(unittest.TestCase):
                          {"sub.analysis.txt": "outer.inner"})
 
 
+class DirectoryOutputs(unittest.TestCase):
+    """
+    A call that reads a file out of another call's Directory output has
+    no exact path match. It used to read as externally fed.
+    """
+
+    def test_a_file_inside_a_produced_directory_joins_to_its_producer(self):
+        metadata = cw.load_metadata(FIXTURES / "diamond.json")
+        prep = metadata["calls"]["diamond.prep"][0]
+        out_dir = prep["outputs"]["prepped"].rsplit("/", 1)[0] + "/outdir"
+        prep["outputs"] = {"outdir": out_dir}
+        qc = metadata["calls"]["diamond.qc"][0]
+        qc["inputs"] = {"prepped": out_dir + "/prepped.csv"}
+        graph = cw.extract(metadata)
+        self.assertEqual(edges_into(graph, QC), {"prepped.csv": PREP})
+        self.assertEqual(contract_violations(graph), [])
+
+    def test_a_sibling_path_is_not_a_child(self):
+        producers = {"/x/call-prep/execution/out": "p"}
+        self.assertIsNone(cw.producer_of("/x/call-prep/execution/outfile", producers))
+        self.assertEqual(cw.producer_of("/x/call-prep/execution/out/a", producers), "p")
+
+
 class Attempts(unittest.TestCase):
 
     def test_only_the_last_attempt_of_a_shard_counts(self):

@@ -17,7 +17,7 @@ being added here. That is the point: a vocabulary travels inside the
 graph rather than being compiled into the tool.
 """
 
-from pathlib import Path
+from clew.graph.graph import container_matches, external_input_entry_nodes
 
 
 def node_field(field):
@@ -32,13 +32,14 @@ def node_field(field):
     return resolve
 
 
+def container(graph, value):
+    """Nodes whose image names the tool, at that version when both say one."""
+    return sorted(container_matches(graph, value))
+
+
 def external_filename(graph, value):
-    """Nodes that consumed an EXTERNAL file with this basename."""
-    return sorted({
-        edge["consumer"] for edge in graph["edges"]
-        if edge["producer"] == "EXTERNAL"
-        and Path(edge["filename"]).name == value
-    })
+    """Nodes that consumed an EXTERNAL file with this basename or a companion."""
+    return external_input_entry_nodes(graph, value)[f"input:{value}"]
 
 
 def label(key):
@@ -66,7 +67,7 @@ def label(key):
 
 
 KINDS = {
-    "container": node_field("container"),
+    "container": container,
     "script": node_field("script"),
     "process": node_field("process"),
     "input": external_filename,

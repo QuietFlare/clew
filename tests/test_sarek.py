@@ -44,6 +44,51 @@ class TestOwnerResolution(unittest.TestCase):
         self.assertIsNone(sarek._owner_of("genome", self.labels))
         self.assertIsNone(sarek._owner_of("genome.interval_list", self.labels))
 
+    def test_the_longest_label_wins_whatever_the_sheet_order(self):
+        # "KO" listed before "KO_2" used to claim "KO_2_T1". On the real
+        # sarek run a sheet with "donor" above "donor_003" moved one FASTQC
+        # task to the wrong donor.
+        labels = {"KO": "KO", "KO_2": "KO_2"}
+        self.assertEqual(sarek._owner_of("KO_2_T1", labels), "KO_2")
+        self.assertEqual(sarek._owner_of("KO_T1", labels), "KO")
+        labels = {"donor": "donor", "donor_003": "donor_003"}
+        self.assertEqual(sarek._owner_of("donor_003-L1", labels), "donor_003")
+
+
+class TestSamplesheetIntegrity(unittest.TestCase):
+    """
+    sarek accepts one sample id under two patients. Attribution cannot:
+    the member map was last-writer-wins, so one patient silently took the
+    other's tasks.
+    """
+
+    def write(self, rows):
+        path = Path(self.tmp.name) / "sheet.csv"
+        path.write_text("patient,sample\n" + "".join(f"{p},{s}\n" for p, s in rows))
+        return path
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_a_member_under_two_subjects_is_refused_by_name(self):
+        path = self.write([("P1", "S1"), ("P2", "S1"), ("P2", "S2")])
+        with self.assertRaises(SystemExit) as refused:
+            sarek.load_subjects(path)
+        self.assertIn("'S1' under P1, P2", str(refused.exception))
+
+    def test_a_member_that_is_another_subject_is_refused(self):
+        path = self.write([("P1", "P2"), ("P2", "S2")])
+        with self.assertRaises(SystemExit):
+            sarek.load_subjects(path)
+
+    def test_a_subject_named_after_its_own_member_is_fine(self):
+        path = self.write([("donor_001", "donor_001"), ("donor_002", "donor_002")])
+        self.assertEqual(sarek.load_subjects(path),
+                         {"donor_001": ["donor_001"], "donor_002": ["donor_002"]})
+
 
 class TestTriggerSelectors(unittest.TestCase):
     def setUp(self):

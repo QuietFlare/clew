@@ -105,6 +105,55 @@ class Triggers(unittest.TestCase):
         self.assertNotIn(FASTQC, self.affected_by("genome.fa"))
 
 
+class JobReferences(unittest.TestCase):
+    """
+    An input given as another job's output field, or as an analysis
+    stage, is not a file link. These used to yield no edge and no notice.
+    """
+
+    def records_with(self, job_input, **job_fields):
+        records = dx.load_records(FIXTURES)
+        job = {"id": "job-EXTRA00000000000000001", "class": "job", "name": "extra",
+               "executableName": "extra", "applet": "applet-extra", "state": "done",
+               "input": job_input}
+        job.update(job_fields)
+        records["jobs"].append(job)
+        return records
+
+    def test_a_job_based_reference_is_an_edge_to_that_job(self):
+        records = self.records_with(
+            {"bam": {"$dnanexus_link": {"job": ALIGN, "field": "bam"}}})
+        graph = dx.extract(records)
+        self.assertEqual(edges_into(graph, "job-EXTRA00000000000000001"), {"bam": ALIGN})
+        self.assertNotIn("coverage", graph)
+        self.assertEqual(contract_violations(graph), [])
+
+    def test_a_stage_reference_resolves_through_the_job_that_ran_the_stage(self):
+        records = self.records_with(
+            {"vcf": {"$dnanexus_link": {"stage": "stage-CALL", "outputField": "vcf"}}})
+        next(j for j in records["jobs"] if j["id"] == CALL)["stage"] = "stage-CALL"
+        graph = dx.extract(records)
+        self.assertEqual(edges_into(graph, "job-EXTRA00000000000000001"), {"vcf": CALL})
+
+    def test_a_reference_to_nothing_here_is_a_coverage_note_not_silence(self):
+        records = self.records_with(
+            {"bam": {"$dnanexus_link": {"job": "job-ELSEWHERE0000000000001", "field": "bam"}},
+             "x": {"$dnanexus_link": {"stage": "stage-NONE", "outputField": "y"}}})
+        graph = dx.extract(records)
+        self.assertEqual(edges_into(graph, "job-EXTRA00000000000000001"), {})
+        (note,) = graph["coverage"]
+        self.assertIn("2 job or stage references", note)
+        self.assertIn("job-EXTRA00000000000000001 (2)", note)
+
+    def test_run_input_is_read_when_it_resolves_more(self):
+        records = self.records_with(
+            {"bam": {"$dnanexus_link": {"job": "job-ELSEWHERE0000000000001", "field": "bam"}}},
+            runInput={"bam": {"$dnanexus_link": "file-BAM0000000000000000001"}})
+        graph = dx.extract(records)
+        self.assertEqual(edges_into(graph, "job-EXTRA00000000000000001"), {"sample_1.bam": ALIGN})
+        self.assertNotIn("coverage", graph)
+
+
 class LinkWalking(unittest.TestCase):
 
     def test_scalars_and_non_file_links_are_ignored(self):

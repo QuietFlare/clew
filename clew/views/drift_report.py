@@ -9,14 +9,15 @@ from clew.views.dashboard import esc, tag
 from clew.views.report import counts
 from clew.views.style import STYLE, masthead
 
-KIND = {"DRIFTED": "bad", "DOWNSTREAM": "unknown", "UNVERIFIED": "unknown",
-        "REPRODUCED": "ok", "ADDED": "", "REMOVED": ""}
+KIND = {"DRIFTED": "bad", "UNSETTLED": "bad", "DOWNSTREAM": "unknown",
+        "UNVERIFIED": "unknown", "REPRODUCED": "ok", "ADDED": "", "REMOVED": ""}
 
 
 def headline(plan):
     v = plan.get("verdicts", {})
     tiles = counts([
         ("drift roots", v.get("DRIFTED", 0), "bad" if v.get("DRIFTED") else ""),
+        ("unsettled", v.get("UNSETTLED", 0), "bad" if v.get("UNSETTLED") else ""),
         ("downstream", v.get("DOWNSTREAM", 0), ""),
         ("reproduced", v.get("REPRODUCED", 0), ""),
         ("unverified", v.get("UNVERIFIED", 0), "unknown" if v.get("UNVERIFIED") else ""),
@@ -45,7 +46,7 @@ def by_verdict(plan):
     for i in plan["plan"]:
         groups[i["verdict"]][i["process"].split(":")[-1]] += 1
     out = ""
-    for verdict in ("DOWNSTREAM", "UNVERIFIED", "ADDED", "REMOVED", "REPRODUCED"):
+    for verdict in ("UNSETTLED", "DOWNSTREAM", "UNVERIFIED", "ADDED", "REMOVED", "REPRODUCED"):
         if verdict not in groups:
             continue
         rows = "".join(

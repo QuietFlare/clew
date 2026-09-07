@@ -51,10 +51,13 @@ class Digest(unittest.TestCase):
         self.assertNotIn("digest", details["gone.txt"])
         self.assertEqual(counts, {"hashed": 1, "kept": 1, "missing": 1, "bytes": 4})
 
-    def test_an_engine_digest_of_another_algorithm_is_replaced(self):
+    def test_an_engine_digest_of_another_algorithm_is_kept(self):
+        # A deep-mode hash is what joins this run to another holding the
+        # same hash. Replacing it with a sha256 would break that join.
         self.graph["output_details"]["aa/000001"][0]["digest"] = "nextflow-deep:abc"
-        digest.digest_outputs(self.graph, self.root / "work")
-        self.assertEqual(self.graph["output_details"]["aa/000001"][0]["digest"], sha(b"alpha"))
+        counts = digest.digest_outputs(self.graph, self.root / "work")
+        self.assertEqual(self.graph["output_details"]["aa/000001"][0]["digest"], "nextflow-deep:abc")
+        self.assertEqual(counts["kept"], 1)
 
     def test_results_are_hashed_and_symlinks_skipped(self):
         counts = digest.digest_results(self.graph, self.results)

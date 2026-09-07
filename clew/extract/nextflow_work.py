@@ -122,15 +122,25 @@ def find_workdir(work_root, task_hash):
     The hash is abbreviated: two-character directory, then the first six
     characters of a much longer directory name. So we list the parent and
     match by prefix.
+
+    Two directories sharing the prefix cannot be told apart by the hash,
+    and every symlink into either would be credited to one task. That is
+    refused rather than guessed; it takes on the order of a million task
+    directories to happen, so the refusal costs nothing until it matters.
     """
     prefix_dir, name_prefix = task_hash.split("/", 1)
     parent = Path(work_root) / prefix_dir
     if not parent.is_dir():
         return None
-    for child in parent.iterdir():
-        if child.is_dir() and child.name.startswith(name_prefix):
-            return child
-    return None
+    found = sorted(child for child in parent.iterdir()
+                   if child.is_dir() and child.name.startswith(name_prefix))
+    if len(found) > 1:
+        raise SystemExit(
+            f"clew extract-work: task hash {task_hash} matches "
+            f"{len(found)} work directories, so their inputs cannot be told "
+            f"apart: {', '.join(c.name for c in found)}. Use the lineage "
+            "store for this run, which keys tasks on the full hash.")
+    return found[0] if found else None
 
 
 def target_to_hash(target, work_root):
@@ -278,15 +288,50 @@ def extract(jsonl_path, work_root):
     return tasks, edges, outputs, output_details, missing_dirs
 
 
+def coverage_notes(missing):
+    """
+    What this graph could not see, carried on the graph like the store
+    extractor does, so it reaches evidence bundles and the dashboard.
+    """
+    notes = []
+    if missing:
+        notes.append(
+            f"{len(missing)} of the run's tasks have no work directory, so "
+            "their inputs and outputs are absent from this graph and "
+            "anything downstream of them cannot be reached: "
+            + ", ".join(missing) + ".")
+    return notes
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Rebuild Nextflow lineage from work/ symlinks.")
     parser.add_argument("--jsonl", required=True, help="Petri weblog JSONL for one run")
     parser.add_argument("--work", required=True, help="Nextflow work/ directory")
     parser.add_argument("--json-out", help="Optional path to write the graph as JSON")
+    parser.add_argument("--allow-partial", action="store_true",
+                        help="write the graph even when some tasks' work "
+                             "directories are gone; the missing tasks are "
+                             "recorded as a coverage note on the graph")
     args = parser.parse_args(argv)
 
     tasks, edges, outputs, output_details, missing = extract(
         args.jsonl, args.work)
+
+    # A task whose directory is gone contributes no edges, so everything
+    # it fed looks externally fed and a withdrawal stops short of it. That
+    # is a false negative, and the default is to refuse rather than write
+    # a graph that under-reports. --allow-partial writes it, with the gap
+    # recorded on the graph itself.
+    if missing and not args.allow_partial:
+        sys.exit(
+            f"clew extract-work: {len(missing)} of {len(tasks)} tasks have "
+            f"no work directory under {args.work}:\n  "
+            + "\n  ".join(missing)
+            + "\nEither the work tree was cleaned, or --work names another "
+            "run's tree. A graph missing these tasks would under-report; "
+            "pass --allow-partial to write it anyway with the gap recorded "
+            "as a coverage note, or use the lineage store if the run "
+            "recorded one.")
 
     # A work tree with tasks but no symlinks at all means the inputs were
     # staged by copy or hard link (stageInMode 'copy'/'link', or a cloud
@@ -310,6 +355,8 @@ def main(argv=None):
 
     print(f"tasks in run       : {len(tasks)}")
     print(f"work dirs missing  : {len(missing)}")
+    for task_hash in missing:
+        print(f"    {task_hash}  {tasks[task_hash].get('name', '')}")
     print(f"input files (edges): {len(edges)}")
     print(f"  resolved to task : {len(resolved)}")
     print(f"  external inputs  : {len(external)}")
@@ -330,11 +377,18 @@ def main(argv=None):
             print(f"{e['consumer']}  <-  {e['producer']}  ({e['filename']})")
             print(f"    target: {e['target']}")
 
+    coverage = coverage_notes(missing)
+    if coverage:
+        print("\n=== what this graph does not cover ===")
+        for note in coverage:
+            print(f"  - {note}")
+
     if args.json_out:
-        Path(args.json_out).write_text(
-            json.dumps({"tasks": tasks, "edges": edges, "outputs": outputs,
-                        "output_details": output_details}, indent=2)
-        )
+        graph = {"tasks": tasks, "edges": edges, "outputs": outputs,
+                 "output_details": output_details}
+        if coverage:
+            graph["coverage"] = coverage
+        Path(args.json_out).write_text(json.dumps(graph, indent=2))
         print(f"\nwrote {args.json_out}")
 
 

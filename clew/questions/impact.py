@@ -56,9 +56,12 @@ from clew.views import report
 from clew.graph import triggers
 from clew.graph.contribution import classify
 from clew.graph.graph import (
+    MATCH_NAME_ONLY,
     container_entry_nodes,
+    container_matches,
     describe,
     external_input_entry_nodes,
+    external_input_matches,
     load_assertions,
     outputs_for,
     resolve_workdirs,
@@ -70,6 +73,66 @@ from clew.domains.nfcore import index_results, published_copies
 # Adding a pipeline = adding a module in domains/ and one entry here.
 DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq,
            "snakemake": snakemake_domain}
+
+
+def graph_notes(graph):
+    """
+    What the graph itself says it does not cover: the extractor's coverage
+    notes, and subworkflow calls Cromwell left unexpanded. Printed and
+    carried into the plan, so a verdict is read next to its limits.
+    """
+    notes = list(graph.get("coverage") or [])
+    hidden = sorted(h for h, t in graph["tasks"].items()
+                    if t.get("unexpanded_subworkflow"))
+    if hidden:
+        notes.append(
+            f"{len(hidden)} subworkflow call(s) were not expanded, so the "
+            f"tasks inside them are absent and anything they fed cannot be "
+            f"reached: {', '.join(hidden)}. Fetch the metadata with "
+            "expandSubWorkflows=true.")
+    return notes
+
+
+def container_notes(graph, needle):
+    """Entry tasks matched on name alone, because their image names no version."""
+    name_only = sorted(h for h, how in container_matches(graph, needle).items()
+                       if how == MATCH_NAME_ONLY)
+    if not name_only:
+        return []
+    return [f"{len(name_only)} entry task(s) matched {needle!r} on name only: "
+            "their image carries a content hash rather than a version, so "
+            "the version could not be checked and they are included: "
+            + ", ".join(f"{h} ({(graph['tasks'][h].get('container') or '').rsplit('/', 1)[-1]})"
+                        for h in name_only)]
+
+
+def input_notes(graph, filename):
+    """Companion files the input trigger also reached, such as an index."""
+    extra = {name: nodes for name, nodes in external_input_matches(graph, filename).items()
+             if name != filename}
+    if not extra:
+        return []
+    return [f"input trigger {filename!r} also reached consumers of "
+            + ", ".join(f"{name} ({len(nodes)} task(s))" for name, nodes in extra.items())
+            + ", since a companion file is regenerated with the file it belongs to"]
+
+
+def print_notes(heading, notes):
+    if notes:
+        print(f"{heading}")
+        for note in notes:
+            print(f"  - {note}")
+        print()
+
+
+def label_keys(graph):
+    """Every label key any task or artifact in the graph carries."""
+    keys = set()
+    for task in graph["tasks"].values():
+        keys.update(task.get("labels") or {})
+    for edge in graph["edges"]:
+        keys.update(edge.get("labels") or {})
+    return keys
 
 
 def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
@@ -184,7 +247,7 @@ def count_undetermined(plan):
 
 
 def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
-                 active_policy=None):
+                 active_policy=None, notes=()):
     """
     The remediation plan as data, for scripts and CI rather than eyes.
 
@@ -264,6 +327,9 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
             "publication status is an external assertion, not verified by Clew",
             "MTA transfers and physical destruction are not modelled",
             "uninstrumented systems are unknown, never clean",
+            # What the graph and the trigger said about their own limits,
+            # so the evidence bundle carries them with the verdicts.
+            *notes,
         ],
     }
 
@@ -340,24 +406,29 @@ def main(argv=None):
         print("note: this graph records no output sizes, so published "
               "copies cannot be mapped. Graphs extracted before sizes were "
               "recorded look like this; re-extract to fix.\n")
+    notes = graph_notes(graph)
+    print_notes("WHAT THIS GRAPH DOES NOT COVER", notes)
+
+    if args.trigger:
+        kind, value = triggers.parse(args.trigger)
+        if kind == "subject" and args.samplesheet:
+            # A samplesheet is how a subject resolves on an nf-core graph,
+            # whose tasks carry no labels. Same path as --subject, so the
+            # documented spelling and the flag give one answer.
+            args.subject, args.trigger = value, None
+        elif kind == "container":
+            args.container = args.container or value
     # Only a subject trigger needs a domain to resolve one. Container and
     # input triggers are graph questions, so asking one should not require
     # naming a pipeline or producing its samplesheet.
-    if args.subject:
-        if not args.samplesheet:
-            raise SystemExit(
-                "--subject needs --samplesheet: resolving a subject to the "
-                "nodes it enters at is the one thing a domain does.")
-        donors = domain.load_subjects(args.samplesheet)
-    else:
-        donors = {}
+    if args.subject and not args.samplesheet:
+        raise SystemExit(
+            "--subject needs --samplesheet: resolving a subject to the "
+            "nodes it enters at is the one thing a domain does.")
+    donors = domain.load_subjects(args.samplesheet) if args.samplesheet else {}
     published = load_assertions(args.assertions)
 
     # --- doubt triggers: single subject, nothing exclusive -------------------
-    if args.trigger:
-        kind, value = triggers.parse(args.trigger)
-        args.container = args.container or (
-            value if kind == "container" else None)
     if args.trigger or args.container or args.input_file:
         if args.mode == "remove":
             # Removal needs an owner: "exclusive" only means something when
@@ -372,10 +443,16 @@ def main(argv=None):
             kind, value = triggers.parse(args.trigger)
             subjects = triggers.resolve(graph, kind, value)
             if not next(iter(subjects.values())):
+                if kind in triggers.KINDS or kind in label_keys(graph):
+                    raise SystemExit(f"no task matches {args.trigger!r}.")
+                hint = (" For an nf-core run the subject comes from the "
+                        "samplesheet: --subject X --samplesheet sheet.csv, "
+                        "or this trigger with --samplesheet."
+                        if kind == "subject" else "")
                 raise SystemExit(
-                    f"no task matches {args.trigger!r}. A trigger kind that "
-                    f"is not built in is read as a label key, so this graph "
-                    f"may simply carry no such label.")
+                    f"no task matches {args.trigger!r}: nothing in this "
+                    f"graph carries a {kind!r} label, so a {kind}: trigger "
+                    f"cannot be resolved from the graph alone.{hint}")
         elif args.container:
             subjects = container_entry_nodes(graph, args.container)
         else:
@@ -384,6 +461,11 @@ def main(argv=None):
         subject, entry_nodes = next(iter(subjects.items()))
         if not entry_nodes:
             raise SystemExit(f"no tasks match {subject}")
+        input_name = args.input_file or (value if args.trigger and kind == "input" else None)
+        trigger_notes = (container_notes(graph, args.container) if args.container
+                         else input_notes(graph, input_name) if input_name else [])
+        print_notes("TRIGGER NOTES", trigger_notes)
+        notes = notes + trigger_notes
 
         radius = core.blast_radius(graph, subjects)
         affected = radius[subject]["affected"]
@@ -398,7 +480,7 @@ def main(argv=None):
         # Last on stdout on purpose: with --json -, a consumer can split at
         # the final '{' and parse cleanly.
         write_outputs(args.json_out, args.html_out, domain, graph, subject, entry_nodes, plan,
-                   results_index, active_policy)
+                      results_index, active_policy, notes)
         return
 
     # --- withdrawal: exclusive/shared computed against the other donors ------
@@ -466,18 +548,18 @@ def main(argv=None):
     # Last on stdout on purpose: with --json -, a consumer can split at the
     # final '{' and parse cleanly.
     write_outputs(args.json_out, args.html_out, domain, graph, label, entry[args.subject], plan,
-               results_index, active_policy)
+                  results_index, active_policy, notes)
 
 
 def write_outputs(json_out, html_out, domain, graph, subject, entry_nodes,
-                  plan, results_index=None, active_policy=None):
+                  plan, results_index=None, active_policy=None, notes=()):
     """
     Render the plan in whichever formats were asked for, building it once.
     """
     if not json_out and not html_out:
         return
     built = plan_to_dict(domain, graph, subject, entry_nodes, plan,
-                         results_index, active_policy)
+                         results_index, active_policy, notes)
     if html_out:
         report.write(built, html_out)
     if json_out:

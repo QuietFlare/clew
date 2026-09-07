@@ -14,6 +14,10 @@ nothing beyond the standard library. The API path has not yet been run
 against a live analysis; the record shapes come from the DNAnexus API
 documentation.
 
+An input given as another job's output field, or as an analysis stage,
+is an edge to that job when it belongs to the analysis. One that names
+no job here is counted in the graph's `coverage` rather than dropped.
+
 The task hash is the job ID. Status is the job state, upper-cased.
 The container is "<executable name>@<applet or app ID>", so a trigger
 like --container gatk matches by name. Two optional keys carry what
@@ -63,6 +67,41 @@ def link_ids(value):
     return []
 
 
+def job_refs(value):
+    """
+    Every job-based or stage reference in a job input, as (kind, id, field).
+
+    A job launched inside an analysis is often given another job's output
+    field rather than a file ID, and a finished job's describe may still
+    show it that way. These are edges to a job, not to a file, and they
+    used to yield nothing.
+    """
+    if isinstance(value, dict):
+        link = value.get("$dnanexus_link")
+        if isinstance(link, dict):
+            if "job" in link:
+                return [("job", link["job"], link.get("field") or "")]
+            if "stage" in link:
+                field = link.get("outputField") or link.get("inputField") or ""
+                return [("stage", link["stage"], field)]
+        if link is not None:
+            return []
+        return [r for v in value.values() for r in job_refs(v)]
+    if isinstance(value, list):
+        return [r for v in value for r in job_refs(v)]
+    return []
+
+
+def input_views(job):
+    """
+    The job's input as recorded, best resolved view first. `input` is what
+    the job ran with; `runInput` and `originalInput` are read as fallbacks
+    when they resolve more references to files.
+    """
+    views = [job.get(key) for key in ("input", "runInput", "originalInput")]
+    return [v for v in views if v]
+
+
 def executable_of(job):
     name = job.get("executableName") or job.get("name") or ""
     ident = job.get("applet") or job.get("app") or job.get("executable") or ""
@@ -80,8 +119,10 @@ def extract(records):
     """Build the common graph schema from job and file describes."""
     jobs = {j["id"]: j for j in records["jobs"]}
     files = {f["id"]: f for f in records["files"]}
+    by_stage = {j["stage"]: jid for jid, j in jobs.items() if j.get("stage")}
 
     tasks, edges, outputs = {}, [], {}
+    unresolved = {}
     for job_id, job in jobs.items():
         task = {
             "hash": job_id,
@@ -101,8 +142,9 @@ def extract(records):
             task["duration_s"] = duration
         tasks[job_id] = task
 
+        views = input_views(job)
         seen = set()
-        for fid in link_ids(job.get("input")):
+        for fid in [fid for view in views for fid in link_ids(view)]:
             if fid in seen:
                 continue
             seen.add(fid)
@@ -117,11 +159,36 @@ def extract(records):
                 "target": fid,
             })
 
+        # References to a job or stage rather than a file. The view that
+        # resolved the most of them to files is the one whose leftovers
+        # count; a reference that names a job in this analysis is an edge
+        # to it, and one that names nothing here is reported, not dropped.
+        refs = min((job_refs(view) for view in views), key=len, default=[])
+        for kind, ref_id, field in dict.fromkeys(refs):
+            producer = ref_id if kind == "job" else by_stage.get(ref_id)
+            if producer in jobs and producer != job_id:
+                edges.append({
+                    "consumer": job_id,
+                    "producer": producer,
+                    "filename": field or ref_id,
+                    "target": f"{ref_id}:{field}" if field else ref_id,
+                })
+            else:
+                unresolved[job_id] = unresolved.get(job_id, 0) + 1
+
         outputs[job_id] = sorted(
             files.get(fid, {}).get("name") or fid
             for fid in dict.fromkeys(link_ids(job.get("output"))))
 
-    return {"tasks": tasks, "edges": edges, "outputs": outputs}
+    graph = {"tasks": tasks, "edges": edges, "outputs": outputs}
+    if unresolved:
+        listing = ", ".join(f"{jid} ({n})" for jid, n in sorted(unresolved.items()))
+        graph["coverage"] = [
+            f"{sum(unresolved.values())} job or stage references in the "
+            f"inputs of {len(unresolved)} jobs name no job in this analysis, "
+            f"so those inputs carry no edge and what fed them is unknown: "
+            f"{listing}."]
+    return graph
 
 
 def api_call(path, body, token, api=API):
@@ -198,6 +265,10 @@ def main(argv=None):
     print(f"  external inputs  : {len(external)}")
     if priced:
         print(f"total price        : {sum(t['price'] for t in priced):.2f}")
+    if graph.get("coverage"):
+        print("\n=== what this graph does not cover ===")
+        for note in graph["coverage"]:
+            print(f"  - {note}")
 
     if args.json_out:
         Path(args.json_out).write_text(json.dumps(graph, indent=2))

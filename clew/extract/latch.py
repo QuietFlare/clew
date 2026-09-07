@@ -77,6 +77,18 @@ def latch_paths(value):
     return []
 
 
+def producer_of(path, producers):
+    """
+    The task that produced this path, or the one that produced the longest
+    directory above it. A file read out of another task's directory output
+    has no exact match, and without this it would read as external.
+    """
+    if path in producers:
+        return producers[path]
+    parents = [p for p in producers if path.startswith(p.rstrip("/") + "/")]
+    return producers[max(parents, key=len)] if parents else None
+
+
 def seconds_between(start, end):
     try:
         a = datetime.fromisoformat(str(start).replace("Z", "+00:00"))
@@ -131,7 +143,7 @@ def extract(records):
     for node in nodes:
         node_id = str(node["id"])
         for path in dict.fromkeys(latch_paths(literals.get(node_id, {}).get("inputs"))):
-            producer = producers.get(path, EXTERNAL)
+            producer = producer_of(path, producers) or EXTERNAL
             if producer == node_id:
                 producer = EXTERNAL
             edges.append({

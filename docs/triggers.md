@@ -19,7 +19,38 @@ The generic form takes `kind:value`, for example `container:gatk4`,
 `script:prep.py`, `input:genome.fa` or `subject:batch_017`. An unknown kind
 is read as a label key, so a graph whose tasks carry labels such as
 `{tissue: liver}` answers `--trigger tissue:liver` with no adapter and no
-new flag. Horus records carry labels natively.
+new flag. Horus records carry labels natively. `subject:X` with
+`--samplesheet` is the same as `--subject X`: nf-core tasks carry no
+labels, so the samplesheet is what resolves one. Without a samplesheet it
+reads the graph's `subject` labels, and says so when there are none.
+
+### How a container is matched
+
+The needle and each task's image are read as a name and a version before
+they are compared. `samtools:1.21` matches `quay.io/biocontainers/samtools:1.21--h50ea8bc_0`
+because the name agrees and the tag begins with the version. It does not
+match `samtools:1.16.1`, nor `samtools:1.2`, since a version prefix must
+end at a separator. A needle without a version matches every version.
+
+The forms read are `registry/path/name:tag`, `name@sha256:...`, Wave
+images such as `community.wave.seqera.io/library/bwa_htslib_samtools:56c9f8d5201889a4`
+(tools joined by `_`, a hash for a tag, no version), Singularity cache
+names with `/` and `:` turned to `-` and an `.img` suffix, `conda@hash`,
+and a bare `name-version`. A tool inside a multi-tool image matches by
+name, so `samtools` finds `bwa_htslib_samtools`.
+
+When the needle carries a version and the image carries none, the task
+matches on name alone and the output says so, under `TRIGGER NOTES` and in
+the plan's caveats. On the shipped sarek run `samtools:1.21` reaches all
+26 samtools tasks, 11 of them on name only, where substring matching found
+15 and reported 46 affected instead of 72.
+
+### How an input is matched
+
+`--input genome.fasta` matches the exact basename, plus companions named
+`genome.fasta.<ext>`, such as `genome.fasta.fai`, since an index is
+regenerated with the file it belongs to. A directory input matches by its
+own basename. The companions reached are listed under `TRIGGER NOTES`.
 
 ## The mode: what kind of wrong is it?
 
