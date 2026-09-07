@@ -18,6 +18,19 @@ clew impact --graph graph.json --samplesheet samplesheet.csv \
     --subject donor_003 --work-root /path/to/work
 ```
 
+Each extractor records where under the engine's root a task ran, as
+`workpath`: `xx/hash` for Nextflow, the call's `execution/` directory for
+Cromwell, the task directory for Horus. `--work-root` is that root, on this
+machine. Snakemake jobs share one directory, so they carry no `workpath`
+and are never checked. A graph extracted before the field existed still
+resolves when its recorded path ends in the task's own `xx/hash`.
+
+Two things make Clew decline to look. When several tasks resolve to one
+directory, none of them is checked, because a verdict on the directory
+would be a verdict on all of them. When none of the resolved directories
+exists, the root is taken to be wrong rather than the whole run gone, and
+nothing is checked. Both print one warning on stderr.
+
 Without `--work-root`, storage is unverified and any verdict that depends on
 it comes back `UNDETERMINED` rather than guessed. Verdicts that hold
 whatever the disk says are still returned. Under policy v2 a published

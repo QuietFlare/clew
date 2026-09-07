@@ -4,14 +4,15 @@ import argparse
 import fnmatch
 import json
 import shutil
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 from clew.extract.digest import sha256_file
 from clew.graph import blast_radius as core
-from clew.graph.graph import (EXTERNAL, STATUS_FAILED, STATUS_UNKNOWN, local_workdir,
-                              published_digests, task_status)
+from clew.graph.graph import (EXTERNAL, STATUS_FAILED, STATUS_UNKNOWN,
+                              published_digests, resolve_workdirs, task_status)
 from clew.domains.nfcore import BOOKKEEPING
 from clew.views import reclaim_report
 from clew.views.reclaim_report import human
@@ -98,12 +99,15 @@ class Reclaimer:
         self.forward = core.forward_index(graph["edges"])
         self.consumed = consumed_outputs(graph)
         self.inputs = inputs_of(graph)
+        # Placed once for the whole graph: a directory several tasks share,
+        # or a root nothing resolves under, unplaces every task it touches.
+        self.local, self.warnings = resolve_workdirs(graph, self.work_root)
         self.present = {}
         self.recomputable = {}
 
     def on_disk(self, task_hash):
         if task_hash not in self.present:
-            path = local_workdir(self.graph["tasks"][task_hash].get("workdir"), self.work_root)
+            path = self.local.get(task_hash)
             self.present[task_hash] = bool(path and path.is_dir())
         return self.present[task_hash]
 
@@ -204,9 +208,9 @@ class Reclaimer:
 
     def verdict(self, task_hash):
         task = self.graph["tasks"][task_hash]
-        path = local_workdir(task.get("workdir"), self.work_root)
+        path = self.local.get(task_hash)
         if path is None:
-            return KEEP, "no work directory recorded", []
+            return KEEP, "task directory not placed under --work-root", []
         if not path.is_dir():
             return GONE, "directory not found under --work-root", []
 
@@ -275,7 +279,7 @@ class Reclaimer:
             if self.target is not None and task.get("target", "") != self.target:
                 continue
             verdict, reason, copies = self.verdict(task_hash)
-            path = local_workdir(task.get("workdir"), self.work_root)
+            path = self.local.get(task_hash)
             item = {
                 "task": task_hash,
                 "process": task.get("process", ""),
@@ -445,6 +449,8 @@ def main(argv=None):
     reclaimer = Reclaimer(graph, args.work_root, args.results, args.intermediates,
                           ignore, args.target)
     items = reclaimer.plan()
+    for line in reclaimer.warnings:
+        print(f"clew: {line}", file=sys.stderr)
     if args.target is not None and not items:
         raise SystemExit(f"no task in this graph ran on target {args.target!r}")
 

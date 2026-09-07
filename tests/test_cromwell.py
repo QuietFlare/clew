@@ -79,6 +79,15 @@ class Scatter(unittest.TestCase):
         self.assertEqual(self.graph["outputs"][PREP], ["prepped.csv"])
         self.assertEqual(self.graph["outputs"][SHARD1], ["s2.analysis.txt"])
 
+    def test_workpath_places_each_call_under_the_workflow_root(self):
+        # The recorded absolute path only means something on the host that
+        # ran it; what travels is the call's place under workflowRoot, and
+        # the task's files sit in execution/ below that.
+        paths = {h: t.get("workpath") for h, t in self.graph["tasks"].items()}
+        self.assertEqual(paths["diamond.prep"], "call-prep/execution")
+        self.assertEqual(paths["diamond.analyse/shard-0"],
+                         "call-analyse/shard-0/execution")
+
     def test_re_execution_evidence(self):
         task = self.graph["tasks"][REPORT]
         self.assertEqual(task["status"], "COMPLETED")
@@ -107,6 +116,13 @@ class Subworkflow(unittest.TestCase):
     def test_the_wrapper_call_is_flattened(self):
         self.assertEqual(set(self.graph["tasks"]),
                          {"outer.prep", "outer.finish", "outer.inner/pair.analyse"})
+
+    def test_a_subworkflow_call_is_placed_under_the_outer_root(self):
+        analyse = next(t for t in self.graph["tasks"].values()
+                       if t["process"] == "pair.analyse")
+        self.assertEqual(
+            analyse["workpath"],
+            "call-inner/pair/9e85b7e0-f8fe-4672-8023-44414edf5646/call-analyse/execution")
 
     def test_edges_cross_the_subworkflow_boundary(self):
         self.assertEqual(edges_into(self.graph, "outer.inner/pair.analyse"),

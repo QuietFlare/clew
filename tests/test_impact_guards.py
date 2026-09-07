@@ -25,13 +25,23 @@ def run_impact(*args):
 
 
 def write_graph(tmp, output_details=True):
-    """One donor, one task whose only output is a directory."""
+    """
+    One donor, one task whose only output is a directory, plus an untagged
+    sibling task. The sibling's directory is what a test creates under the
+    work root to show the root is right and the donor's directory is gone,
+    rather than every directory missing because the root is wrong.
+    """
     graph = {
         "tasks": {
             "aa/000001": {"hash": "aa/000001", "name": "QUANT (donor_001)",
                           "process": "QUANT", "container": "img",
                           "script": "run", "status": "COMPLETED",
                           "workdir": "/elsewhere/work/aa/000001abcdef",
+                          "target": ""},
+            "bb/000002": {"hash": "bb/000002", "name": "INDEX",
+                          "process": "INDEX", "container": "img",
+                          "script": "run", "status": "COMPLETED",
+                          "workdir": "/elsewhere/work/bb/000002abcdef",
                           "target": ""},
         },
         "edges": [{"consumer": "aa/000001", "producer": "EXTERNAL",
@@ -56,7 +66,8 @@ class TestCleanedScratch(unittest.TestCase):
 
     def test_gone_workdir_is_undetermined_until_results_are_checked(self):
         with tempfile.TemporaryDirectory() as tmp:
-            work = Path(tmp, "work"); work.mkdir()
+            work = Path(tmp, "work")
+            Path(work, "bb", "000002abcdef").mkdir(parents=True)
             item = self.plan(tmp, "--work-root", str(work))
         self.assertIsNone(item["action"])
         self.assertIsNone(item["storage"])
@@ -65,11 +76,28 @@ class TestCleanedScratch(unittest.TestCase):
 
     def test_gone_workdir_and_empty_results_is_already_gone(self):
         with tempfile.TemporaryDirectory() as tmp:
-            work = Path(tmp, "work"); work.mkdir()
+            work = Path(tmp, "work")
+            Path(work, "bb", "000002abcdef").mkdir(parents=True)
             results = Path(tmp, "results"); results.mkdir()
             item = self.plan(tmp, "--work-root", str(work),
                              "--results", str(results))
         self.assertEqual(item["action"], "ALREADY_GONE")
+
+    def test_a_root_nothing_resolves_under_is_not_a_cleaned_run(self):
+        # Same disk as above minus the sibling's directory: now no recorded
+        # directory exists under the root, which is what a wrong --work-root
+        # looks like, and it must not settle to ALREADY_GONE.
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp, "work"); work.mkdir()
+            results = Path(tmp, "results"); results.mkdir()
+            graph, sheet = write_graph(tmp)
+            result = run_impact("--graph", str(graph), "--samplesheet", str(sheet),
+                                "--subject", "donor_001", "--json", "-",
+                                "--work-root", str(work), "--results", str(results))
+            item = json.loads(result.stdout[result.stdout.index("{"):])["plan"][0]
+        self.assertIsNone(item["action"])
+        self.assertIsNone(item["storage"])
+        self.assertIn("root looks wrong", result.stderr)
 
     def test_published_directory_keeps_the_obligation(self):
         with tempfile.TemporaryDirectory() as tmp:

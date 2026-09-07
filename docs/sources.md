@@ -183,6 +183,12 @@ nothing, so its children become the nodes and the wrapper disappears. If
 the metadata came without `expandSubWorkflows=true` the wrapper is kept as
 a node and marked, so the summary can say how much of the run is hidden.
 
+Each call records its place under the workflow root, `call-x`,
+`call-x/shard-N` or `call-x/shard-N/attempt-N`, with a subworkflow's calls
+nested below the call that ran it. The task's own files are in `execution/`
+under that, which is the directory `--work-root` questions look at; the
+root is `cromwell-executions/<workflow>/<id>`.
+
 The container is the image digest Cromwell resolved, or the declared image
 when it did not. Cromwell hashes inputs for call caching and never hashes
 outputs, so there are no content digests, and a String input containing a
@@ -217,6 +223,22 @@ consumed. Directory outputs, piped inputs, and files above Snakemake's
 checksum size limit carry none. The container is the image the rule ran
 in, or `conda@<hash>` for a conda environment. The script is the resolved
 shell command.
+
+An output's digest is known from the jobs that read it. The extractor
+copies each consumer's recorded checksum onto the producer's output, so
+`drift` and `stitch` see it. A final output nobody consumed carries none,
+and an output whose consumers recorded different checksums is left
+undigested, since the store then describes two runs at once.
+
+Every job runs in the workflow directory. There is no per-task directory,
+so tasks carry no `workpath` and `--work-root` leaves their storage
+unverified. Reading the shared directory as each task's own would let one
+redundant output make the whole workflow deletable.
+
+`clew impact --pipeline snakemake` attributes a job to a sample when the
+id appears in the output path that names the job, as a whole path
+component or bounded by `-`, `_` or `.`, so `sample_1` does not match
+`sample_10.fq`. The samplesheet's `sample` column lists the ids.
 
 The store is a cache, not a history. Every run overwrites the records of
 the outputs it rebuilt and leaves the rest, so after a partial rerun the
@@ -286,7 +308,7 @@ they carry, and evidence is what verdicts are made of.
 | script and container image | yes | yes | yes | yes | no | yes |
 | output sizes | yes | yes | no | no | no | yes |
 | content digests | every output with `cache 'deep'`, else external inputs only | every artifact | no | every consumed input | no | no |
-| storage checkable | `--work-root` and `--results` | `--work-root` and `--results` | `--work-root` at `cromwell-executions/<workflow>`; a missing call directory stays unverified, since no output sizes means the published tree cannot be checked | no, jobs share one directory | published copies only | `--work-root` and `--results` |
+| storage checkable | `--work-root` at `work/` and `--results` | `--work-root` at the run directory and `--results` | `--work-root` at the workflow root, `cromwell-executions/<workflow>/<id>`; each call's `execution/` directory is checked; no output sizes, so the published tree cannot be | no; jobs share one directory, so storage stays unverified | published copies only | `--work-root` at `work/` and `--results` |
 | best verdict for a shared, surviving artifact | REGENERATE | REGENERATE | REGENERATE | REGENERATE | QUARANTINE | REGENERATE |
 
 The last row is the practical difference. A crate carries no re-execution

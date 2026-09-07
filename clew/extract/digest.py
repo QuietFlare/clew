@@ -3,9 +3,10 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
-from clew.graph.graph import local_workdir
+from clew.graph.graph import resolve_workdirs
 
 ALGORITHM = "sha256"
 
@@ -22,8 +23,11 @@ def digest_outputs(graph, work_root):
     """Fill `digest` on every output found under work_root. Returns counts."""
     counts = {"hashed": 0, "kept": 0, "missing": 0, "bytes": 0}
     details = graph.setdefault("output_details", {})
+    resolved, warnings = resolve_workdirs(graph, work_root)
+    for line in warnings:
+        print(f"clew: {line}", file=sys.stderr)
     for task_hash, task in graph["tasks"].items():
-        local = local_workdir(task.get("workdir"), work_root)
+        local = resolved.get(task_hash)
         entries = details.setdefault(task_hash, [])
         known = {d["file"]: d for d in entries}
         for name in graph.get("outputs", {}).get(task_hash, []):

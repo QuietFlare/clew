@@ -56,7 +56,7 @@ import argparse
 import json
 from pathlib import Path
 
-from clew.graph.graph import STATUS_CACHED, task_status
+from clew.graph.graph import STATUS_CACHED, relative_to, task_status
 
 RECORD_FORMAT = "horus-lineage/v1"
 PLAN = "run.json"
@@ -219,6 +219,9 @@ def extract(run_dir):
             "workdir": record.get("working_dir") or "",
             "script": script_of(record),
         }
+        workpath = relative_to(record.get("working_dir"), plan.get("run_directory"))
+        if workpath:
+            tasks[node]["workpath"] = workpath
 
         for entry in record.get("inputs", []):
             digest = entry.get("sha256")

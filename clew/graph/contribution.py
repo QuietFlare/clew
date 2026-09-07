@@ -49,7 +49,7 @@ over-claiming remediation wastes work, under-claiming tells someone their data
 is gone when it is not. Only the second one ends up in front of a regulator.
 """
 
-from pathlib import Path
+from clew.graph.graph import local_workdir
 
 # --- contribution class -----------------------------------------------------
 
@@ -97,13 +97,13 @@ def explain(action):
 
 # ---------------------------------------------------------------------------
 # Reading a class off a graph. Both read schema fields only: `classify`
-# looks at task["script"] and task["container"], `storage_state` joins the
-# last two path components onto a root the caller gives. A domain maps its
+# looks at task["script"] and task["container"], `storage_state` looks for
+# the task directory under a root the caller gives. A domain maps its
 # events onto the classes above; it does not own the reading of them.
 # ---------------------------------------------------------------------------
 
 
-def storage_state(workdir, work_root=None):
+def storage_state(task, work_root=None):
     """
     Whether the task's artifacts are still on disk — or None for "not checked".
 
@@ -122,33 +122,39 @@ def storage_state(workdir, work_root=None):
     direction this project exists not to make. A false negative that silences
     an obligation is worth more care than a false positive that wastes work.
 
-    `work_root` is the caller saying where to look. The recorded path is from
-    whichever machine ran the pipeline, so only its last two components — the
-    two-character prefix and the full task hash, which is how the engine lays
-    out a work directory — are joined onto the root given here. That makes a
-    graph portable between hosts without pretending the recorded absolute
-    path means anything locally.
+    `work_root` is the caller saying where to look. Where under it the task
+    ran is the graph's `workpath`, or for older hashed-layout graphs the last two
+    components of the recorded path; see graph.local_workdir. A task whose
+    directory cannot be placed under the root is not checked, not gone.
     """
-    if not workdir or not work_root:
-        return None
-    parts = Path(workdir).parts
-    if len(parts) < 2:
-        return None
-    local = Path(work_root, *parts[-2:])
-    return "WRITABLE" if local.is_dir() else "DESTROYED"
+    return storage_at(local_workdir(task, work_root))
 
 
-def classify(graph, task_hash, exclusive, published=None, work_root=None):
+def storage_at(local):
+    """Storage for a resolved task directory, None when there is none to look at."""
+    if local is None:
+        return None
+    return WRITABLE if local.is_dir() else DESTROYED
+
+
+def classify(graph, task_hash, exclusive, published=None, work_root=None,
+             resolved=None):
     """
     Contribution class and storage for one affected task, from pipeline
     evidence alone: a task whose script and container were recorded can be
     re-executed (REGENERABLE); one without fails closed to IRREDUCIBLE.
     Publication arrives as an external assertion and sets `terminal`.
 
-    `storage` is None unless `work_root` says where to look. See storage_state.
+    `storage` is None unless `work_root` says where to look. A caller that
+    has already placed every task with graph.resolve_workdirs passes the
+    map as `resolved`, so its refusals (shared directories, a root nothing
+    exists under) hold here too. See storage_state.
     """
     task = graph["tasks"].get(task_hash, {})
-    storage = storage_state(task.get("workdir", ""), work_root)
+    if resolved is not None:
+        storage = storage_at(resolved.get(task_hash))
+    else:
+        storage = storage_state(task, work_root)
 
     reproducible = bool(task.get("script")) and bool(task.get("container"))
     klass = "REGENERABLE" if reproducible else "IRREDUCIBLE"
@@ -165,7 +171,9 @@ def classify(graph, task_hash, exclusive, published=None, work_root=None):
         reason = "script or container missing; task cannot be reproduced"
 
     if storage is None:
-        reason += "; storage not checked (no --work-root given)"
+        reason += ("; storage not checked (task directory not placed under "
+                   "--work-root)" if work_root
+                   else "; storage not checked (no --work-root given)")
 
     return {
         "contribution": klass,

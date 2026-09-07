@@ -75,6 +75,55 @@ class GraphDirectory(unittest.TestCase):
             shutil.rmtree(empty)
 
 
+class StoreRuns(unittest.TestCase):
+    """A store graph is one resume chain, so its sidecar is keyed by session."""
+
+    FIRST, SECOND, OTHER = "a" * 32, "b" * 32, "c" * 32
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        history = self.root / ".history"
+        history.mkdir()
+        for run_hash, name, session, day in (
+                (self.FIRST, "first_run", "session-1", 1),
+                (self.SECOND, "second_run", "session-1", 2),
+                (self.OTHER, "other_run", "session-2", 3)):
+            (history / run_hash).write_text(
+                f"2026-08-0{day} 10:00:00 CEST\t{name}\t{session}\tlid://{run_hash}\n")
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_both_runs_of_a_chain_share_one_sidecar(self):
+        store = runs.Runs(self.root)
+        self.assertEqual(store.sidecar_path(self.FIRST),
+                         self.root / ".clew" / "session-1.digests.json")
+        self.assertEqual(store.sidecar_path(self.FIRST), store.sidecar_path(self.SECOND))
+        self.assertNotEqual(store.sidecar_path(self.FIRST), store.sidecar_path(self.OTHER))
+
+    def test_a_digest_written_under_one_run_name_is_read_under_the_other(self):
+        store = runs.Runs(self.root)
+        g = store.load("first_run")
+        g["output_details"] = {"aa/1": [{"file": "out.txt", "digest": "sha256:abc"}]}
+        store.save_sidecar(g)
+        again = runs.Runs(self.root).load("second_run")
+        self.assertEqual(again["output_details"]["aa/1"][0]["digest"], "sha256:abc")
+        self.assertNotIn("aa/1", runs.Runs(self.root).load("other_run").get("output_details", {}))
+
+    def test_a_sidecar_filed_under_a_run_hash_is_still_read(self):
+        # Sidecars written before the session key existed sit under the
+        # run hash. Digests already on disk must keep counting.
+        legacy = self.root / ".clew"
+        legacy.mkdir()
+        (legacy / f"{self.SECOND}.digests.json").write_text(json.dumps(
+            {"clew_sidecar_version": 1,
+             "outputs": {"aa/1": {"out.txt": "sha256:old"}},
+             "published": {"p.txt": {"digest": "sha256:old", "size": 1}}}))
+        g = runs.Runs(self.root).load("first_run")
+        self.assertEqual(g["output_details"]["aa/1"][0]["digest"], "sha256:old")
+        self.assertEqual(g["published"]["p.txt"]["digest"], "sha256:old")
+
+
 class HorusRuns(unittest.TestCase):
     def test_a_single_run_directory(self):
         store = runs.Runs(FIXTURES / "horus_run")

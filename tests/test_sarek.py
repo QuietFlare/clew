@@ -17,7 +17,9 @@ from clew.domains import sarek
 
 
 def graph_with_tasks(tasks):
-    return {"tasks": tasks, "edges": [], "outputs": {}}
+    # The schema keys a task by its hash and repeats it in the record.
+    return {"tasks": {h: {"hash": h, **t} for h, t in tasks.items()},
+            "edges": [], "outputs": {}}
 
 
 class TestOwnerResolution(unittest.TestCase):

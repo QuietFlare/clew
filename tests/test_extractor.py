@@ -89,6 +89,11 @@ class TestNumberedSubdirectories(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_workpath_is_the_directory_relative_to_the_work_root(self):
+        tasks, *_ = ex.extract(self.jsonl, self.work)
+        self.assertEqual(tasks["ab/123456"]["workpath"], "ab/123456aaaa0000")
+        self.assertEqual(tasks["cd/abcdef"]["workpath"], "cd/abcdef0000aaaa")
+
     def test_inputs_inside_numbered_subdirs_are_found(self):
         tasks, edges, outputs, details, missing = ex.extract(
             self.jsonl, self.work)

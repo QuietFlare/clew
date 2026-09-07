@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `clew impact --pipeline snakemake`: a subject adapter that attributes a
+  job to a sample named in its output path.
+- ADR 0007: extractors translate, core never interprets an engine string.
+
 ### Fixed
 
 - `clew impact`: evidence chains come from one breadth-first pass over the
@@ -36,6 +42,24 @@ follow [Semantic Versioning](https://semver.org/).
 - `clew reclaim`: when two outputs share a digest, the published copy with
   the output's own file name is the one named in the plan and receipt; all
   candidates are listed only when none matches.
+- Storage checks joined the last two components of a task's recorded path
+  onto `--work-root`, which fits Nextflow only. Every extractor now records
+  `workpath`, the task directory relative to the engine's root, and
+  `impact`, `reclaim` and `digest` join that. Cromwell shards and
+  subworkflow calls resolve; Snakemake tasks, which share one directory,
+  are left unverified instead of read as destroyed or deletable.
+- `reclaim`, `digest` and `impact` leave storage unchecked for every task
+  that resolves to a directory another task also resolves to, with one
+  warning, so one redundant output cannot make a whole workflow deletable.
+- `impact`: when none of a graph's task directories exists under
+  `--work-root`, storage is left unchecked and a warning says the root
+  looks wrong, instead of every task reading `ALREADY_GONE`.
+- `--runs` on a `.lineage` store: the digest sidecar is keyed by session,
+  so a digest written under one run name of a resume chain is found under
+  the other.
+- `clew extract-snakemake`: an output's digest is filled from the checksum
+  its consumers recorded, so `drift` and `stitch` can compare Snakemake
+  runs without `clew digest`.
 
 ## [0.4.0] - 2026-09-07
 

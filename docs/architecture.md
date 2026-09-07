@@ -113,9 +113,10 @@ The edges of the model, reported rather than hidden:
 The rules above are recorded as decisions, one file each, in
 [docs/adr](adr/): unknown is never clean, the engine knows no field and
 no workflow engine, one graph with one tool per question, content
-digests are the only identity, the engine's record is the record, and a
-plan is the record while a page is a view. A change to any of them is a
-new ADR that supersedes the old, not an edit.
+digests are the only identity, the engine's record is the record, a
+plan is the record while a page is a view, and extractors translate
+while core never interprets an engine string. A change to any of them is
+a new ADR that supersedes the old, not an edit.
 
 ## Not built
 

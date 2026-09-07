@@ -76,6 +76,27 @@ class FileBackend(unittest.TestCase):
                          if e["consumer"] == REPORT and e["filename"] == "s1_stats")
         self.assertNotIn("sha256", stats_dir)
 
+    def test_jobs_share_a_directory_so_none_has_a_workpath(self):
+        for task in self.graph["tasks"].values():
+            self.assertNotIn("workpath", task)
+
+    def test_a_consumed_output_gets_the_digest_its_consumer_recorded(self):
+        # The store hashes inputs only, so the bam's digest is known from
+        # the stats job that read it; drift and stitch read output_details.
+        bam = next(e for e in self.graph["edges"]
+                   if e["consumer"] == STATS1 and e["filename"] == "s1.bam")
+        details = {d["file"]: d["digest"] for d in self.graph["output_details"][ALIGN1]}
+        self.assertEqual(details, {"s1.bam": bam["digest"]})
+
+    def test_consumers_that_disagree_leave_the_output_undigested(self):
+        edges = [
+            {"consumer": "b", "producer": "a", "filename": "x", "digest": "sha256:1"},
+            {"consumer": "c", "producer": "a", "filename": "x", "digest": "sha256:2"},
+            {"consumer": "c", "producer": "a", "filename": "y", "digest": "sha256:3"},
+        ]
+        self.assertEqual(sm.digests_from_consumers(edges),
+                         {"a": [{"file": "y", "digest": "sha256:3"}]})
+
     def test_re_execution_evidence(self):
         task = self.graph["tasks"][ALIGN1]
         self.assertEqual(task["process"], "align")

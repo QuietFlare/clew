@@ -13,7 +13,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
-from clew.graph.graph import task_status
+from clew.graph.graph import relative_to, task_status
 
 EXTERNAL = "EXTERNAL"
 SCHEMES = ("gs://", "s3://", "drs://", "http://", "https://", "az://", "file://")
@@ -82,6 +82,9 @@ def duration_of(attempt):
 def extract(metadata):
     """Build the common graph schema from one workflow's metadata."""
     leaves = list(walk_calls(metadata))
+    # Subworkflow calls nest under the outer workflow's root, so every call
+    # is placed relative to the top-level root, whatever depth it ran at.
+    root = metadata.get("workflowRoot") or ""
 
     producers = {}
     for node, _, attempt in leaves:
@@ -102,6 +105,12 @@ def extract(metadata):
             "script": attempt.get("commandLine") or "",
             "workdir": attempt.get("callRoot") or "",
         }
+        # The call root holds inputs/ and execution/; the task's own files,
+        # outputs included, are under execution/, so that is the directory
+        # storage questions are asked about.
+        call_path = relative_to(attempt.get("callRoot"), root)
+        if call_path:
+            task["workpath"] = f"{call_path}/execution"
         if (attempt.get("callCaching") or {}).get("hit"):
             task["cached"] = True
         if attempt["_unexpanded"]:

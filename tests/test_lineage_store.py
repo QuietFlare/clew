@@ -231,6 +231,12 @@ class SyntheticStore(unittest.TestCase):
             f"/work/{PRODUCER[:2]}/{PRODUCER[2:]}",
         )
 
+    def test_workpath_is_the_hash_split_as_the_work_tree_splits_it(self):
+        graph = ls.extract(self.store, CHAIN)
+        producer = ls.abbreviate(PRODUCER)
+        self.assertEqual(graph["tasks"][producer]["workpath"],
+                         f"{PRODUCER[:2]}/{PRODUCER[2:]}")
+
     def test_tag_preserved_for_domain_parsing(self):
         # Domain adapters attribute subjects by parsing "(tag)" from the
         # name; the adapter must not strip it from `name`, only `process`.

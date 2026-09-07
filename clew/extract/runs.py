@@ -68,14 +68,43 @@ class Runs:
         else:
             graph = json.loads((self.path / f"{run_id}.json").read_text())
         graph["run"] = {"name": name, "id": run_id}
-        sidecar = self.sidecar_path(run_id)
-        if sidecar.is_file():
-            merge_sidecar(graph, json.loads(sidecar.read_text()))
+        for sidecar in self.sidecar_paths(run_id):
+            if sidecar.is_file():
+                merge_sidecar(graph, json.loads(sidecar.read_text()))
         return graph
+
+    def sidecar_paths(self, run_id):
+        """
+        Every sidecar that may hold this run's digests: the one filed under
+        the current key first, then any filed under a run hash of the same
+        chain by an earlier Clew, so digests already on disk keep counting.
+        """
+        paths = [self.sidecar_path(run_id)]
+        if self.kind == "nextflow":
+            history = nextflow_store.load_history(self.path)
+            session = nextflow_store.pick_run(history, run_id)["session_id"]
+            for run in history:
+                if run["session_id"] == session:
+                    legacy = self.path / SIDECAR_DIR / f"{run['run_hash']}.digests.json"
+                    if legacy not in paths:
+                        paths.append(legacy)
+        return paths
+
+    def sidecar_key(self, run_id):
+        """
+        What a sidecar is filed under. A store graph is the whole resume
+        chain, so its digests belong to the session, not to whichever run
+        name was typed; a digest written under one name must be found
+        under the other.
+        """
+        if self.kind == "nextflow":
+            run = nextflow_store.pick_run(nextflow_store.load_history(self.path), run_id)
+            return run["session_id"]
+        return run_id
 
     def sidecar_path(self, run_id):
         base = self.path.parent if self.kind == "horus-run" else self.path
-        return base / SIDECAR_DIR / f"{run_id}.digests.json"
+        return base / SIDECAR_DIR / f"{self.sidecar_key(run_id)}.digests.json"
 
     def save_sidecar(self, graph):
         """Keep the sha256 digests of a graph beside the engine's record."""

@@ -32,6 +32,10 @@ reclaimable ones.
 | `KEEP` | None of the above could be shown | no |
 | `GONE` | The directory is not under `--work-root` | nothing to do |
 
+A task whose directory cannot be placed under `--work-root` is `KEEP`, and
+so is every task in a directory that several tasks share, with one warning
+on stderr. See [storage.md](storage.md) for how directories are placed.
+
 The reason on each `KEEP` names what withheld it: an output with no
 published copy, a published match that was ambiguous, a missing recipe, an
 input that could not be found at its recorded path.

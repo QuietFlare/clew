@@ -172,7 +172,30 @@ def extract(records, workdir=""):
 
         outputs[node] = sorted(Path(p).name for p in paths)
 
-    return {"tasks": tasks, "edges": edges, "outputs": outputs}
+    return {"tasks": tasks, "edges": edges, "outputs": outputs,
+            "output_details": digests_from_consumers(edges)}
+
+
+def digests_from_consumers(edges):
+    """
+    {producer: [{file, digest}]} for every output some consumer hashed.
+
+    The store hashes what a job read, never what it wrote, so an output's
+    digest is only known through its consumers. Two consumers that disagree
+    read different bytes under one name, a mixed store, and then the
+    output is left undigested rather than pinned to either.
+    """
+    seen = {}
+    for edge in edges:
+        if edge["producer"] == EXTERNAL or not edge.get("digest"):
+            continue
+        seen.setdefault((edge["producer"], edge["filename"]), set()).add(edge["digest"])
+    details = {}
+    for (producer, name), digests in sorted(seen.items()):
+        if len(digests) == 1:
+            details.setdefault(producer, []).append(
+                {"file": name, "digest": next(iter(digests))})
+    return details
 
 
 def main(argv=None):

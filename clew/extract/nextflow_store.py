@@ -399,6 +399,7 @@ def extract(store, session_id):
             "status": STATUS_UNRECORDED,  # the store records no exit status, see coverage
             "target": "",   # one machine per run; nothing to record
             "workdir": workdir,
+            "workpath": f"{full_hash[:2]}/{full_hash[2:]}",
             "script": spec.get("script", ""),
         }
         # Absent unless true, so a chain with no re-runs reads exactly as it
