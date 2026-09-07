@@ -116,7 +116,12 @@ def continue_from(previous_dir, since):
                 f"--since {since} needs --previous: the entries after that "
                 "seq can only be anchored to the bundle that ended there")
         return None, None
-    manifest = load_json(Path(previous_dir) / bundle.MANIFEST)
+    manifest_path = Path(previous_dir) / bundle.MANIFEST
+    if not manifest_path.is_file():
+        raise SystemExit(
+            f"--previous {previous_dir} holds no {bundle.MANIFEST}, so "
+            "it is not a sealed bundle and nothing can chain to it.")
+    manifest = load_json(manifest_path)
     previous_head = manifest["anchors"]["log_head"]
     if since and previous_head["seq"] != since:
         raise SystemExit(

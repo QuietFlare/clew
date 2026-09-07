@@ -420,11 +420,18 @@ def main(argv=None):
             args.container = args.container or value
     # Only a subject trigger needs a domain to resolve one. Container and
     # input triggers are graph questions, so asking one should not require
-    # naming a pipeline or producing its samplesheet.
+    # naming a pipeline or producing its samplesheet. A samplesheet with no
+    # subject asks for the per-subject table, so it is loaded whenever given.
     if args.subject and not args.samplesheet:
         raise SystemExit(
             "--subject needs --samplesheet: resolving a subject to the "
             "nodes it enters at is the one thing a domain does.")
+    doubt = args.trigger or args.container or args.input_file
+    if not doubt and not args.samplesheet:
+        raise SystemExit(
+            "nothing to ask: give --container, --input or --trigger, or "
+            "--samplesheet with --subject. --samplesheet alone prints the "
+            "reach of every subject.")
     donors = domain.load_subjects(args.samplesheet) if args.samplesheet else {}
     published = load_assertions(args.assertions)
 
@@ -489,8 +496,8 @@ def main(argv=None):
 
     if not args.subject:
         print(f"{len(graph['tasks'])} tasks, {len(graph['edges'])} edges, "
-              f"{len(donors)} donors\n")
-        print(f"{'donor':<12} {'entry':>6} {'affected':>9} {'exclusive':>10} {'shared':>7}")
+              f"{len(donors)} subjects\n")
+        print(f"{'subject':<12} {'entry':>6} {'affected':>9} {'exclusive':>10} {'shared':>7}")
         for donor in sorted(radius):
             r = radius[donor]
             print(f"{donor:<12} {len(entry[donor]):>6} {len(r['affected']):>9} "

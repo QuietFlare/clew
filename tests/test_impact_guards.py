@@ -194,3 +194,22 @@ class TestUnattributableSubject(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSamplesheetAlone(unittest.TestCase):
+    """--samplesheet with no --subject prints the reach of every subject."""
+
+    def test_the_table_lists_every_subject(self):
+        result = run_impact(
+            "--graph", str(ROOT / "clew" / "data" / "graph5.json"),
+            "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("5 subjects", result.stdout)
+        for subject in ("donor_001", "donor_003", "donor_005"):
+            self.assertIn(subject, result.stdout)
+
+    def test_no_trigger_and_no_samplesheet_is_refused(self):
+        result = run_impact(
+            "--graph", str(ROOT / "clew" / "data" / "graph5.json"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("nothing to ask", result.stderr)

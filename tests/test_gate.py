@@ -254,6 +254,23 @@ class TestCliFailsClosed(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("both blocking and clearing", result.stderr)
 
+    def test_a_missing_gate_policy_file_is_refused_with_a_message(self):
+        result = self.run_gate(
+            "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"),
+            "--gate-policy", "/nowhere/gate-policy.json",
+            "--dsn", "postgresql://nowhere/none")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("cannot read --gate-policy", result.stderr)
+
+    def test_a_missing_samplesheet_is_refused_with_a_message(self):
+        result = self.run_gate(
+            "--samplesheet", "/nowhere/samplesheet.csv", "--block-on", "X",
+            "--dsn", "postgresql://nowhere/none")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("cannot read --samplesheet", result.stderr)
+
     def test_the_shipped_policy_template_is_valid_json_and_names_types(self):
         template = json.loads((ROOT / "clew" / "data" / "gate-policy.example.json").read_text())
         self.assertTrue(template["blocking"])

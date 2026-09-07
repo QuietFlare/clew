@@ -62,7 +62,16 @@ def load_gate_policy(args):
     template. See gate-policy.example.json.
     """
     if args.gate_policy:
-        document = json.loads(Path(args.gate_policy).read_text())
+        try:
+            document = json.loads(Path(args.gate_policy).read_text())
+        except OSError as exc:
+            raise SystemExit(
+                f"cannot read --gate-policy {args.gate_policy}: "
+                f"{exc.strerror}. Stopping: a gate without its policy "
+                "cannot check anything.")
+        except ValueError as exc:
+            raise SystemExit(
+                f"--gate-policy {args.gate_policy} is not valid JSON: {exc}")
         blocking = document.get("blocking", [])
         clearing = document.get("clearing", [])
         version = document.get("version", Path(args.gate_policy).name)
@@ -121,7 +130,12 @@ def main(argv=None):
 
     policy = load_gate_policy(args)
     domain = DOMAINS[args.pipeline]
-    subjects = sorted(domain.load_subjects(args.samplesheet))
+    try:
+        subjects = sorted(domain.load_subjects(args.samplesheet))
+    except OSError as exc:
+        raise SystemExit(
+            f"cannot read --samplesheet {args.samplesheet}: {exc.strerror}. "
+            "Stopping: no inputs were checked.")
 
     if args.as_of:
         from clew.ledger import eventlog

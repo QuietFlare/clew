@@ -11,18 +11,25 @@ clew gate --pipeline sarek --samplesheet samplesheet.csv \
 
 ```
 CLEW GATE  clew/data/donors.csv
+  subjects        5
   blocking on     ConsentWithdrawn, QCFailed, SampleContaminated
   cleared by      ConsentReinstated, QCPassed
   as of           2026-09-07T10:12:44+00:00  (now; no --as-of given)
   log head        seq 5  0a9f436b2c7dca66
 
   BLOCKED  1
-      donor_003    ConsentWithdrawn effective 2026-03-01, asserted by registry@example.org
+      donor_003                    ConsentWithdrawn effective 2026-03-01, asserted by registry@example.org
           log seq 1, entry 01fd6803a761d58a
+
   UNKNOWN  2
-      donor_002    the log holds no decisive fact about this subject
+      donor_002                    the log holds no decisive fact about this subject
+      donor_004                    the log holds no decisive fact about this subject
+
   CLEARED  2
-      donor_001    QCPassed effective 2026-05-20, asserted by lab.qa@example.org
+      donor_001                    QCPassed effective 2026-05-20, asserted by lab.qa@example.org
+          log seq 4, entry 7c1e0b9d2f6a4e83
+      donor_005                    QCPassed effective 2026-05-20, asserted by lab.qa@example.org
+          log seq 5, entry 0a9f436b2c7dca66
 
 STOP  1 blocked, 2 unknown, 2 cleared
 ```

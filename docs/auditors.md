@@ -39,7 +39,9 @@ it.
 |---|---|
 | `list_bundles` | what evidence exists at all |
 | `subject_history` | every recorded fact about one subject, both clocks, actors |
+| `policy_history` | which policy versions were adopted, when, and by whom |
 | `policy_in_force` | which table the log says applied on a date |
+| `plan_summary` | what a plan concluded: trigger, tasks reached, count per action |
 | `verdict` | why one task got the verdict it did: rule id, rationale, chain |
 | `was_affected` | whether this output used that material |
 | `check_integrity` | the deterministic verifier's own output |

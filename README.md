@@ -40,7 +40,9 @@ clew impact --graph graph.json --container gatk4
 ```
 
 Every affected task gets a verdict, re-run, quarantine, delete or disclose,
-with the derivation chain as evidence. Nothing unknown is reported as clean.
+with the derivation chain as evidence. A verdict that depends on whether
+the artifact still exists needs `--work-root` and `--results`; without
+them it is withheld, not guessed. Nothing unknown is reported as clean.
 
 **The disk is full and nothing is wrong.**
 
@@ -87,9 +89,9 @@ One command per engine turns a run into a graph.
 | DNAnexus | `clew extract-dnanexus --analysis <id> --json-out graph.json` |
 | Latch | `clew extract-latch --execution <id> --json-out graph.json` |
 
-Or skip the file: every question takes `--runs` pointing at the engine's
-own record, a `.lineage` store or a horus-lineage root, and reads the run
-it needs.
+Or skip the file: `reclaim`, `drift` and `digest` take `--runs` pointing
+at the engine's own record, a `.lineage` store or a horus-lineage root,
+and read the run they need. `impact` takes a graph file.
 
 Content digests make every answer exact. Horus records them, and Nextflow
 does with `cache 'deep'`. For any other run, `clew digest` reads each file
