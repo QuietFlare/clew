@@ -34,6 +34,9 @@ TAG_PATTERN = re.compile(r"\(([^()]+)\)\s*$")
 # and no publishDir copies them one by one.
 BOOKKEEPING = ("versions.yml",)
 
+# Index key standing in for a directory's size, which is meaningless.
+DIRECTORY = "directory"
+
 
 def load_subjects(samplesheet_path, subject_column, member_column=None):
     """
@@ -122,7 +125,8 @@ classify = contribution.classify
 
 def index_results(results_dir):
     """
-    Index a published-results tree by (basename, size).
+    Index a published-results tree by (basename, size), plus directories
+    by (basename, DIRECTORY).
 
     Why this key: the artifacts in results/ are COPIES made by publishDir.
     The lineage store's checksums are Nextflow's "standard" mode — hashed
@@ -131,13 +135,20 @@ def index_results(results_dir):
     files collide on both, every candidate is listed and the match is
     flagged ambiguous rather than silently picking one. A deletion list
     must over-report candidates, never guess.
+
+    Directory outputs (a Salmon quant directory, a QualiMap report) have no
+    meaningful size, so they are indexed by name alone and any match is
+    flagged for verification. Missing them read a cleaned scratch as
+    ALREADY_GONE while the published directory was still on disk.
     """
     index = {}
     root = Path(results_dir)
     for path in root.rglob("*"):
+        rel = str(path.relative_to(root))
         if path.is_file():
-            key = (path.name, path.stat().st_size)
-            index.setdefault(key, []).append(str(path.relative_to(root)))
+            index.setdefault((path.name, path.stat().st_size), []).append(rel)
+        elif path.is_dir():
+            index.setdefault((path.name, DIRECTORY), []).append(rel)
     return index
 
 
@@ -147,12 +158,22 @@ def published_copies(graph, task_hash, results_index):
         return []
     matches = []
     for detail in graph.get("output_details", {}).get(task_hash, []):
-        key = (Path(detail["file"]).name, detail.get("size"))
-        found = results_index.get(key, [])
+        name = Path(detail["file"]).name
+        found = results_index.get((name, detail.get("size")), [])
         if found:
             matches.append({
                 "output": detail["file"],
                 "published": sorted(found),
                 "ambiguous": len(found) > 1,
+            })
+            continue
+        found = results_index.get((name, DIRECTORY), [])
+        if found:
+            matches.append({
+                "output": detail["file"],
+                "published": sorted(found),
+                # Name only; a directory's size says nothing. Over-report.
+                "ambiguous": True,
+                "match": "directory name",
             })
     return matches
