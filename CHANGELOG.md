@@ -6,6 +6,8 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-07
+
 ### Added
 
 - `clew drift`: where two runs of the same workflow part ways, and why.
@@ -112,7 +114,8 @@ First release on PyPI as `clew-lineage`.
 - A CI gate that fails closed on unknown subjects.
 - A self-contained dashboard and a read-only MCP server for auditors.
 
-[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/QuietFlare/clew/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/QuietFlare/clew/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/QuietFlare/clew/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/QuietFlare/clew/compare/v0.1.0...v0.1.1

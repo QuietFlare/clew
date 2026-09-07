@@ -78,7 +78,7 @@ them; `clew digest` supplies them for runs that were recorded without.
 python3 -m unittest discover -s tests
 ```
 
-433 tests need nothing installed. The other 25 exercise the log's storage
+449 tests need nothing installed. The other 25 exercise the log's storage
 behaviour, the role grants, the triggers and concurrent appends, and skip
 unless you point them at a database you own:
 

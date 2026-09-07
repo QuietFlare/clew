@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clew-lineage"
-version = "0.3.0"
+version = "0.4.0"
 description = "Works out what to delete, re-run, or disclose when something upstream of a pipeline goes bad. Reads the lineage your engine already records and returns a plan an auditor can verify."
 readme = "README.md"
 requires-python = ">=3.9"
