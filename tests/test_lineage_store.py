@@ -122,6 +122,14 @@ class SyntheticStore(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_a_bare_string_path_is_one_input(self):
+        # Iterating a string reads it one character at a time and records
+        # nothing. Not seen in the Petri store, where every path is a list.
+        edges = ls.task_edges(CONSUMER, {"input": [
+            {"type": "path", "name": "bam", "value": f"lid://{PRODUCER}/out.bam"}]})
+        self.assertEqual([(e["producer"], e["filename"]) for e in edges],
+                         [(ls.abbreviate(PRODUCER), "out.bam")])
+
     def test_history_and_run_selection(self):
         runs = ls.load_history(self.store)
         self.assertEqual([r["name"] for r in runs],

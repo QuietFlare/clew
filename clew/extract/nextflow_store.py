@@ -256,7 +256,12 @@ def task_edges(task_hash, spec):
     for inp in spec.get("input", []):
         if inp.get("type") != "path":
             continue  # val inputs are parameters, not artifacts
-        for value in inp.get("value", []):
+        values = inp.get("value", [])
+        if not isinstance(values, list):
+            # A single path is written bare; iterating a string would read
+            # it one character at a time and record nothing.
+            values = [values]
+        for value in values:
             if isinstance(value, str) and value.startswith(LID_PREFIX):
                 producer_hash, _, filename = value.removeprefix(LID_PREFIX).partition("/")
                 edges.append({

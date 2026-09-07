@@ -35,7 +35,10 @@ def digest_outputs(graph, work_root):
                 known[name] = {"file": name}
                 entries.append(known[name])
         for detail in entries:
-            if (detail.get("digest") or "").startswith(f"{ALGORITHM}:"):
+            # Any recorded digest stays, whatever its algorithm: a deep-mode
+            # hash from the engine is what joins this run to another that
+            # holds the same hash, and a sha256 in its place would break that.
+            if ":" in (detail.get("digest") or ""):
                 counts["kept"] += 1
                 continue
             path = local / detail["file"] if local else None
@@ -95,7 +98,7 @@ def main(argv=None):
     if args.work_root:
         c = digest_outputs(graph, args.work_root)
         print(f"outputs: {c['hashed']} hashed ({c['bytes']:,} bytes), "
-              f"{c['kept']} already sha256, {c['missing']} not on disk")
+              f"{c['kept']} already digested, {c['missing']} not on disk")
     if args.results:
         c = digest_results(graph, args.results)
         print(f"published: {c['hashed']} files hashed ({c['bytes']:,} bytes), "

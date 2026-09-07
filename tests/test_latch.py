@@ -104,6 +104,29 @@ class Triggers(unittest.TestCase):
         self.assertNotIn(FASTQC, self.affected_by("genome.fa"))
 
 
+class DirectoryOutputs(unittest.TestCase):
+    """
+    A task that reads a file out of another task's directory output has
+    no exact path match. It used to read as externally fed, and traversal
+    stopped there.
+    """
+
+    def test_a_file_inside_a_produced_directory_joins_to_its_producer(self):
+        records = lt.load_records(FIXTURES)
+        records["literals"][ALIGN]["outputs"] = {"literals": {"outdir": {"scalar": {
+            "blob": {"uri": "latch:///demo/out/align"}}}}}
+        records["literals"][CALL]["inputs"] = {"literals": {"bam": {"scalar": {
+            "blob": {"uri": "latch:///demo/out/align/sample_1.bam"}}}}}
+        graph = lt.extract(records)
+        self.assertEqual(edges_into(graph, CALL), {"sample_1.bam": ALIGN})
+
+    def test_the_longest_produced_directory_wins(self):
+        producers = {"latch:///out": "1", "latch:///out/deep": "2"}
+        self.assertEqual(lt.producer_of("latch:///out/deep/x.txt", producers), "2")
+        self.assertEqual(lt.producer_of("latch:///out/x.txt", producers), "1")
+        self.assertIsNone(lt.producer_of("latch:///outside/x.txt", producers))
+
+
 class PathWalking(unittest.TestCase):
 
     def test_only_latch_paths_are_files(self):
