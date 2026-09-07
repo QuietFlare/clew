@@ -1,11 +1,31 @@
 """Read runs straight from the engine's record; Clew keeps only a digest sidecar beside it."""
 
 import json
+import sys
 from pathlib import Path
 
 from clew.extract import horus, nextflow_store
 
 SIDECAR_DIR = ".clew"
+
+# Where a record may say when it was made, for engines whose record is a
+# JSON file. Read before file mtime, which `touch` or a copy rewrites.
+TIMESTAMP_KEYS = ("timestamp", "started_at", "created_at", "start_time")
+
+
+def recorded_timestamp(path):
+    """A timestamp from inside a JSON record, or "" when it carries none."""
+    try:
+        record = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return ""
+    for holder in (record, record.get("run") or {}):
+        if not isinstance(holder, dict):
+            continue
+        for key in TIMESTAMP_KEYS:
+            if isinstance(holder.get(key), str) and holder[key]:
+                return holder[key]
+    return ""
 
 
 class Runs:
@@ -27,40 +47,76 @@ class Runs:
         raise SystemExit(f"{self.path} is not a .lineage store, a horus-lineage root, "
                          "or a directory of graph JSON files")
 
-    def names(self):
-        """[(name, id, timestamp)] oldest first."""
+    def records(self):
+        """
+        [{name, id, timestamp, session, by_mtime}] oldest first. A run
+        whose record carries no timestamp is ordered by file mtime and
+        says so, since a copy or a touch reorders those.
+        """
         if self.kind == "nextflow":
-            return [(r["name"], r["run_hash"], r["timestamp"])
+            return [{"name": r["name"], "id": r["run_hash"], "timestamp": r["timestamp"],
+                     "session": r["session_id"], "by_mtime": False}
                     for r in nextflow_store.load_history(self.path)]
         if self.kind == "horus-run":
-            return [(self.path.name, self.path.name, "")]
+            return [{"name": self.path.name, "id": self.path.name,
+                     "timestamp": recorded_timestamp(self.path / horus.PLAN),
+                     "session": None, "by_mtime": False}]
         if self.kind == "horus":
-            dirs = sorted((c for c in self.path.iterdir() if (c / horus.PLAN).is_file()),
-                          key=lambda c: c.stat().st_mtime)
-            return [(c.name, c.name, "") for c in dirs]
-        files = sorted((c for c in self.path.iterdir() if c.suffix == ".json"),
-                       key=lambda c: c.stat().st_mtime)
-        return [(c.stem, c.stem, "") for c in files]
+            entries = [(c, c / horus.PLAN) for c in self.path.iterdir()
+                       if (c / horus.PLAN).is_file()]
+        else:
+            entries = [(c, c) for c in self.path.iterdir() if c.suffix == ".json"]
+        found = []
+        for entry, record in entries:
+            stamp = recorded_timestamp(record)
+            name = entry.stem if entry.is_file() else entry.name
+            found.append(({"name": name, "id": name, "timestamp": stamp,
+                           "session": None, "by_mtime": not stamp},
+                          entry.stat().st_mtime))
+        # Timestamps and mtimes do not compare, so recorded ones sort
+        # among themselves and the rest fall in by mtime after them.
+        found.sort(key=lambda pair: (pair[0]["by_mtime"], pair[0]["timestamp"], pair[1]))
+        return [record for record, _ in found]
+
+    def names(self):
+        """[(name, id, timestamp)] oldest first."""
+        return [(r["name"], r["id"], r["timestamp"]) for r in self.records()]
 
     def resolve(self, wanted=None):
-        """(name, id) for a run name or id prefix; the latest when None."""
-        names = self.names()
-        if not names:
+        """
+        (name, id) for a run name, run-id prefix or session-id prefix; the
+        latest when None. A session prefix names a resume chain, whose
+        newest run stands for it.
+        """
+        records = self.records()
+        if not records:
             raise SystemExit(f"no runs under {self.path}")
         if wanted is None:
-            return names[-1][:2]
-        matches = [n for n in names if n[0] == wanted or n[1].startswith(wanted)]
+            latest = records[-1]
+            if latest["by_mtime"]:
+                print(f"note: {latest['name']} taken as the latest run by file "
+                      "modification time; its record carries no timestamp",
+                      file=sys.stderr)
+            return latest["name"], latest["id"]
+        matches = [r for r in records
+                   if r["name"] == wanted or r["id"].startswith(wanted)
+                   or (r["session"] or "").startswith(wanted)]
+        sessions = {r["session"] for r in matches}
+        if len(matches) > 1 and len(sessions) == 1 and None not in sessions:
+            matches = matches[-1:]
         if len(matches) != 1:
             raise SystemExit(f"--run {wanted!r} matched {len(matches)} runs; known: "
-                             + ", ".join(n[0] for n in names))
-        return matches[0][:2]
+                             + ", ".join(r["name"] for r in records))
+        return matches[0]["name"], matches[0]["id"]
 
     def load(self, wanted=None):
         """The graph of one run, with any sidecar digests merged in."""
         name, run_id = self.resolve(wanted)
+        session = None
         if self.kind == "nextflow":
             run = nextflow_store.pick_run(nextflow_store.load_history(self.path), run_id)
-            graph = nextflow_store.extract(self.path, run["session_id"])
+            session = run["session_id"]
+            graph = nextflow_store.extract(self.path, session)
         elif self.kind == "horus-run":
             graph = horus.extract(self.path)
         elif self.kind == "horus":
@@ -71,6 +127,14 @@ class Runs:
         for sidecar in self.sidecar_paths(run_id):
             if sidecar.is_file():
                 merge_sidecar(graph, json.loads(sidecar.read_text()))
+        if session:
+            # The graph is the chain's, not the run's: two runs of one
+            # session load the same graph, and a caller comparing them
+            # needs to know that.
+            graph["run"]["session"] = session
+        sidecar = self.sidecar_path(run_id)
+        if sidecar.is_file():
+            merge_sidecar(graph, json.loads(sidecar.read_text()))
         return graph
 
     def sidecar_paths(self, run_id):

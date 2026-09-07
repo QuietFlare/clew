@@ -66,6 +66,28 @@ class GraphDirectory(unittest.TestCase):
         runs.merge_sidecar(g, {"outputs": {"aa/1": {"out.txt": "sha256:sidecar"}}})
         self.assertEqual(g["output_details"]["aa/1"][0]["digest"], "sha256:engine")
 
+    def test_latest_reads_a_recorded_timestamp_before_mtime(self):
+        # `touch` reorders mtimes; a timestamp inside the record does not move.
+        import os, time
+        early = graph("C")
+        early["run"] = {"timestamp": "2026-01-01T00:00:00Z"}
+        late = graph("D")
+        late["run"] = {"timestamp": "2026-06-01T00:00:00Z"}
+        (self.root / "early.json").write_text(json.dumps(early))
+        (self.root / "late.json").write_text(json.dumps(late))
+        os.utime(self.root / "early.json", (time.time() + 100, time.time() + 100))
+        store = runs.Runs(self.root)
+        self.assertEqual([r["name"] for r in store.records()][:2], ["early", "late"])
+        self.assertFalse(store.records()[1]["by_mtime"])
+        self.assertTrue(store.records()[-1]["by_mtime"])
+
+    def test_the_mtime_fallback_is_said_out_loud(self):
+        import contextlib, io
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(runs.Runs(self.root).resolve(), ("second", "second"))
+        self.assertIn("modification time", err.getvalue())
+
     def test_something_else_is_refused(self):
         empty = Path(tempfile.mkdtemp())
         try:
@@ -123,11 +145,37 @@ class StoreRuns(unittest.TestCase):
         self.assertEqual(g["output_details"]["aa/1"][0]["digest"], "sha256:old")
         self.assertEqual(g["published"]["p.txt"]["digest"], "sha256:old")
 
+class LineageStoreRuns(unittest.TestCase):
+    """A session-id prefix names a resume chain; its newest run stands for it."""
+
+    def setUp(self):
+        from tests.test_lineage_store import RUN_A, RUN_B, RUN_C, CHAIN, OTHER
+        self.root = Path(tempfile.mkdtemp())
+        history = self.root / ".history"
+        history.mkdir()
+        (history / RUN_A).write_text(f"2026-08-01 10:00:00 CEST\tfirst_run\t{CHAIN}\tlid://{RUN_A}\n")
+        (history / RUN_B).write_text(f"2026-08-02 10:00:00 CEST\tsecond_run\t{CHAIN}\tlid://{RUN_B}\n")
+        (history / RUN_C).write_text(f"2026-08-03 10:00:00 CEST\tother_run\t{OTHER}\tlid://{RUN_C}\n")
+        self.run_b = RUN_B
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def test_a_session_prefix_resolves_to_the_chain_s_newest_run(self):
+        store = runs.Runs(self.root)
+        self.assertEqual(store.resolve("session-ch"), ("second_run", self.run_b))
+        self.assertEqual(store.resolve("bbbb"), ("second_run", self.run_b))
+
+    def test_a_prefix_spanning_two_sessions_is_still_ambiguous(self):
+        with self.assertRaises(SystemExit):
+            runs.Runs(self.root).resolve("session-")
+
 
 class HorusRuns(unittest.TestCase):
     def test_a_single_run_directory(self):
         store = runs.Runs(FIXTURES / "horus_run")
         self.assertEqual(store.kind, "horus-run")
+        self.assertEqual(store.records()[0]["timestamp"], "2026-09-02T09:01:34.050766+00:00")
         g = store.load()
         self.assertEqual(g["run"]["name"], "horus_run")
         self.assertTrue(any(d.get("digest", "").startswith("sha256:")
