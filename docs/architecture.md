@@ -29,6 +29,7 @@ flowchart TB
     subgraph Q["questions/"]
         IMP["impact<br/>what a change reached"]
         REC["reclaim<br/>what can be deleted"]
+        DRI["drift<br/>where two runs part ways"]
         GATE["gate<br/>block a run before it starts"]
     end
     Q --> LED["ledger/<br/>policy, log, evidence"]
@@ -44,8 +45,8 @@ clew/domains/    the layer allowed to know about sarek, samplesheets, donors.
 clew/extract/    one extractor per engine, all emitting the same JSON,
                  plus stitch and digest.
 clew/questions/  one module per question asked of the graph: impact,
-                 reclaim, gate.
-clew/views/      dashboard, the impact and reclaim pages, MCP server.
+                 reclaim, drift, gate.
+clew/views/      dashboard, one page per question, MCP server.
 tests/           stdlib unittest.
 ```
 

@@ -30,7 +30,7 @@ clew demo
 Python 3.9 or later, no dependencies. The demo runs over a real
 nf-core/sarek run that ships with the package.
 
-## Three questions
+## What it answers
 
 **Something upstream went bad.** A reference update, a broken container, a
 withdrawn sample.
@@ -51,6 +51,16 @@ clew reclaim --graph graph.json --work-root work/ --results results/
 Proposes only the directories the graph proves redundant, and deletes
 nothing without `--apply` and a receipt.
 
+**Did the new version produce what the old one did?**
+
+```bash
+clew drift --before a.json --after b.json
+```
+
+Names the first task on each chain whose outputs differ and why: an input
+changed, a container changed, or nothing changed and the tool is not
+deterministic. Everything else is confirmed reproduced, digest for digest.
+
 **One run consumed another's output.**
 
 ```bash
@@ -60,7 +70,7 @@ clew stitch --graph a=a.json --graph b=b.json --out chain.json
 Joins runs by content digest, so a question follows a change across
 launches, machines and engines.
 
-Add `--html` to `impact` or `reclaim` for a one-page report.
+Add `--html` to `impact`, `reclaim` or `drift` for a one-page report.
 
 ![An impact report: how much of the run a bad container reaches, and what to do about each task it touches](docs/impact.png)
 
