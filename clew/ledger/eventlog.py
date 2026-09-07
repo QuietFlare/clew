@@ -76,7 +76,7 @@ later reads verify()'s ok=True as "nothing was lost".
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 # The predecessor of the first entry. Same width as a real hash so the chain
 # is uniform and nothing has to special-case "is this the beginning".
@@ -182,8 +182,64 @@ def _broken(seq, verified, reason):
             "broken_at": seq, "reason": reason}
 
 
+def stamp(moment):
+    """One ISO-8601 spelling for every timestamp the log writes."""
+    return moment.astimezone(timezone.utc).isoformat(timespec="seconds")
+
+
 def now():
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return stamp(datetime.now(timezone.utc))
+
+
+def instant(text):
+    """
+    An ISO-8601 string as an aware UTC datetime, for comparing and sorting.
+
+    Timestamps are stored as text because the hash covers bytes, but text
+    compares as text: "2026-03-01T09:00:00+02:00" sorts after
+    "2026-03-01T08:00:00+00:00" although it is the earlier instant, and a
+    date-only value never compares equal to the same day with a time on it.
+    Every comparison of two timestamps goes through here instead.
+
+    A date alone means midnight UTC. A time with no offset is taken as UTC.
+    Anything unparseable raises, because a comparison against a value that
+    cannot be placed on a timeline has no honest answer.
+    """
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError(f"not a timestamp: {text!r}")
+    spelled = text.strip()
+    if spelled.endswith("Z"):
+        spelled = spelled[:-1] + "+00:00"
+    try:
+        moment = datetime.fromisoformat(spelled)
+    except ValueError:
+        raise ValueError(f"not an ISO-8601 timestamp: {text!r}") from None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(timezone.utc)
+
+
+def _date_only(text):
+    try:
+        date.fromisoformat(text.strip())
+    except ValueError:
+        return False
+    return True
+
+
+def in_effect(effective_from, as_of):
+    """
+    Whether a fact effective at `effective_from` counts when asking at `as_of`.
+
+    A date-only as_of names the whole day: "as of 1 May" includes a fact
+    stamped 09:00 on 1 May, because the person asking means the day, not
+    the stroke of midnight that began it.
+    """
+    moment = instant(effective_from)
+    cutoff = instant(as_of)
+    if _date_only(as_of):
+        return moment < cutoff + timedelta(days=1)
+    return moment <= cutoff
 
 
 # ------------------------------------------------------------------- driver
@@ -315,19 +371,29 @@ def head(conn):
 
 
 def append(conn, event_type, subject, body=None, actor="unknown",
-           effective_from=None, recorded_at=None):
+           effective_from=None):
     """
     Add one event and return it, hash included.
+
+    `recorded_at` is the server's clock, read inside the same transaction
+    that writes the row. The caller cannot supply it: recorded_at is the
+    one field whose value is "when the log heard this", and the process
+    doing the telling is the wrong party to say when that was. The hash
+    covers it, so it cannot be stamped inside the INSERT itself; reading
+    the server clock first and hashing over that is the same guarantee.
 
     `effective_from` defaults to `recorded_at` — a fact with no stated
     effective date is treated as effective when we heard it. That default
     never back-dates anything on its own, which is the safe direction, but it
     is still a default: a domain that knows the real date should pass it.
+    A value that is not an ISO-8601 timestamp is refused here, because a
+    fact that cannot be placed on a timeline cannot be ordered against any
+    other and would poison every later comparison.
     """
-    recorded_at = recorded_at or now()
+    if effective_from is not None:
+        instant(effective_from)
+
     entry = {
-        "effective_from": effective_from or recorded_at,
-        "recorded_at": recorded_at,
         "actor": actor,
         "event_type": event_type,
         "subject": subject,
@@ -341,6 +407,10 @@ def append(conn, event_type, subject, body=None, actor="unknown",
             # both read seq N and the chain forks. The advisory lock is held
             # for the transaction and released with it.
             cur.execute("SELECT pg_advisory_xact_lock(%s)", (APPEND_LOCK,))
+
+            cur.execute("SELECT now() AS t")
+            entry["recorded_at"] = stamp(cur.fetchone()["t"])
+            entry["effective_from"] = effective_from or entry["recorded_at"]
 
             previous = head(conn)
             entry["seq"] = previous["seq"] + 1

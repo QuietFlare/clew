@@ -48,6 +48,7 @@ import json
 
 from clew.graph import contribution as contribution_module
 from clew.ledger import policy as policy_module
+from clew.ledger.eventlog import in_effect, instant
 
 # Fact types core does recognise, because Clew itself writes them. Everything
 # else in a log is the customer's vocabulary and stays opaque.
@@ -135,7 +136,7 @@ def subject_history(entries, subject):
     the gap between them stays visible.
     """
     matching = sorted((e for e in entries if e["subject"] == subject),
-                      key=lambda e: (e["effective_from"], e["seq"]))
+                      key=lambda e: (instant(e["effective_from"]), e["seq"]))
     if not matching:
         # An empty history is a real answer and must not look like a clean
         # one. It cites the log head so a reader can see what was searched.
@@ -172,7 +173,7 @@ def policy_history(entries):
     """Which remediation table was adopted, when, and by whom."""
     adoptions = sorted(
         (e for e in entries if e["event_type"] == POLICY_ADOPTED),
-        key=lambda e: (e["effective_from"], e["seq"]))
+        key=lambda e: (instant(e["effective_from"]), e["seq"]))
     if not adoptions:
         return {
             "question": "which policy versions were adopted, and when?",
@@ -213,7 +214,7 @@ def policy_in_force(entries, as_of):
     """
     adoptions = [e for e in entries
                  if e["event_type"] == POLICY_ADOPTED
-                 and e["effective_from"] <= as_of]
+                 and in_effect(e["effective_from"], as_of)]
     if not adoptions:
         return {
             "question": f"which policy was in force on {as_of}?",
@@ -225,7 +226,8 @@ def policy_in_force(entries, as_of):
             ],
         }
 
-    latest = max(adoptions, key=lambda e: (e["effective_from"], e["seq"]))
+    latest = max(adoptions,
+                 key=lambda e: (instant(e["effective_from"]), e["seq"]))
     return answer(
         f"which policy was in force on {as_of}?",
         {"as_of": as_of, "version": latest["subject"],

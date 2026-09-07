@@ -63,9 +63,13 @@ def cmd_init(conn, args):
 
 def cmd_append(conn, args):
     body = json.loads(args.body) if args.body else {}
-    entry = eventlog.append(conn, event_type=args.event_type,
-                            subject=args.subject, body=body, actor=args.actor,
-                            effective_from=args.effective_from)
+    try:
+        entry = eventlog.append(conn, event_type=args.event_type,
+                                subject=args.subject, body=body,
+                                actor=args.actor,
+                                effective_from=args.effective_from)
+    except ValueError as exc:
+        raise SystemExit(f"refusing to append: {exc}")
     print(f"seq {entry['seq']}  {entry['event_type']}  {entry['subject']}")
     print(f"  effective from  {entry['effective_from']}")
     print(f"  recorded at     {entry['recorded_at']}")

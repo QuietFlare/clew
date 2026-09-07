@@ -93,7 +93,7 @@ class LogTestCase(unittest.TestCase):
         for i in range(1, n + 1):
             el.append(conn, event_type="Thing", subject=f"s{i}",
                       body={"i": i}, actor="tester",
-                      effective_from=T0, recorded_at=T0)
+                      effective_from=T0)
 
 
 class TestRolePrivileges(LogTestCase):
@@ -233,28 +233,41 @@ class TestAppend(LogTestCase):
         self.assertEqual(el.head(self.writer), {"seq": 0, "hash": el.GENESIS})
 
     def test_effective_from_defaults_to_recorded_at(self):
-        e = el.append(self.writer, "T", "s", actor="t", recorded_at=T0)
-        self.assertEqual(e["effective_from"], T0)
+        e = el.append(self.writer, "T", "s", actor="t")
+        self.assertEqual(e["effective_from"], e["recorded_at"])
+
+    def test_recorded_at_is_the_server_clock_in_utc(self):
+        # The caller cannot say when the log heard something. The stamp is
+        # the server's, and it is spelled the one way the log spells time.
+        e = el.append(self.writer, "T", "s", actor="t")
+        self.assertTrue(e["recorded_at"].endswith("+00:00"))
+        el.instant(e["recorded_at"])
 
     def test_a_fact_can_be_effective_before_it_was_recorded(self):
         e = el.append(self.writer, "T", "s", actor="t",
-                      effective_from="2025-06-01T00:00:00+00:00",
-                      recorded_at=T0)
-        self.assertLess(e["effective_from"], e["recorded_at"])
+                      effective_from="2025-06-01T00:00:00+00:00")
+        self.assertLess(el.instant(e["effective_from"]),
+                        el.instant(e["recorded_at"]))
         self.assertTrue(el.verify(self.writer)["ok"])
+
+    def test_an_unparseable_effective_from_is_refused(self):
+        with self.assertRaises(ValueError):
+            el.append(self.writer, "T", "s", actor="t",
+                      effective_from="last Tuesday")
+        self.assertEqual(el.head(self.writer)["seq"], 0)
 
     def test_timestamps_survive_the_round_trip_byte_for_byte(self):
         # Why the columns are text. A timestamptz would come back in the
         # server's own formatting and every later hash would fail to
         # recompute — verification broken by a display convention.
         odd = "2026-01-01T00:00:00+00:00"
-        el.append(self.writer, "T", "s", actor="t", recorded_at=odd)
-        self.assertEqual(el.read(self.writer)[0]["recorded_at"], odd)
+        el.append(self.writer, "T", "s", actor="t", effective_from=odd)
+        self.assertEqual(el.read(self.writer)[0]["effective_from"], odd)
         self.assertTrue(el.verify(self.writer)["ok"])
 
     def test_body_round_trips_as_a_structure(self):
         el.append(self.writer, "T", "s", {"nested": {"list": [1, 2]}},
-                  actor="t", recorded_at=T0)
+                  actor="t")
         self.assertEqual(el.read(self.writer)[0]["body"],
                          {"nested": {"list": [1, 2]}})
 
@@ -267,7 +280,7 @@ class TestRead(LogTestCase):
 
     def test_filters_by_type_and_subject(self):
         for event_type, subject in (("A", "s1"), ("B", "s1"), ("A", "s2")):
-            el.append(self.writer, event_type, subject, actor="t", recorded_at=T0)
+            el.append(self.writer, event_type, subject, actor="t")
         self.assertEqual(len(el.read(self.writer, event_type="A")), 2)
         self.assertEqual(len(el.read(self.writer, subject="s1")), 2)
         self.assertEqual(
@@ -304,7 +317,7 @@ class TestConcurrentAppend(LogTestCase):
                 conn = el.connect(self.writer_dsn)
                 for i in range(10):
                     el.append(conn, "Thing", f"w{index}", {"i": i},
-                              actor="tester", recorded_at=T0)
+                              actor="tester")
                 conn.close()
             except Exception as exc:            # pragma: no cover
                 errors_seen.append(exc)

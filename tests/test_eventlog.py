@@ -137,6 +137,46 @@ class TestVerifyEntries(unittest.TestCase):
         self.assertEqual(el.verify_entries(entries)["broken_at"], 2)
 
 
+class TestInstant(unittest.TestCase):
+    """
+    Timestamps are stored as text because the hash covers bytes, but they
+    must never be COMPARED as text: two offsets spell one moment two ways.
+    """
+
+    def test_a_date_alone_is_midnight_utc(self):
+        self.assertEqual(el.instant("2026-03-01"),
+                         el.instant("2026-03-01T00:00:00+00:00"))
+
+    def test_a_time_with_no_offset_is_utc(self):
+        self.assertEqual(el.instant("2026-03-01T09:00:00"),
+                         el.instant("2026-03-01T09:00:00+00:00"))
+
+    def test_z_and_plus_zero_are_the_same_moment(self):
+        self.assertEqual(el.instant("2026-03-01T09:00:00Z"),
+                         el.instant("2026-03-01T09:00:00+00:00"))
+
+    def test_offsets_compare_by_instant(self):
+        # Later as text, earlier as a moment.
+        self.assertLess(el.instant("2026-03-01T09:00:00+02:00"),
+                        el.instant("2026-03-01T08:00:00+00:00"))
+
+    def test_garbage_raises(self):
+        for text in ("", "soon", "2026-13-01", None, "01/03/2026"):
+            with self.assertRaises(ValueError, msg=repr(text)):
+                el.instant(text)
+
+    def test_a_date_only_as_of_covers_the_whole_day(self):
+        self.assertTrue(el.in_effect("2026-05-20T09:00:00+00:00", "2026-05-20"))
+        self.assertTrue(el.in_effect("2026-05-20T23:59:59+00:00", "2026-05-20"))
+        self.assertFalse(el.in_effect("2026-05-21T00:00:00+00:00", "2026-05-20"))
+
+    def test_a_timed_as_of_is_exact(self):
+        self.assertTrue(el.in_effect("2026-05-20T08:00:00+00:00",
+                                     "2026-05-20T08:00:00+00:00"))
+        self.assertFalse(el.in_effect("2026-05-20T08:00:01+00:00",
+                                      "2026-05-20T08:00:00+00:00"))
+
+
 class TestWindowAnchoring(unittest.TestCase):
     """
     A slice of the chain is only verifiable against what came before it.

@@ -111,6 +111,8 @@ def main(argv=None):
                              "estate — but it must be a choice.")
     parser.add_argument("--out", metavar="DIR",
                         help="seal the result into an evidence bundle")
+    parser.add_argument("--force", action="store_true",
+                        help="replace the contents of a non-empty --out")
     parser.add_argument("--actor", default="ci",
                         help="who ran the check, for --out --seal-into-log")
     parser.add_argument("--seal-into-log", action="store_true",
@@ -120,6 +122,13 @@ def main(argv=None):
     policy = load_gate_policy(args)
     domain = DOMAINS[args.pipeline]
     subjects = sorted(domain.load_subjects(args.samplesheet))
+
+    if args.as_of:
+        from clew.ledger import eventlog
+        try:
+            eventlog.instant(args.as_of)
+        except ValueError as exc:
+            raise SystemExit(f"--as-of: {exc}")
 
     if not args.dsn:
         raise SystemExit(
@@ -139,9 +148,13 @@ def main(argv=None):
             f"cannot reach the event log: {str(exc).strip().splitlines()[0]}\n"
             "Stopping. An unreachable log is not the same as a clean one.")
 
+    # as_of is always a concrete instant in the result, defaulted to now by
+    # the core when none was given. That is what lets a sealed gate result
+    # be re-derived after the log has grown.
     result = core_gate.decide(
         subjects, entries, policy["blocking"], policy["clearing"],
         as_of=args.as_of, unknown_blocks=not args.allow_unknown)
+    result["as_of_given"] = args.as_of is not None
     result["gate_policy"] = policy
     result["samplesheet"] = str(args.samplesheet)
     result["log_head"] = log_head
@@ -162,7 +175,10 @@ def report(result, policy, log_head):
     print(f"  blocking on     {', '.join(policy['blocking'])}")
     if policy["clearing"]:
         print(f"  cleared by      {', '.join(policy['clearing'])}")
-    print(f"  as of           {result['as_of'] or 'now (all facts in effect)'}")
+    when = result["as_of"]
+    if not result.get("as_of_given", True):
+        when += "  (now; no --as-of given)"
+    print(f"  as of           {when}")
     print(f"  log head        seq {log_head['seq']}  {log_head['hash'][:16]}")
     print()
 
@@ -216,10 +232,11 @@ def seal(args, result, policy, entries, log_head):
             | {"body": json.dumps(e["body"], sort_keys=True,
                                   separators=(",", ":"), ensure_ascii=True)}
             for e in entries],
+        # Keyed by content hash, basename only: the same sheet from any
+        # directory seals to the same bundle.
         "inputs.json": {
-            Path(args.samplesheet).name: {
-                "path": str(args.samplesheet),
-                "sha256": bundle.sha256_file(args.samplesheet),
+            bundle.sha256_file(args.samplesheet): {
+                "name": Path(args.samplesheet).name,
                 "bytes": Path(args.samplesheet).stat().st_size,
             }
         },
@@ -232,9 +249,15 @@ def seal(args, result, policy, entries, log_head):
         "the log's coverage bounds this result: facts never recorded cannot "
         "block anything",
     ]
-    manifest, digest = bundle.build(
-        args.out, documents, log_head=log_head, coverage=coverage,
-        description=f"Clew gate result for {Path(args.samplesheet).name}")
+    try:
+        manifest, digest = bundle.build(
+            args.out, documents, log_head=log_head, coverage=coverage,
+            force=args.force,
+            description=f"Clew gate result for {Path(args.samplesheet).name}")
+    except FileExistsError:
+        raise SystemExit(
+            f"{args.out} is not empty; a bundle needs a directory of its "
+            "own. Pass --force to replace what is there.")
     print(f"\nsealed {args.out}")
     print(f"  bundle hash  {digest}")
 

@@ -38,6 +38,11 @@ def load_store(bundle_root):
             continue
         try:
             manifest = json.loads(manifest_path.read_text())
+            # A manifest naming a path outside its own directory is not a
+            # bundle with an odd entry; it is a way to make the reader load
+            # a file the seal never covered. Skipped whole.
+            if not all(sealed.safe_name(n) for n in manifest.get("files", {})):
+                continue
             documents = {}
             for name in manifest.get("files", {}):
                 if name.endswith(".json"):
@@ -122,8 +127,7 @@ def check_integrity(bundle):
     path = Path(bundle["path"])
     checks = [sealed.verify_files(path, manifest)]
     events = bundle["documents"].get("events.json", [])
-    if "events.json" in manifest["files"]:
-        checks.append(sealed.verify_log(events, manifest, eventlog))
+    checks.append(sealed.verify_log(events, manifest, eventlog))
     if plan_of(bundle):
         checks.append(sealed.verify_policy(plan_of(bundle), policy_of(bundle)))
         checks.append(sealed.verify_replay(plan_of(bundle), policy_of(bundle)))

@@ -47,6 +47,8 @@ June, or every historical gate result becomes unreproducible the moment
 someone records something new.
 """
 
+from clew.ledger.eventlog import in_effect, instant, now
+
 BLOCKED = "BLOCKED"
 CLEARED = "CLEARED"
 UNKNOWN = "UNKNOWN"
@@ -59,14 +61,19 @@ def decisive_facts(entries, blocking, clearing, as_of=None):
     `blocking` and `clearing` are sets of opaque type names. Core does not
     know what any of them mean — a domain decides which of its vocabulary
     belongs in which set, and that mapping is the customer's to author.
+
+    Timestamps are compared as instants, never as text: two offsets spell
+    the same moment differently, and text order is not time order.
     """
     decisive = set(blocking) | set(clearing)
     relevant = [e for e in entries if e["event_type"] in decisive]
     if as_of is not None:
-        relevant = [e for e in relevant if e["effective_from"] <= as_of]
+        relevant = [e for e in relevant
+                    if in_effect(e["effective_from"], as_of)]
     # effective_from first, log order as the tiebreak. See the module
     # docstring: seq is the only ordering nobody can back-date.
-    return sorted(relevant, key=lambda e: (e["effective_from"], e["seq"]))
+    return sorted(relevant,
+                  key=lambda e: (instant(e["effective_from"]), e["seq"]))
 
 
 def status_by_subject(subjects, entries, blocking, clearing, as_of=None):
@@ -114,7 +121,16 @@ def decide(subjects, entries, blocking, clearing, as_of=None,
     correct choice — a pilot run against a log that only covers part of an
     estate — but it must be a choice someone made, not a default they
     inherited without noticing.
+
+    `as_of` defaults to now and the value used is recorded in the result.
+    A result that said "as of: nothing in particular" could never be
+    re-derived once the log grew, because nobody would know which facts
+    were in view when it was decided.
     """
+    if as_of is None:
+        as_of = now()
+    else:
+        instant(as_of)
     statuses = status_by_subject(subjects, entries, blocking, clearing, as_of)
     counts = {BLOCKED: 0, CLEARED: 0, UNKNOWN: 0}
     for detail in statuses.values():

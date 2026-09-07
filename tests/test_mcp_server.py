@@ -44,6 +44,7 @@ def a_plan():
         "clew_plan_version": 1, "trigger": "withdrawal of s1",
         **policy_module.identify(policy_module.DEFAULT),
         "tasks_total": 10, "tasks_affected": 1, "entry_tasks": ["t0"],
+        "actions": {decision["action"]: 1},
         "plan": [{
             "task": "t1", "process": "P", "name": "t1",
             "action": decision["action"], "rule": decision["rule"],

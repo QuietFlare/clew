@@ -60,6 +60,35 @@ follow [Semantic Versioning](https://semver.org/).
 - `clew extract-snakemake`: an output's digest is filled from the checksum
   its consumers recorded, so `drift` and `stitch` can compare Snakemake
   runs without `clew digest`.
+- `clew evidence verify`: the bundled chain is checked from genesis, or from
+  the previous bundle's log head, which the manifest now records under
+  `anchors.since` and `anchors.previous_log_head`. It was checked against
+  its own first `prev_hash`, so a forged chain verified. A bundle claiming
+  a log head with no `events.json` now fails the log check.
+- `clew gate`, `policy_in_force`: `effective_from` and `--as-of` are
+  compared as instants, not as text. A date-only `--as-of` covers the whole
+  day, mixed offsets order by the moment they name, and an unparseable
+  `effective_from` is refused at append time.
+- `clew gate`: `as_of` defaults to now (UTC) and the value used is recorded
+  in the result and the bundle, so a sealed gate result can be re-derived
+  after the log has grown.
+- `policy.decide`: a value outside a dimension's possible values is an error
+  rather than a silent non-match, and `None` on `exclusive` or `terminal` is
+  unverified, evaluated the way storage already was. A plan with
+  `terminal: null` can no longer replay to a settled verdict.
+- `clew evidence build`, `clew gate --out`: a non-empty output directory is
+  refused unless `--force`; `verify` fails on any subdirectory or other
+  entry the manifest does not list.
+- `clew evidence verify`: replay also recomputes each undetermined item's
+  `possible` map and the plan's `actions` counts and `tasks_affected`.
+- `clew evidence build --input`: `inputs.json` is keyed by content hash and
+  records the basename only, so the path spelling no longer changes the
+  bundle hash. Two files with the same content under different names are
+  refused.
+- Manifest file names containing `/`, `\`, or `..` fail verification and
+  are skipped by the bundle store.
+- `eventlog.append`: `recorded_at` is the database server's clock, read in
+  the appending transaction. Callers can no longer supply it.
 
 ## [0.4.0] - 2026-09-07
 
