@@ -61,12 +61,15 @@ from clew.graph.graph import (
     external_input_entry_nodes,
     load_assertions,
     outputs_for,
+    resolve_workdirs,
 )
+from clew.domains import snakemake as snakemake_domain
 from clew.domains.nfcore import index_results, published_copies
 
 # Which adapter translates between this pipeline's vocabulary and core's.
 # Adding a pipeline = adding a module in domains/ and one entry here.
-DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
+DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq,
+           "snakemake": snakemake_domain}
 
 
 def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
@@ -88,11 +91,17 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
     # any of them.
     print(f"POLICY: {stamp['policy_version']}  {stamp['policy_hash'][:16]}\n")
 
+    # Placed once for the whole graph, not per task: whether the root is
+    # right at all is a question about every task together.
+    resolved, warnings = resolve_workdirs(graph, work_root)
+    for line in warnings:
+        print(f"clew: {line}", file=sys.stderr)
+
     plan = []
     for task_hash in sorted(affected):
         facts = classify(
             graph, task_hash, task_hash in exclusive_set, published=published,
-            work_root=work_root,
+            work_root=work_root, resolved=resolved,
         )
         # The domain's storage check only sees the workdir. If the scratch
         # copy is gone but published copies are known to exist, the artifact

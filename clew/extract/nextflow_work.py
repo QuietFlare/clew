@@ -221,6 +221,7 @@ def extract(jsonl_path, work_root):
         if workdir is None:
             missing_dirs.append(task_hash)
             continue
+        tasks[task_hash]["workpath"] = str(workdir.relative_to(work_root))
 
         produced = []
 

@@ -73,9 +73,21 @@ class Runs:
             merge_sidecar(graph, json.loads(sidecar.read_text()))
         return graph
 
+    def sidecar_key(self, run_id):
+        """
+        What a sidecar is filed under. A store graph is the whole resume
+        chain, so its digests belong to the session, not to whichever run
+        name was typed; a digest written under one name must be found
+        under the other.
+        """
+        if self.kind == "nextflow":
+            run = nextflow_store.pick_run(nextflow_store.load_history(self.path), run_id)
+            return run["session_id"]
+        return run_id
+
     def sidecar_path(self, run_id):
         base = self.path.parent if self.kind == "horus-run" else self.path
-        return base / SIDECAR_DIR / f"{run_id}.digests.json"
+        return base / SIDECAR_DIR / f"{self.sidecar_key(run_id)}.digests.json"
 
     def save_sidecar(self, graph):
         """Keep the sha256 digests of a graph beside the engine's record."""

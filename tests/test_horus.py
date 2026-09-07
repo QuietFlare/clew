@@ -103,6 +103,10 @@ class TestHorusAdapter(unittest.TestCase):
         self.assertTrue(prep["container"].startswith("shell@"))
         self.assertTrue(prep["workdir"])
 
+    def test_workpath_is_the_working_dir_under_the_run_directory(self):
+        prep = next(t for h, t in self.graph["tasks"].items() if short(h) == "prep")
+        self.assertEqual(prep["workpath"], "prep/ba236cbbbdff477cab36123153dc3670")
+
     def test_an_unknown_record_format_is_refused(self):
         """
         Refusing beats guessing at the fields of a version we do not know.
