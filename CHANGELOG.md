@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `clew impact --pipeline snakemake`: a subject adapter that attributes a
+  job to a sample named in its output path.
+- ADR 0007: extractors translate, core never interprets an engine string.
+
 ### Fixed
 
 - `clew impact`: evidence chains come from one breadth-first pass over the
@@ -54,8 +60,6 @@ follow [Semantic Versioning](https://semver.org/).
 - `clew extract-snakemake`: an output's digest is filled from the checksum
   its consumers recorded, so `drift` and `stitch` can compare Snakemake
   runs without `clew digest`.
-- `clew impact --pipeline snakemake`: a subject adapter that attributes a
-  job to a sample named in its output path.
 
 ## [0.4.0] - 2026-09-07
 
