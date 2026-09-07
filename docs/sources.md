@@ -286,7 +286,7 @@ they carry, and evidence is what verdicts are made of.
 | script and container image | yes | yes | yes | yes | no | yes |
 | output sizes | yes | yes | no | no | no | yes |
 | content digests | every output with `cache 'deep'`, else external inputs only | every artifact | no | every consumed input | no | no |
-| storage checkable | `--work-root` | `--work-root` | `--work-root` at `cromwell-executions/<workflow>` | no, jobs share one directory | published copies only | `--work-root` |
+| storage checkable | `--work-root` and `--results` | `--work-root` and `--results` | `--work-root` at `cromwell-executions/<workflow>`; a missing call directory stays unverified, since no output sizes means the published tree cannot be checked | no, jobs share one directory | published copies only | `--work-root` and `--results` |
 | best verdict for a shared, surviving artifact | REGENERATE | REGENERATE | REGENERATE | REGENERATE | QUARANTINE | REGENERATE |
 
 The last row is the practical difference. A crate carries no re-execution

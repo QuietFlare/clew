@@ -6,6 +6,17 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `clew impact`: evidence chains come from one breadth-first pass over the
+  graph. The per-target search had no visited set, so a reference-update
+  trigger on a run with scatter-gather stages did not finish.
+- `clew impact`: a cleaned work directory is only `ALREADY_GONE` once the
+  published tree has been checked too. Without `--results` the verdict is
+  withheld. Directory outputs are now found under `--results` by name.
+- `clew impact`: a subject that matches no task tag exits non-zero instead
+  of reporting zero affected tasks.
+
 ## [0.4.0] - 2026-09-07
 
 ### Added

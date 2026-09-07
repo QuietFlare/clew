@@ -73,7 +73,10 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
                published, results_index=None, active_policy=None,
                work_root=None):
     """Classify every affected task and print the remediation plan."""
+    published_checked = (results_index is not None
+                         and bool(graph.get("output_details")))
     forward = core.forward_index(graph["edges"])
+    tree = core.evidence_tree(entry_nodes, forward)
     active_policy = active_policy or policy.DEFAULT
     stamp = policy.identify(active_policy)
 
@@ -106,6 +109,15 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
             facts["reason"] += ("; workdir removed but published copies exist"
                                 if was == contribution.DESTROYED
                                 else "; published copies found on disk")
+        elif facts["storage"] == contribution.DESTROYED and not published_checked:
+            # A missing workdir is only "gone" once the published tree has
+            # been looked at too. Without that, DESTROYED would settle to
+            # ALREADY_GONE for a sample whose BAM sits in results/. Leave
+            # the dimension unverified and let the policy withhold.
+            facts["storage"] = None
+            facts["reason"] += ("; workdir removed, published tree not "
+                                "checked (no --results, or no output sizes "
+                                "in the graph)")
         decision = policy.decide(
             facts["contribution"],
             storage=facts["storage"],
@@ -149,7 +161,8 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
             elif task_hash not in entry_nodes:
                 # Evidence: show one concrete chain reaching this task, so the
                 # claim is checkable rather than merely asserted.
-                for path in core.paths_to(entry_nodes, task_hash, forward, limit=1):
+                path = core.path_from(tree, task_hash)
+                if path:
                     hops = " -> ".join(
                         f"{h}[{describe(graph, h)}]" for h in path
                     )
@@ -176,6 +189,7 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
     were reading the same table.
     """
     forward = core.forward_index(graph["edges"])
+    tree = core.evidence_tree(entry_nodes, forward)
     active_policy = active_policy or policy.DEFAULT
     items = []
     for task_hash, facts, decision in plan:
@@ -207,9 +221,9 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
             item["script"] = task.get("script", "")
         # One checkable derivation chain per non-entry task: the evidence.
         if task_hash not in entry_nodes:
-            paths = core.paths_to(entry_nodes, task_hash, forward, limit=1)
-            if paths:
-                item["evidence_path"] = paths[0]
+            path = core.path_from(tree, task_hash)
+            if path:
+                item["evidence_path"] = path
         if decision.get("possible"):
             item["possible"] = decision["possible"]
         copies = published_copies(graph, task_hash, results_index)
@@ -236,7 +250,8 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
             "verdicts hold under the cited policy version only; replay an "
             "older plan under the policy it names, not under this one",
             "UNDETERMINED items are not clean; they are unanswered. Re-run "
-            "with --work-root where the artifacts live to settle them",
+            "with --work-root and --results where the artifacts live to "
+            "settle them",
             "publication status is an external assertion, not verified by Clew",
             "MTA transfers and physical destruction are not modelled",
             "uninstrumented systems are unknown, never clean",
@@ -295,9 +310,12 @@ def main(argv=None):
                              "verdict that depends on storage is reported "
                              "UNDETERMINED rather than guessed.")
     parser.add_argument("--results", metavar="DIR",
-                        help="the run's published results directory; plan items "
-                             "then name the published copies of each artifact "
-                             "(needs a graph from the lineage store adapter)")
+                        help="the run's published results directory. Needed "
+                             "with --work-root: a task whose scratch was "
+                             "cleaned is only ALREADY_GONE once its published "
+                             "copies were also looked for. Plan items name "
+                             "the copies found. Needs a graph that records "
+                             "output sizes (store, work or horus extractors).")
     args = parser.parse_args(argv)
 
     domain = DOMAINS[args.pipeline]
@@ -392,6 +410,17 @@ def main(argv=None):
         raise SystemExit(f"unknown subject {args.subject!r}; known: {', '.join(sorted(radius))}")
 
     result = radius[args.subject]
+    if not entry[args.subject]:
+        # Zero entry nodes is a failed attribution, not a clean result. The
+        # samplesheet id matched no task tag, which is what an id mismatch
+        # between LIMS, samplesheet and pipeline looks like.
+        tagged = sum(len(nodes) for nodes in entry.values())
+        hint = (" No task tag matched ANY subject in the samplesheet: the "
+                "ids in the samplesheet and the tags in the run disagree."
+                if not tagged else "")
+        raise SystemExit(
+            f"{args.subject!r} is in the samplesheet but no task in the "
+            f"graph carries its tag. Not attributable, not clean.{hint}")
     mode = args.mode or "remove"
     if mode == "remove":
         # Withdrawal: the subject's exclusive artifacts have nothing left to
@@ -473,8 +502,8 @@ def print_caveats(have_assertions, active_policy=None, undetermined=0):
     print("MTA transfers and physical destruction are not modelled here.")
     if undetermined:
         print(f"{undetermined} items are UNDETERMINED: not clean, unanswered. "
-              "Storage was not\nchecked. Re-run with --work-root pointing at "
-              "the work directory to settle them.")
+              "Storage was not\nfully checked. Re-run with --work-root and "
+              "--results pointing at the run's directories to settle them.")
 
 
 if __name__ == "__main__":

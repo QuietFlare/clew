@@ -60,6 +60,58 @@ class TestTraversal(unittest.TestCase):
         self.assertEqual(paths, [["a", "b", "c"]])
 
 
+class TestEvidenceSearchScales(unittest.TestCase):
+    """
+    Path evidence is one breadth-first pass, not a walk over every simple
+    path. A ladder of diamonds has 2**depth paths from top to bottom; the
+    old search enumerated them and a forty-level ladder never finished.
+    """
+
+    def ladder(self, depth):
+        edges = []
+        prev = ["top"]
+        for level in range(depth):
+            cur = [f"l{level:02d}a", f"l{level:02d}b"]
+            for node in cur:
+                for parent in prev:
+                    edges.append((node, parent))
+            prev = cur
+        edges.append(("bottom", prev[0]))
+        edges.append(("bottom", prev[1]))
+        nodes = {n for pair in edges for n in pair}
+        return graph_from(edges, tasks={n: {} for n in nodes})
+
+    def test_deep_ladder_answers_every_target_at_once(self):
+        g = self.ladder(60)
+        forward = core.forward_index(g["edges"])
+        tree = core.evidence_tree(["top"], forward)
+        self.assertEqual(len(tree), len(g["tasks"]))
+        for target in g["tasks"]:
+            path = core.path_from(tree, target)
+            if target == "top":
+                self.assertEqual(path, [])
+                continue
+            self.assertEqual(path[0], "top")
+            self.assertEqual(path[-1], target)
+            for a, b in zip(path, path[1:]):
+                self.assertIn(b, forward[a], f"{a} -> {b} is not an edge")
+
+    def test_tree_is_deterministic(self):
+        g = self.ladder(5)
+        forward = core.forward_index(g["edges"])
+        first = core.evidence_tree(["top"], forward)
+        second = core.evidence_tree(["top"], forward)
+        self.assertEqual(first, second)
+        self.assertEqual(core.path_from(first, "bottom"),
+                         ["top", "l00a", "l01a", "l02a", "l03a", "l04a", "bottom"])
+
+    def test_unreached_target_has_no_path(self):
+        g = graph_from([("b", "a"), ("d", "c")])
+        forward = core.forward_index(g["edges"])
+        self.assertEqual(core.path_from(core.evidence_tree(["a"], forward), "d"), [])
+        self.assertEqual(core.paths_to(["a"], "d", forward), [])
+
+
 class TestMixedVerdictsFromOneNode(unittest.TestCase):
     """
     The withdrawn donor fed a pool. The pool fed BOTH a published paper and

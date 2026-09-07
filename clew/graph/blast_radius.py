@@ -24,7 +24,7 @@ everything built on top of it. So we invert the edges before traversing.
 """
 
 import json
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 
 EXTERNAL = "EXTERNAL"
@@ -72,29 +72,50 @@ def reachable(start_nodes, forward):
     return seen
 
 
-def paths_to(start_nodes, target, forward, limit=3):
+def evidence_tree(start_nodes, forward):
     """
-    Up to `limit` forward paths from any start node to `target`.
+    One breadth-first pass from every start node: {node: parent}, with
+    parent None for the start nodes themselves.
 
-    This is the evidence half. Saying "MULTIQC is affected" is a claim;
-    showing the chain that reaches it is something a reader can check.
+    Computed once per trigger and read once per affected task. The earlier
+    per-target depth-first walk kept no visited set, so every scatter-gather
+    stage multiplied the paths it had to enumerate; fifty subjects with
+    three interval stages did not finish. This is linear in edges.
+
+    Sorted, not incidental set order: which chain is recorded must not depend
+    on the interpreter's hash seed, because re-running on the same inputs
+    has to give byte-identical output.
     """
-    found = []
-    stack = [[n] for n in start_nodes]
-    while stack and len(found) < limit:
-        path = stack.pop()
-        node = path[-1]
-        if node == target and len(path) > 1:
-            found.append(path)
-            continue
-        # Sorted, not incidental set order: which evidence chain gets shown
-        # must not depend on the interpreter's hash seed. Re-running Clew on
-        # the same inputs has to produce byte-identical output — that
-        # replayability is one of the three things Clew actually claims.
+    parent = {node: None for node in start_nodes}
+    queue = deque(sorted(start_nodes))
+    while queue:
+        node = queue.popleft()
         for nxt in sorted(forward.get(node, ())):
-            if nxt not in path:  # no cycles
-                stack.append(path + [nxt])
-    return found
+            if nxt not in parent:
+                parent[nxt] = node
+                queue.append(nxt)
+    return parent
+
+
+def path_from(tree, target):
+    """The recorded chain from a start node to target; [] if target is a start node or unreached."""
+    if tree.get(target) is None:
+        return []
+    path = [target]
+    while tree[path[-1]] is not None:
+        path.append(tree[path[-1]])
+    path.reverse()
+    return path
+
+
+def paths_to(start_nodes, target, forward, limit=1):
+    """
+    A forward path from any start node to `target`, as a one-element list,
+    or [] when there is none. Kept for callers that ask one target at a
+    time; `evidence_tree` answers every target at once.
+    """
+    path = path_from(evidence_tree(start_nodes, forward), target)
+    return [path] if path else []
 
 
 def blast_radius(graph, subjects):
