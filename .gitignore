@@ -18,3 +18,4 @@ dist/
 
 # Local MCP config
 .mcp.json
+uv.lock
