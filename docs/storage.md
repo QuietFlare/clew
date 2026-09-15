@@ -33,7 +33,7 @@ nothing is checked. Both print one warning on stderr.
 
 Without `--work-root`, storage is unverified and any verdict that depends on
 it comes back `UNDETERMINED` rather than guessed. Verdicts that hold
-whatever the disk says are still returned. Under policy v2 a published
+whatever the disk says are still returned. A released
 artifact is `NOTIFY_ONLY` either way, and that is an answer, not a guess:
 
 ```

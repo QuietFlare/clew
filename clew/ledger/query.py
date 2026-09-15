@@ -74,7 +74,7 @@ def cite_entry(entry):
 
 
 def cite_rule(policy_document, rule_id):
-    for rule in policy_module.upgrade(policy_document)["rules"]:
+    for rule in policy_document["rules"]:
         if rule["id"] == rule_id:
             return {"kind": "policy_rule", "rule": rule_id,
                     "policy_version": policy_document["version"],
@@ -247,9 +247,9 @@ def verdict(plan, policy_document, task):
             "action": item.get("action"),
             "possible": item.get("possible"),
             "rule": item.get("rule"),
-            "reason": item.get("reason", item.get("because")),
-            "facts": {"contribution": item.get("contribution"),
-                      **policy_module.plan_item_facts(item)},
+            "reason": item.get("reason"),
+            "facts": {k: item.get(k) for k in
+                      ("contribution", "storage", "scope", "released", "mode")},
             "evidence_path": item.get("evidence_path"),
             "published_copies": item.get("published_copies"),
             "explanation": contribution_module.explain(item["action"])

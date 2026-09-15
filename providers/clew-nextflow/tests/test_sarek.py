@@ -141,7 +141,7 @@ class TestAssertions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "assertions.json"
             path.write_text(json.dumps({
-                "published": [{"task": "aa/000001", "what": "Fig 3",
+                "released": [{"task": "aa/000001", "what": "Fig 3",
                                "asserted_by": "someone", "date": "2026-08-21"}]
             }))
             published = core_graph.load_assertions(path)

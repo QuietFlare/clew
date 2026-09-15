@@ -32,8 +32,7 @@ class TestDecisionTable(unittest.TestCase):
     """Unchanged semantics. Same assertions as before the table became data."""
 
     def test_destroyed_storage_wins_over_everything_except_publication(self):
-        # The v1 -> v2 change. Deleting your copy of a published artifact does
-        # not un-publish it, so the disclosure obligation outlives the bytes.
+        # Deleting your copy of a released artifact does not un-release it.
         for klass, exclusive in product(c.CLASSES, (True, False)):
             self.assertEqual(
                 p.remediate(klass, storage=c.DESTROYED, scope=(p.EXCLUSIVE if exclusive else p.SHARED),
@@ -213,23 +212,8 @@ class TestVersionsAreImmutable(unittest.TestCase):
     """
 
     FROZEN = {
-        "v1": "078548c9317185851ea70dba23953d35db5578447f34abd003a27e05b49d2bc4",
-        "v2": "b86891d5a5ad7ddbac4711c3f7bed6d5b5c4b8e517d5297a51e373b36c99295d",
-        "v3": "ace608e119dac334d1b0626f11042bf81b1490610608ab3600b06a57a18185de",
+        "v1": "f1f49f91c8a49f7e80eee15961796fb777a0e6f94783b19c8d79d54616275100",
     }
-    # The same tables as sealed before format 2, which plans out there cite.
-    LEGACY = {
-        "v1": "dbb59de6d85fc0f87f4bc7d490b6ce34f8bf9222875386a721ec4e18f3ee0461",
-        "v2": "e6ba60ffe6763949106eca86f7888c3cc3e28c920fd999ce275d708153152642",
-        "v3": "12e8068b4f8a5fd18f64e014e10a6de13b3fec7c3abd03871c3f333585bcc266",
-    }
-
-    def test_the_format_1_rendering_still_hashes_as_it_was_sealed(self):
-        for version, expected in self.LEGACY.items():
-            table = p.resolve(version)
-            self.assertEqual(p.fingerprint(p.downgrade(table)), expected)
-            self.assertTrue(p.cites(table, expected))
-            self.assertEqual(p.upgrade(p.downgrade(table)), table)
 
     def test_shipped_hashes_have_not_moved(self):
         for version, expected in self.FROZEN.items():
@@ -240,56 +224,27 @@ class TestVersionsAreImmutable(unittest.TestCase):
                 f"plans citing it stay replayable.")
 
     def test_every_registered_version_is_frozen_here(self):
-        # Adding a version without freezing its hash would leave it editable.
         self.assertEqual(set(p.REGISTRY), set(self.FROZEN))
 
-    def test_v1_and_v2_are_genuinely_different_tables(self):
-        self.assertNotEqual(p.fingerprint(p.V1), p.fingerprint(p.V2))
-
-    def test_rule_ids_are_stable_across_versions(self):
-        # Ids identify rules, not positions, so two plans on different
-        # versions stay comparable line by line.
-        self.assertEqual({r["id"] for r in p.V1["rules"]},
-                         {r["id"] for r in p.V2["rules"]})
-
-    def test_only_the_order_of_r1_and_r2_changed(self):
+    def test_rule_ids_follow_table_order(self):
         self.assertEqual([r["id"] for r in p.V1["rules"]],
-                         ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"])
-        self.assertEqual([r["id"] for r in p.V2["rules"]],
-                         ["R2", "R1", "R3", "R4", "R5", "R6", "R7", "R8"])
-
-    def test_v1_still_decides_the_way_it_always_did(self):
-        # The point of keeping it: a plan from before the change replays
-        # under the table that produced it, not under today's.
-        self.assertEqual(
-            p.remediate(c.REGENERABLE, storage=c.DESTROYED, released=True,
-                        policy=p.resolve("v1")),
-            c.ALREADY_GONE)
-        self.assertEqual(
-            p.remediate(c.REGENERABLE, storage=c.DESTROYED, released=True,
-                        policy=p.resolve("v2")),
-            c.NOTIFY_ONLY)
+                         [f"R{i}" for i in range(1, 10)])
 
 
-class TestV3(unittest.TestCase):
-    """v3 adds the mode: a corrected separable part is recomputed, not purged."""
+class TestMode(unittest.TestCase):
+    """A removed subject's separable part is purged; a corrected one is recomputed."""
 
     def test_removed_is_purged_and_corrected_is_regenerated(self):
         gone = p.decide(c.SEPARABLE, mode=p.REMOVE)
         changed = p.decide(c.SEPARABLE, mode=p.TRACE)
-        self.assertEqual((gone["action"], gone["rule"]), (c.PURGE, "R5"))
-        self.assertEqual((changed["action"], changed["rule"]), (c.REGENERATE, "R9"))
-
-    def test_v2_never_saw_the_difference(self):
-        for mode in p.MODES:
-            self.assertEqual(p.remediate(c.SEPARABLE, mode=mode, policy=p.V2), c.PURGE)
+        self.assertEqual((gone["action"], gone["rule"]), (c.PURGE, "R6"))
+        self.assertEqual((changed["action"], changed["rule"]), (c.REGENERATE, "R5"))
 
     def test_mode_matters_only_for_a_separable_writable_shared_artifact(self):
         for klass, storage, exclusive, terminal, _ in SPACE:
-            a = p.remediate(klass, storage=storage, scope=(p.EXCLUSIVE if exclusive else p.SHARED),
-                            released=terminal, mode=p.REMOVE)
-            b = p.remediate(klass, storage=storage, scope=(p.EXCLUSIVE if exclusive else p.SHARED),
-                            released=terminal, mode=p.TRACE)
+            scope = p.EXCLUSIVE if exclusive else p.SHARED
+            a = p.remediate(klass, storage=storage, scope=scope, released=terminal, mode=p.REMOVE)
+            b = p.remediate(klass, storage=storage, scope=scope, released=terminal, mode=p.TRACE)
             differs = (klass == c.SEPARABLE and storage == c.WRITABLE
                        and not exclusive and not terminal)
             self.assertEqual(a != b, differs, (klass, storage, exclusive, terminal))
@@ -297,14 +252,7 @@ class TestV3(unittest.TestCase):
     def test_an_unknown_mode_is_withheld_not_guessed(self):
         decision = p.decide(c.SEPARABLE, mode=None)
         self.assertIsNone(decision["action"])
-        self.assertEqual(decision["possible"], {c.PURGE: "R5", c.REGENERATE: "R9"})
-
-    def test_v3_is_v2_plus_one_rule(self):
-        self.assertEqual([r["id"] for r in p.V3["rules"]],
-                         ["R2", "R1", "R3", "R4", "R9", "R5", "R6", "R7", "R8"])
-        by_id = {r["id"]: r for r in p.V3["rules"]}
-        for r in p.V2["rules"]:
-            self.assertEqual(by_id[r["id"]], r)
+        self.assertEqual(decision["possible"], {c.PURGE: "R6", c.REGENERATE: "R5"})
 
 
 class TestLoadAndResolve(unittest.TestCase):
@@ -319,13 +267,12 @@ class TestLoadAndResolve(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "policy.json"
             path.write_text(json.dumps({"version": "x", "rules": [
-                {"id": "R1", "when": {}, "action": "SHRED", "because": "no"}]}))
+                {"id": "R1", "when": {}, "action": "SHRED", "reason": "no"}]}))
             with self.assertRaises(p.InvalidPolicy):
                 p.load(path)
 
     def test_a_shipped_version_resolves(self):
         self.assertIs(p.resolve("v1"), p.V1)
-        self.assertIs(p.resolve("v2"), p.V2)
 
     def test_an_unknown_version_raises_rather_than_substituting(self):
         # A plan citing a version this build does not have cannot be replayed
@@ -426,34 +373,20 @@ class TestUnverifiedStorage(unittest.TestCase):
         self.assertNotIn("possible", decision)
         self.assertIn("every possible state", decision["reason"])
 
-    def test_under_v1_nothing_is_decidable_without_checking_storage(self):
-        # A consequence of R1 being first: DESTROYED always yields
-        # ALREADY_GONE, and no other rule can, so every unchecked item
-        # disagrees with itself. Under v1, storage MUST be verified, which
-        # is half of why v2 exists.
-        for klass, exclusive, terminal in product(c.CLASSES, (True, False),
-                                                  (True, False)):
-            decision = p.decide(klass, storage=None, scope=(p.EXCLUSIVE if exclusive else p.SHARED),
-                                released=terminal, policy=p.V1)
-            self.assertIsNone(decision["action"],
-                              f"{klass} {exclusive} {terminal}")
-
-    def test_under_v2_publication_needs_no_disk_check(self):
-        # The verdict genuinely does not depend on the storage state, so it
-        # is returned rather than withheld. Not a guess: all three possible
-        # states give the same answer.
+    def test_a_released_artifact_needs_no_disk_check(self):
+        # Release is asked before existence, so the verdict does not depend
+        # on storage and is returned rather than withheld.
         for klass, exclusive in product(c.CLASSES, (True, False)):
-            decision = p.decide(klass, storage=None, scope=(p.EXCLUSIVE if exclusive else p.SHARED),
-                                released=True, policy=p.V2)
+            decision = p.decide(klass, storage=None,
+                                scope=(p.EXCLUSIVE if exclusive else p.SHARED), released=True)
             self.assertEqual(decision["action"], c.NOTIFY_ONLY)
-            self.assertEqual(decision["rule"], "R2")
+            self.assertEqual(decision["rule"], "R1")
 
-    def test_under_v2_unpublished_items_still_need_a_disk_check(self):
-        # v2 narrows what must be verified; it does not remove the need.
+    def test_an_unreleased_artifact_still_needs_a_disk_check(self):
         for klass, exclusive in product(c.CLASSES, (True, False)):
             self.assertIsNone(
-                p.decide(klass, storage=None, scope=(p.EXCLUSIVE if exclusive else p.SHARED),
-                         released=False, policy=p.V2)["action"])
+                p.decide(klass, storage=None,
+                         scope=(p.EXCLUSIVE if exclusive else p.SHARED), released=False)["action"])
 
     def test_undetermined_is_not_an_action(self):
         # Code iterating the action set must not find it there and start
@@ -493,12 +426,11 @@ class TestEveryDimensionIsChecked(unittest.TestCase):
         self.assertIn(c.ALREADY_GONE, decision["possible"])
         self.assertIn(c.DESTROY, decision["possible"])
 
-    def test_agreement_over_an_unverified_terminal_is_a_real_answer(self):
-        # Published or not, a DESTROYED artifact under v1 is ALREADY_GONE.
-        decision = p.decide(c.REGENERABLE, storage=c.DESTROYED, released=None,
-                            mode=p.REMOVE, policy=p.V1)
-        self.assertEqual(decision["action"], c.ALREADY_GONE)
-        self.assertIn("released unverified", decision["reason"])
+    def test_agreement_over_an_unverified_mode_is_a_real_answer(self):
+        # Removed or corrected, a regenerable artifact is regenerated.
+        decision = p.decide(c.REGENERABLE, mode=None)
+        self.assertEqual(decision["action"], c.REGENERATE)
+        self.assertIn("mode unverified", decision["reason"])
 
     def test_a_value_outside_the_dimension_is_an_error(self):
         with self.assertRaises(ValueError):

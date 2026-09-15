@@ -362,7 +362,7 @@ def verify_against_log(manifest, hash_at_seq):
 def verify_policy(plan, policy_document):
     stated = plan.get("policy_hash")
     actual = policy_module.fingerprint(policy_document)
-    if not policy_module.cites(policy_document, stated):
+    if stated != actual:
         return _check("policy", False,
                       f"the plan cites policy hash {stated}, but the bundled "
                       f"policy hashes to {actual}")
@@ -420,8 +420,9 @@ def verify_replay(plan, policy_document):
     for item in items:
         try:
             decision = policy_module.decide(
-                item["contribution"], policy=policy_document,
-                **policy_module.plan_item_facts(item))
+                item["contribution"], storage=item.get("storage"),
+                scope=item.get("scope"), released=item.get("released"),
+                mode=item.get("mode"), policy=policy_document)
         except ValueError as exc:
             mismatches.append(f"{item['task']}: {exc}")
             continue

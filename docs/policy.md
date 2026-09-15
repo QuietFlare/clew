@@ -13,7 +13,7 @@ clew rulebook show
 ```
 
 ```
-  R3   exclusive=True, storage=WRITABLE                     -> DESTROY
+  R3   scope=exclusive, storage=WRITABLE                   -> DESTROY
        Exists only because of this subject and the bytes can be changed.
        Nothing else needs it, so it goes entirely.
 ```
@@ -24,54 +24,32 @@ answer" is a checkable sentence.
 
 ## Rule order is semantics
 
-First match wins, and an omitted dimension is a wildcard. That is the whole
-difference between the two shipped versions.
-
-```bash
-clew rulebook diff v1 v2
-```
-
-```
-order  v1: R1 R2 R3 R4 R5 R6 R7 R8
-       v2: R2 R1 R3 R4 R5 R6 R7 R8
-
-  R2  position 2 -> 1
-      - Immutable history: published, or already past a trust boundary.
-        Terminates remediation, not notification: you cannot unpublish...
-      + Immutable history: published, or already past a trust boundary.
-        Asked first, before existence: destroying our copy does not reach
-        the published or transferred one, so the obligation to disclose
-        survives the bytes.
-```
-
-v1 asked "does it still exist?" before "was it published?", so a published
-artifact whose working copy had been deleted came back `ALREADY_GONE`.
-Deleting your copy of something does not unpublish it.
-
-The consequence was sharper than it looks. `R1` is the only rule that can
-yield `ALREADY_GONE`, so putting it first made every verdict depend on the
-storage state. Under v1 nothing was decidable without a disk check. Under v2
-a published artifact resolves without one, because the answer does not
-depend on it:
+First match wins, and an omitted dimension is a wildcard. Release is asked
+first: a released artifact is `NOTIFY_ONLY` whatever the disk says, because
+deleting our copy does not reach the released one. Existence is asked
+second, so nothing else is decidable without a storage check, and Clew
+withholds rather than guesses. The mode is asked before purge: a separable
+part that was corrected (`trace`) is recomputed, R5, while one that was
+removed (`remove`) is cut out in place, R6.
 
 ```bash
 clew impact --graph clew/data/graph5.json --trigger patient:donor_003 \
-    --samplesheet clew/data/donors.csv --assertions clew/data/assertions.json --policy v1
+    --samplesheet clew/data/donors.csv --assertions clew/data/assertions.json
 ```
 
 ```
-POLICY: v1  dbb59de6d85fc0f8       POLICY: v2  e6ba60ffe6763949
-  UNDETERMINED  (16)                 NOTIFY_ONLY   (1)   c9/023b13  MULTIQC
-    c9/023b13  MULTIQC               UNDETERMINED (15)
+POLICY: v1  f1f49f91c8a49f7e
+  NOTIFY_ONLY   (1)   c9/023b13  MULTIQC
+  UNDETERMINED (15)
 ```
 
-## Old versions stay, byte for byte
+## Versions are immutable
 
-`--policy v1` still resolves, and a plan computed in January replays under
-the table that produced it rather than under today's. A semantic change is a
-new version, never an edit. The shipped hashes are frozen as literals in the
-test suite, so editing one fails the build and says to add a version
-instead.
+A plan cites the table by version and hash, so a plan computed in January
+replays under the table that produced it. A semantic change is a new
+version, never an edit. The shipped hash is frozen as a literal in the test
+suite, so editing the table fails the build and says to add a version
+instead. Only `v1` ships today.
 
 Adoption is a logged fact. `clew rulebook register` writes a
 `PolicyAdopted` event carrying the whole table, not a pointer to it. A
@@ -105,5 +83,5 @@ sits in the open with a rule id on it.
 This is the core table, not a customer's policy. It defines what the classes
 mean, so changing it changes the semantics of every historical plan, which is
 why it is versioned. Which of a customer's events map to which class, what
-counts as published, and what a given withdrawal tier may reach are a
-separate object that lives in `domains/`.
+counts as released, and what a given trigger may reach are the
+adapter's, under `providers/`.

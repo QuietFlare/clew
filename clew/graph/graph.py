@@ -136,13 +136,13 @@ def external_input_entry_nodes(graph, filename):
 def load_assertions(path):
     """
     Externally-asserted facts the pipeline cannot know about itself
-    (publication, so far). Returns {task_hash: assertion_record}; a missing
-    path honestly means "publication status unknown".
+    (release, so far). Returns {task_hash: assertion_record}; a missing
+    path honestly means "release status unknown".
     """
     if not path:
         return {}
     data = json.loads(Path(path).read_text())
-    return {rec["task"]: rec for rec in data.get("published", [])}
+    return {rec["task"]: rec for rec in data.get("released", [])}
 
 
 def outputs_for(graph, task_hashes):

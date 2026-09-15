@@ -16,18 +16,16 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- Policy tables are format 2: `scope` (`exclusive` or `shared`), `released`
-  and `reason` replace `exclusive`, `terminal` and `because`. Tables and
-  bundles written in format 1 still load, replay and verify; the shipped
-  versions keep their format 1 hashes reachable, so a plan citing one
-  still resolves.
-- Policy v3, now the default: a fifth dimension, `mode` (`remove` or
-  `trace`), and one rule, R9. A corrected subject's separable part is
-  regenerated; v2 purged it, which removed the old part and put nothing
-  back. v1 and v2 are unchanged.
+- One shipped policy table, `v1`, with five dimensions: `contribution`,
+  `storage`, `scope` (`exclusive` or `shared`), `released` and `mode`
+  (`remove` or `trace`). Release is asked before existence, and a corrected
+  subject's separable part is regenerated rather than purged (R5). The
+  earlier tables and the names `exclusive`, `terminal` and `because` are
+  gone.
 - Plan items are `clew_plan_version` 2: `scope`, `released`, `mode`,
   `reason` for the rule's rationale and `evidence` for how the class was
   found. The printed plan carries a column header.
+- `--assertions` files list released artifacts under `released`.
 - `clew evidence build`: `--out` is optional and defaults to
   `<trigger>-<date>`.
 - The plan header says "removal of", not "withdrawal of".

@@ -280,7 +280,7 @@ def section_plan(bundle, store):
         kind = "unknown" if not detail["action"] else (
             "bad" if action in ("DESTROY", "QUARANTINE") else "")
         chain = " → ".join(detail.get("evidence_path") or [])
-        because = detail.get("reason", detail.get("because")) if detail["action"] else (
+        because = detail["reason"] if detail["action"] else (
             "no verdict: storage was not verified and the answer depends on "
             "it. Possible: " + ", ".join(sorted(detail.get("possible") or {})))
         rows.append(

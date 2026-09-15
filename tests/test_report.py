@@ -21,7 +21,7 @@ PLAN = {
     "tasks_affected": 3,
     "tasks_total": 8,
     "entry_tasks": ["run/a"],
-    "policy_version": "v2",
+    "policy_version": "v1",
     "policy_hash": "e6ba60ffe6763949106eca86f7888c3cc",
     "actions": {"REGENERATE": 2},
     "caveats": ["uninstrumented systems are unknown, never clean"],

@@ -9,7 +9,7 @@ real nf-core/sarek run, 5 synthetic donors, 81 tasks, 344 edges, rebuilt
 from work/ symlinks. The run's work/ was cleaned before it shipped, so a
 verdict that depends on storage is shown OPEN with what each storage state
 would settle to; --work-root on a live run settles them. The published
-report settles without a disk: under policy v2, publication is asked before
+report settles without a disk: release is asked before
 existence.
 """
 
@@ -218,7 +218,7 @@ def main(argv=None):
     print(f"Every verdict above is under policy {stamp['policy_version']}, "
           f"sha256 {stamp['policy_hash'][:16]};")
     print("`clew rulebook show` prints the table and the rationale for")
-    print("each rule; `clew rulebook diff v1 v2` shows what the last change to")
+    print("each rule; `clew rulebook diff v1 qbc.json` shows what a site changed against")
     print("it was, and why. `clew evidence build` seals any of the above into")
     print("a bundle that replays offline, and `clew gate` stops a run whose")
     print("inputs are not permitted before the pipeline starts.")

@@ -36,8 +36,8 @@ nf-core/sarek run that ships with the package.
 
 ## What it answers
 
-**Something upstream went bad.** A reference update, a broken container, a
-withdrawn sample.
+**Something upstream went bad.** A reference update, a broken container, an
+input that turned out wrong.
 
 ```bash
 clew impact --graph graph.json --container gatk4

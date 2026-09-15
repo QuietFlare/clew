@@ -48,10 +48,10 @@ class TestPolicyProviders(unittest.TestCase):
                 self.assertEqual(policy.resolve("site-v3")["version"], "site-v3")
 
     def test_a_registered_name_overrides_a_shipped_version(self):
-        mine = table("v2", description="the site's own v2")
-        with registered(("v2", "clew-site", FakeEntry(mine))):
-            self.assertEqual(policy.resolve("v2")["description"], "the site's own v2")
-        self.assertNotEqual(policy.resolve("v2")["description"], "the site's own v2")
+        mine = table("v1", description="the site's own v1")
+        with registered(("v1", "clew-site", FakeEntry(mine))):
+            self.assertEqual(policy.resolve("v1")["description"], "the site's own v1")
+        self.assertNotEqual(policy.resolve("v1")["description"], "the site's own v1")
 
     def test_an_invalid_table_is_refused_naming_the_provider(self):
         broken = table("bad-v1")

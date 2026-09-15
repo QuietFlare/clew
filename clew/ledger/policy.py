@@ -30,7 +30,6 @@ from clew.graph import contribution
 
 # The dimensions a rule may test. A rule naming anything else is rejected at
 # load time rather than silently never matching.
-FORMAT = 2  # field names. Format 1 said exclusive, terminal and because.
 
 DIMENSIONS = ("contribution", "storage", "scope", "released", "mode")
 EXCLUSIVE, SHARED = "exclusive", "shared"  # scope: made for this subject alone, or not
@@ -69,160 +68,24 @@ def rule(rule_id, action, reason, **when):
     return {"id": rule_id, "when": when, "action": action, "reason": reason}
 
 
-_RENAMED = {"exclusive": "scope", "terminal": "released"}
-
-
-def upgrade(policy):
-    """A format 1 table in today's names. Anything else comes back untouched."""
-    if not isinstance(policy, dict) or policy.get("format", 1) >= FORMAT:
-        return policy
-    rules = []
-    for item in policy.get("rules") or []:
-        if not isinstance(item, dict):
-            rules.append(item)
-            continue
-        item = dict(item)
-        if isinstance(item.get("when"), dict):
-            when = {}
-            for key, value in item["when"].items():
-                if key == "exclusive" and isinstance(value, bool):
-                    when["scope"] = EXCLUSIVE if value else SHARED
-                else:
-                    when[_RENAMED.get(key, key)] = value
-            item["when"] = when
-        if "because" in item:
-            item["reason"] = item.pop("because")
-        rules.append(item)
-    return dict(policy, format=FORMAT, rules=rules)
-
-
-def downgrade(policy):
-    """The format 1 rendering. Plans sealed before format 2 cite its hash."""
-    back = {v: k for k, v in _RENAMED.items()}
-    rules = []
-    for item in policy["rules"]:
-        when = {}
-        for key, value in item["when"].items():
-            if key == "scope":
-                when["exclusive"] = value == EXCLUSIVE
-            else:
-                when[back.get(key, key)] = value
-        rules.append({"id": item["id"], "when": when, "action": item["action"],
-                      "because": item["reason"]})
-    old = {k: v for k, v in policy.items() if k != "format"}
-    return dict(old, rules=rules)
-
-
-def cites(policy, stated):
-    """Whether a plan's stated hash names this table, in either format."""
-    return stated in (fingerprint(policy), fingerprint(downgrade(upgrade(policy))))
-
-
-def plan_item_facts(item):
-    """A plan item's verifiable facts in today's names; version 1 items said exclusive and terminal."""
-    scope = item.get("scope")
-    if scope is None and item.get("exclusive") is not None:
-        scope = EXCLUSIVE if item["exclusive"] else SHARED
-    return {"storage": item.get("storage"), "scope": scope,
-            "released": item.get("released", item.get("terminal")),
-            "mode": item.get("mode")}
-
-
 # --------------------------------------------------------------- the policy
+#
+# First match wins, so order is part of the rule. Release is asked before
+# existence: deleting our copy does not reach the released one. A
+# corrected subject's separable part is recomputed, not merely removed.
 
 V1 = {
     "version": "v1",
-    "format": FORMAT,
-    "description": "Clew's built-in remediation table.",
+    "description": "Clew's remediation table.",
     "rules": [
-        rule("R1", contribution.ALREADY_GONE,
-             "Nothing survives to remediate. Asked first because every later "
-             "question presumes an artifact still exists.",
-             storage=contribution.DESTROYED),
-
-        rule("R2", contribution.NOTIFY_ONLY,
-             "Immutable history — published, or already past a trust "
-             "boundary. Terminates remediation, not notification: you cannot "
-             "unpublish, so the answer is disclosure.",
+        rule("R1", contribution.NOTIFY_ONLY,
+             "Released: published, or past a trust boundary. Destroying our "
+             "copy does not reach the released one, so the obligation is to "
+             "disclose, not to act.",
              released=True),
 
-        rule("R3", contribution.DESTROY,
-             "Exists only because of this subject and the bytes can be "
-             "changed. Nothing else needs it, so it goes entirely.",
-             scope=EXCLUSIVE, storage=contribution.WRITABLE),
-
-        rule("R4", contribution.QUARANTINE,
-             "Exists only because of this subject, but the storage cannot be "
-             "written. Removal is correct and unavailable, so block use.",
-             scope=EXCLUSIVE),
-
-        rule("R5", contribution.PURGE,
-             "The contribution can be isolated and the bytes can be changed. "
-             "Subtract it in place; the artifact survives for everyone else.",
-             contribution=contribution.SEPARABLE,
-             storage=contribution.WRITABLE),
-
-        rule("R6", contribution.REGENERATE,
-             "Separable in principle but the artifact is unwritable. Rewriting "
-             "in place is not required — produce a fresh one without it.",
-             contribution=contribution.SEPARABLE),
-
-        rule("R7", contribution.REGENERATE,
-             "Cannot be isolated, but the derivation can be re-executed from "
-             "the remaining sources.",
-             contribution=contribution.REGENERABLE),
-
-        rule("R8", contribution.QUARANTINE,
-             "IRREDUCIBLE: neither separable nor re-executable. Nothing can be "
-             "removed and nothing can be rebuilt, so block further use. Also "
-             "where every unrecognised class lands, by normalisation.",
-             contribution=contribution.IRREDUCIBLE),
-    ],
-}
-
-# --------------------------------------------------------------------- v2
-#
-# WHY v2 EXISTS: in v1, "does it still exist?" is asked before "was it
-# published?". A published artifact whose working copy had been deleted came
-# back ALREADY_GONE, "nothing to do", which is wrong. Deleting your copy of
-# something does not un-publish it. The disclosure obligation survives the
-# bytes, and the same holds for material that has left under an agreement:
-# our copy being gone does not reach the partner's.
-#
-# The practical consequence is sharper than it first looks. Because R1 is the
-# only rule that can yield ALREADY_GONE, putting it first made EVERY verdict
-# depend on the storage state, so under v1 nothing at all is decidable
-# without a disk check. Under v2 a published artifact resolves to NOTIFY_ONLY
-# whatever the disk says, because the answer genuinely does not depend on it.
-#
-# V1 IS LEFT EXACTLY AS IT WAS, byte for byte. Plans computed in January cite
-# it and must stay replayable; editing it in place would make the version
-# label a lie and the hash meaningless. A semantic change is a new version,
-# never an edit. There is a test pinning v1's hash to a literal so that this
-# cannot happen by accident.
-#
-# RULE IDS ARE STABLE ACROSS VERSIONS. R2 is the same rule here as in v1, in
-# a different position, ids identify rules, not positions, so two plans on
-# different versions remain comparable line by line.
-
-V2 = {
-    "version": "v2",
-    "format": FORMAT,
-    "description": ("Clew's remediation table. Publication is asked before "
-                    "existence: a deleted working copy does not discharge a "
-                    "disclosure obligation."),
-    "rules": [
-        rule("R2", contribution.NOTIFY_ONLY,
-             "Immutable history — published, or already past a trust "
-             "boundary. Asked first, before existence: destroying our copy "
-             "does not reach the published or transferred one, so the "
-             "obligation to disclose survives the bytes.",
-             released=True),
-
-        rule("R1", contribution.ALREADY_GONE,
-             "Nothing survives to remediate, and nothing left our hands. "
-             "Every later question presumes an artifact still exists, so this "
-             "is asked early — but after publication, which outlives it.",
+        rule("R2", contribution.ALREADY_GONE,
+             "Nothing survives to remediate, and nothing left our hands.",
              storage=contribution.DESTROYED),
 
         rule("R3", contribution.DESTROY,
@@ -235,56 +98,39 @@ V2 = {
              "written. Removal is correct and unavailable, so block use.",
              scope=EXCLUSIVE),
 
-        rule("R5", contribution.PURGE,
-             "The contribution can be isolated and the bytes can be changed. "
-             "Subtract it in place; the artifact survives for everyone else.",
-             contribution=contribution.SEPARABLE,
-             storage=contribution.WRITABLE),
-
-        rule("R6", contribution.REGENERATE,
-             "Separable in principle but the artifact is unwritable. Rewriting "
-             "in place is not required — produce a fresh one without it.",
-             contribution=contribution.SEPARABLE),
-
-        rule("R7", contribution.REGENERATE,
-             "Cannot be isolated, but the derivation can be re-executed from "
-             "the remaining sources.",
-             contribution=contribution.REGENERABLE),
-
-        rule("R8", contribution.QUARANTINE,
-             "IRREDUCIBLE: neither separable nor re-executable. Nothing can be "
-             "removed and nothing can be rebuilt, so block further use. Also "
-             "where every unrecognised class lands, by normalisation.",
-             contribution=contribution.IRREDUCIBLE),
-    ],
-}
-
-# --------------------------------------------------------------------- v3
-#
-# WHY v3 EXISTS: v2 gave a corrected subject the same verdict as a removed
-# one, purge, which takes the old part out and never puts the new one back.
-# R9 adds the mode. Every other cell decides as under v2.
-
-V3 = {
-    "version": "v3",
-    "format": FORMAT,
-    "description": ("Clew's remediation table. A corrected subject's separable "
-                    "part is recomputed, not merely removed."),
-    "rules": [r for r in V2["rules"] if r["id"] not in ("R5", "R6", "R7", "R8")] + [
-        rule("R9", contribution.REGENERATE,
+        rule("R5", contribution.REGENERATE,
              "The subject changed rather than left. Its part can be isolated, "
              "so recompute that part and put it back; the rest stands.",
              contribution=contribution.SEPARABLE, mode=TRACE),
-    ] + [r for r in V2["rules"] if r["id"] in ("R5", "R6", "R7", "R8")],
+
+        rule("R6", contribution.PURGE,
+             "The contribution can be isolated and the bytes can be changed. "
+             "Subtract it in place; the artifact survives for everyone else.",
+             contribution=contribution.SEPARABLE, storage=contribution.WRITABLE),
+
+        rule("R7", contribution.REGENERATE,
+             "Separable in principle but the artifact is unwritable. Produce "
+             "a fresh one without it.",
+             contribution=contribution.SEPARABLE),
+
+        rule("R8", contribution.REGENERATE,
+             "Cannot be isolated, but the derivation can be re-executed from "
+             "the remaining sources.",
+             contribution=contribution.REGENERABLE),
+
+        rule("R9", contribution.QUARANTINE,
+             "Neither separable nor re-executable. Nothing can be removed and "
+             "nothing rebuilt, so block further use. Every unrecognised class "
+             "lands here, by normalisation.",
+             contribution=contribution.IRREDUCIBLE),
+    ],
 }
 
-DEFAULT = V3
+DEFAULT = V1
 
-# Every policy ever shipped, so a plan citing an old version can be replayed
-# under the table that was actually in force when it was computed. Entries
-# here are immutable: a version is a historical record, not a place to fix
-# things.
-REGISTRY = {policy["version"]: policy for policy in (V1, V2, V3)}
+# Every shipped table, so a plan citing a version replays under the table
+# that decided it. Entries are immutable: change the meaning, add a version.
+REGISTRY = {policy["version"]: policy for policy in (V1,)}
 
 
 # ------------------------------------------------------------------ hashing
@@ -325,7 +171,6 @@ def validate(policy):
     """
     if not isinstance(policy, dict):
         raise InvalidPolicy("policy must be an object")
-    policy = upgrade(policy)
 
     version = policy.get("version")
     if not isinstance(version, str) or not version.strip():
@@ -480,7 +325,7 @@ def decide(contribution_class, storage=contribution.WRITABLE, scope=SHARED,
     set is an error, not a wildcard; only the contribution class normalises,
     to IRREDUCIBLE.
     """
-    policy = upgrade(policy or DEFAULT)
+    policy = policy or DEFAULT
 
     # Guard 1, outside the rules: unknown class becomes IRREDUCIBLE before
     # anything gets to look at it.

@@ -22,7 +22,7 @@ infrastructure defeats that.
 ```
   ok   files      6 files, all hashes match
   ok   log        2 entries re-chain to the recorded head (seq 2)
-  ok   policy     v2 matches the hash the plan cites
+  ok   policy     v1 matches the hash the plan cites
   ok   replay     all 57 verdicts recompute identically from the bundled facts and policy
   ok   signature  sealed by qa.lead@example.org
 ```

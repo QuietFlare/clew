@@ -345,7 +345,7 @@ def plan_to_dict(adapter, graph, subject, entry_nodes, plan, results_index=None,
             "UNDETERMINED items are not clean; they are unanswered. Re-run "
             "with --work-root and --results where the artifacts live to "
             "settle them",
-            "publication status is an external assertion, not verified by Clew",
+            "release status is an external assertion, not verified by Clew",
             "MTA transfers and physical destruction are not modelled",
             "uninstrumented systems are unknown, never clean",
             # What the graph and the trigger said about their own limits,
@@ -432,7 +432,7 @@ def parser_for(adapters, adapter):
                              "to what the kind declares.")
     parser.add_argument("--assertions", help="JSON file of externally-asserted facts")
     parser.add_argument("--policy", metavar="VERSION|PATH",
-                        help="a shipped policy version (v1, v2) or a policy JSON "
+                        help="a shipped policy version (v1) or a policy JSON "
                              "file. Defaults to the current table.")
     parser.add_argument("--files", action="store_true", help="list affected output files")
     parser.add_argument("--html", dest="html_out", metavar="PATH",
@@ -634,7 +634,7 @@ def print_caveats(have_assertions, active_policy=None, undetermined=0, asserted=
         print("Publication status from the assertions file; recorded as an "
               "external claim with actor and date, not verified by Clew.")
     else:
-        print("No assertions file given: publication status unknown, all "
+        print("No assertions file given: release status unknown, all "
               "artifacts treated as unpublished.")
     print("MTA transfers and physical destruction are not modelled here.")
     if undetermined:
