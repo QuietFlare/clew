@@ -1,7 +1,7 @@
 """
 The vocabulary: the classes, the actions, and the fail-closed normalisation.
 
-Deciding is not tested here — it moved to core/policy.py, where the table has
+Deciding is not tested here, it moved to core/policy.py, where the table has
 a version and a hash. See tests/test_policy.py. The split is deliberate: the
 words have to be stable for Clew to mean anything, while the table has to be
 versioned so a plan from March can be replayed under March's table.

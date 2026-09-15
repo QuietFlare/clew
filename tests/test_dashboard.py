@@ -14,7 +14,7 @@ evidence, not diffing timestamps.
 It must ESCAPE EVERYTHING. Subjects, actors, triggers and event types are
 strings the recording organisation chose, and they go straight into markup.
 An identifier containing a tag would otherwise break the page at best and
-inject script at worst — in a document whose entire purpose is being trusted.
+inject script at worst, in a document whose entire purpose is being trusted.
 """
 
 import json
@@ -48,7 +48,7 @@ def log_entry(seq, prev_hash, subject="s1", event_type="Withdrawn",
     return fields
 
 
-def a_plan(trigger="withdrawal of s1", undetermined=False):
+def a_plan(trigger="removal of s1", undetermined=False):
     if undetermined:
         decision = policy_module.decide("REGENERABLE", storage=None)
         storage = None

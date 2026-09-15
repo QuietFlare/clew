@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clew-horus"
+version = "0.4.0"
+description = "Clew provider for horus-lineage run directories"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "QuietFlare" }]
+dependencies = ["clew-lineage>=0.4"]
+
+[project.entry-points."clew.extractors"]
+horus = "clew.provider.horus.extractor_lineage"
+
+[project.entry-points."clew.adapters"]
+vina-docking = "clew.provider.horus.adapter_vina_docking"
+
+[tool.setuptools.packages.find]
+# Installs into the clew.provider namespace; no __init__.py above the provider.
+include = ["clew*"]
+namespaces = true

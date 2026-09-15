@@ -1,77 +1,22 @@
 """
-Clew core — the append-only event log, on Postgres.
+The append-only event log, on Postgres. It stores opaque events: type,
+subject, body, actor and two timestamps. Providers define what the types
+mean.
 
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY. It stores opaque events: a type, a
-subject, a body, an actor, two timestamps. Core never interprets any of them.
-Domain adapters define what the types mean; if core ever needed to know, the
-boundary would be broken.
+Two clocks. effective_from is when the fact became true; recorded_at is when
+the log heard it. The gap is often the interesting part, and a plan computed
+from the facts carries no clock of its own.
 
-WHAT THIS IS FOR
-----------------
-Clew claims three things and only three. This file is the first of them:
+Three protections with different jobs. Role grants stop the application: the
+writer holds SELECT and INSERT and cannot grant itself more, which no file
+can offer. Triggers stop the owner's mistake by refusing UPDATE, DELETE and
+TRUNCATE from anyone. The hash chain catches whoever defeats both: each
+entry hashes its content and its predecessor, so an edit fails to recompute
+and verify() finds it without trusting the table.
 
-    the log is append-only and unmodified.
-
-Everything downstream — a blast radius, a remediation plan, an evidence
-bundle — is a computation over facts. If the facts can be edited after the
-fact, none of the rest is worth anything. So the facts get their own store
-whose only job is to make revision impossible for the application and
-detectable for everyone else.
-
-TWO CLOCKS, DELIBERATELY
-------------------------
-    effective_from   when the fact became true in the world
-    recorded_at      when we learned it
-
-They are usually different and the gap is the interesting part. A withdrawal
-signed on the 1st and entered on the 5th was true from the 1st; a release
-made on the 3rd was made in good faith and is still a release that must be
-disclosed. One timestamp cannot express that, and retrofitting the second one
-later means re-interpreting every historical row. So both, from the start.
-
-Note what this does NOT do: it does not put a clock in the computation.
-The log timestamps facts. A plan computed from those facts is a pure function
-of them, and stays byte-identical on replay. Learning is dated; deciding is not.
-
-THREE LAYERS OF PROTECTION, EACH WITH A DIFFERENT JOB
------------------------------------------------------
-They are not redundant. Each one stops something the next cannot.
-
-1. ROLE GRANTS stop the application.
-   The writer role holds SELECT and INSERT. It was never granted UPDATE,
-   DELETE or TRUNCATE, and it cannot grant them to itself. This is the reason
-   this log is on a server rather than in a local file: enforcement lives
-   outside the process that writes, in a database the application does not
-   administer. A file-backed store cannot do this — whoever holds the file
-   holds everything.
-
-2. TRIGGERS stop the owner's mistake.
-   Grants do not constrain the table owner, and the owner is a real person
-   with a psql prompt at 6pm. The triggers refuse UPDATE, DELETE and TRUNCATE
-   from anyone, owner included. TRUNCATE gets its own statement-level trigger
-   because it does not fire row triggers at all — it would otherwise empty the
-   whole log silently.
-
-3. THE HASH CHAIN catches whoever defeats both.
-   A superuser can disable a trigger and rewrite a row. Every entry hashes its
-   own content plus its predecessor's hash, so any such edit fails to
-   recompute, and verify() finds it without trusting the table, the triggers,
-   or us.
-
-WHAT IS STILL NOT PROVED
-------------------------
-The chain detects EDITING. It does not detect TRUNCATION OF THE TAIL — a
-shorter chain is still self-consistent — nor a FULL REWRITE by someone who
-rebuilds every hash from the altered point.
-
-No hash chain solves that alone. What closes it is anchoring the head hash
-somewhere the log's owner does not control: a countersigned evidence bundle, a
-build log, a timestamping service. Slice 3 does that. Until then the claim is
-exactly "the application cannot edit, and anyone else's edit is detectable",
-which is what this says rather than something more comfortable.
-
-The tests assert both limits rather than leaving them implied, so nobody
-later reads verify()'s ok=True as "nothing was lost".
+Not proved here: truncation of the tail, or a rewrite from a point onward. A
+witness outside the owner's control closes that, and the evidence bundle is
+that witness.
 """
 
 import hashlib
@@ -120,7 +65,7 @@ def event_hash(entry):
     fields = {k: entry[k] for k in FIELDS if k != "hash"}
     # The body is hashed as its canonical TEXT, which is what the database
     # stores. Accepting a structure here and canonicalising it means an
-    # exported bundle verifies whether its bodies arrive parsed or raw —
+    # exported bundle verifies whether its bodies arrive parsed or raw , 
     # a trap worth closing once rather than in every consumer.
     if not isinstance(fields["body"], str):
         fields["body"] = canonical(fields["body"])
@@ -130,23 +75,11 @@ def event_hash(entry):
 
 def verify_entries(entries, start_seq=1, start_prev=GENESIS):
     """
-    Re-walk a chain in sequence order, recomputing every hash.
-
-    Takes plain dicts, not rows, so the same function verifies a live log and
-    an exported evidence bundle. Trusts nothing but the raw field values:
-    not the stored hash, not the triggers, not that the file opened cleanly.
-    Anyone can run this, which is the property that matters — an auditor who
-    does not trust us can verify without us.
-
-    `start_seq`/`start_prev` anchor a WINDOW of the chain. A bundle covering
-    entries 40-60 is not verifiable on its own — it is verifiable against the
-    hash the previous bundle ended on. Defaulting them to the genesis pair
-    means an unanchored window silently verifies as if it were the whole log,
-    so a caller checking a window must supply the anchor it is claiming.
-
-    Returns the FIRST failure, not a list. A chain is broken from its first
-    bad link onwards; reporting every later entry as "also wrong" would be
-    noise that buries where the edit actually happened.
+    Re-walk a chain in sequence order, recomputing every hash from the raw
+    field values. Plain dicts, so a live log and a bundle verify the same
+    way. `start_seq` and `start_prev` anchor a window; an unanchored window
+    would pass as if it were the whole log. Returns the first failure only,
+    which is where the edit happened.
     """
     expected_prev = start_prev
     expected_seq = start_seq
@@ -193,17 +126,10 @@ def now():
 
 def instant(text):
     """
-    An ISO-8601 string as an aware UTC datetime, for comparing and sorting.
-
-    Timestamps are stored as text because the hash covers bytes, but text
-    compares as text: "2026-03-01T09:00:00+02:00" sorts after
-    "2026-03-01T08:00:00+00:00" although it is the earlier instant, and a
-    date-only value never compares equal to the same day with a time on it.
-    Every comparison of two timestamps goes through here instead.
-
-    A date alone means midnight UTC. A time with no offset is taken as UTC.
-    Anything unparseable raises, because a comparison against a value that
-    cannot be placed on a timeline has no honest answer.
+    An ISO-8601 string as an aware UTC datetime. Timestamps are stored as
+    text because the hash covers bytes, but text order is not time order
+    across offsets, so every comparison goes through here. A bare date is
+    midnight UTC, a missing offset is UTC, and an unparseable value raises.
     """
     if not isinstance(text, str) or not text.strip():
         raise ValueError(f"not a timestamp: {text!r}")
@@ -265,7 +191,7 @@ CREATE TABLE IF NOT EXISTS events (
 -- Timestamps are text, not timestamptz, and that is deliberate. The hash
 -- covers bytes. A timestamptz round-trips through the server's own
 -- formatting, so '+00:00' could come back as 'Z' and every hash after it
--- would fail to recompute — verification broken by a display convention.
+-- would fail to recompute, verification broken by a display convention.
 -- ISO-8601 UTC sorts correctly as text, which is the whole reason the format
 -- exists, so nothing is lost for querying.
 
@@ -308,21 +234,12 @@ def connect(dsn, autocommit=True):
 def init(conn, writer=WRITER_ROLE, auditor=AUDITOR_ROLE,
          writer_password=None, auditor_password=None):
     """
-    Create the table, the guards, and the two roles. Run as the owner.
-
-    THE GRANTS ARE THE POINT. The writer is given SELECT and INSERT and
-    nothing else — not UPDATE, not DELETE, not TRUNCATE — and a role cannot
-    grant itself a privilege it does not hold. The application therefore
-    cannot edit the log even if its code is wrong, its credentials leak, or
-    someone is in a hurry. That is prevention, and it is the one thing a
-    file-backed store cannot offer at any price: whoever holds the file holds
-    every privilege over it.
-
-    What this does NOT constrain is the owner, who can drop a trigger and
-    re-grant anything. Owner and application must therefore be different
-    identities, and the owner's credentials should not live in the pipeline.
-    Clew cannot enforce that from inside; it is an operational control, and
-    saying so is more use than implying we solved it.
+    Create the table, the guards and the two roles, as the owner. The writer
+    gets SELECT and INSERT only and cannot grant itself more, so the
+    application cannot edit the log whatever its code or credentials do. The
+    owner can still drop a trigger, so owner and application must be
+    different identities. That is an operational control, not something this
+    code enforces.
     """
     from psycopg import sql
 
@@ -373,22 +290,11 @@ def head(conn):
 def append(conn, event_type, subject, body=None, actor="unknown",
            effective_from=None):
     """
-    Add one event and return it, hash included.
-
-    `recorded_at` is the server's clock, read inside the same transaction
-    that writes the row. The caller cannot supply it: recorded_at is the
-    one field whose value is "when the log heard this", and the process
-    doing the telling is the wrong party to say when that was. The hash
-    covers it, so it cannot be stamped inside the INSERT itself; reading
-    the server clock first and hashing over that is the same guarantee.
-
-    `effective_from` defaults to `recorded_at` — a fact with no stated
-    effective date is treated as effective when we heard it. That default
-    never back-dates anything on its own, which is the safe direction, but it
-    is still a default: a domain that knows the real date should pass it.
-    A value that is not an ISO-8601 timestamp is refused here, because a
-    fact that cannot be placed on a timeline cannot be ordered against any
-    other and would poison every later comparison.
+    Add one event and return it, hash included. `recorded_at` is the server
+    clock read in the same transaction; the caller is the wrong party to say
+    when the log heard it. `effective_from` defaults to recorded_at, which
+    never back-dates, and must be ISO-8601 or it cannot be ordered against
+    anything.
     """
     if effective_from is not None:
         instant(effective_from)
@@ -460,7 +366,7 @@ def read(conn, since=0, until=None, event_type=None, subject=None):
 
 def raw(conn, since=0, until=None):
     """
-    Entries with bodies left as stored text — the form that was hashed.
+    Entries with bodies left as stored text, the form that was hashed.
 
     verify() and the evidence bundle both want this. read() is for humans and
     for code that wants structures; raw() is for arithmetic.
@@ -479,12 +385,9 @@ def raw(conn, since=0, until=None):
 
 def anchor(conn, seq):
     """
-    The hash an entry range beginning after `seq` must chain back to.
-
-    Genesis when seq is 0. Raises when the named entry does not exist, rather
-    than falling back to genesis: a missing anchor means the caller is
-    verifying against a history that is not there, and quietly treating that
-    as "start of log" would turn a real problem into a pass.
+    The hash an entry range beginning after `seq` must chain to: genesis at
+    0. A missing entry raises rather than falling back to genesis, which
+    would turn a check against absent history into a pass.
     """
     if seq == 0:
         return GENESIS

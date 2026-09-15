@@ -1,17 +1,8 @@
 """
-Clew — the QuietFlare brand faces, embedded.
-
-Inter and Inter Tight, latin subset, as woff2 data URIs. The site loads
-these from a font host; a report cannot, because a page that fetches
-anything stops opening on a machine with no network, and these get
-emailed and archived.
-
-Three weights, not five: Inter 400 for running text, Inter 500 for
-labels and tags, Inter Tight 800 for headings. Roughly 185 KB of the
-page, which is the price of the page looking like QuietFlare wherever
-it is opened.
-
-Regenerate with the script in docs/ if the site's faces change.
+The QuietFlare faces, embedded: Inter 400 and 500 and Inter Tight 800, latin
+subset, as woff2 data URIs, about 185 KB. A report that fetches fonts stops
+opening offline, and these get emailed and archived. Regenerate with the
+script in docs/ if the site's faces change.
 """
 
 FACES = """

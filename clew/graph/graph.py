@@ -1,5 +1,5 @@
 """
-Clew core — questions you can ask any graph.
+Clew core, questions you can ask any graph.
 
 Everything here reads the common schema and nothing else: `tasks`,
 `edges`, `outputs`. No engine, no domain.
@@ -27,14 +27,11 @@ MATCH_NAME_ONLY = "name-only"
 
 def parse_image(image):
     """
-    (name, components, version) of a container reference, version None
-    when the reference carries none.
-
-    Forms read: registry/path/name:tag, name@sha256:..., Wave images
-    (tools joined by `_`, hash tag), Singularity cache names (`:` and `/`
-    turned to `-`, `.img` or `.sif`), conda@hash, and a bare name-version.
-    Components are the pieces a needle can name: the whole name plus its
-    `_` and `-` parts, so "samtools" finds "bwa_htslib_samtools".
+    (name, components, version) of a container reference; version None when
+    absent. Reads registry paths, name@sha256, Wave images (tools joined by
+    _), Singularity cache names, conda@hash and a bare name-version.
+    Components are the name and its _ and - parts, so "samtools" finds
+    "bwa_htslib_samtools".
     """
     text = (image or "").strip()
     for scheme in ("docker://", "oras://", "library://", "shub://"):
@@ -190,15 +187,11 @@ def relative_to(path, root):
 
 def local_workdir(task, work_root):
     """
-    The task directory under work_root, or None when the graph does not
-    say where under the root the task ran.
-
-    `workpath` is the extractor's answer, relative to the engine's root, so
-    a graph from another host still resolves. Without it the recorded
-    absolute path is only trusted when it visibly follows the hashed
-    layout; any other shape (one directory shared by every task, a nested
-    call tree) would resolve to somewhere wrong and read as DESTROYED or,
-    worse, as deletable.
+    The task directory under work_root, or None when the graph cannot place
+    it. `workpath` is the extractor's answer relative to the engine root.
+    Without it the recorded absolute path is trusted only when it follows
+    the hashed layout; any other shape would resolve wrongly and read as
+    DESTROYED or deletable.
     """
     if not work_root:
         return None
@@ -213,13 +206,9 @@ def local_workdir(task, work_root):
 def resolve_workdirs(graph, work_root):
     """
     {task hash: local directory or None} for every task, plus warnings.
-
-    Two refusals, both in the direction of not claiming anything: tasks
-    that resolve to one shared directory are all unresolved, because a
-    verdict on the directory would be a verdict on every one of them; and
-    when no resolved directory exists at all the root is more likely wrong
-    than the whole run gone, so every task is unresolved rather than
-    DESTROYED.
+    Tasks resolving to one shared directory are all unresolved, and when
+    nothing resolves at all the root is taken as wrong rather than the run
+    as gone.
     """
     resolved = {h: local_workdir(t, work_root) for h, t in graph["tasks"].items()}
     warnings = []
@@ -311,6 +300,9 @@ TASK_FIELDS = ("hash", "name", "process", "container", "status",
 # for a call tree), so --work-root plus workpath is the directory on this
 # machine. Absent when the engine has no per-task directory.
 OPTIONAL_TASK_FIELDS = ("task_id", "target", "workpath")
+# `metrics`: {name: non-negative number}, whatever the engine recorded
+# about what a task cost. The names are the provider's; a plan sums each
+# per verdict and says how many tasks carried no figure under that name.
 EDGE_FIELDS = ("consumer", "producer", "filename", "target")
 EXTERNAL = "EXTERNAL"
 
@@ -338,6 +330,12 @@ def contract_violations(graph):
         for field in OPTIONAL_TASK_FIELDS:
             if task.get(field) is not None and not isinstance(task[field], (str, int)):
                 problems.append(f"task {key}: {field} is not a string or integer")
+        metrics = task.get("metrics")
+        if metrics is not None and not (
+                isinstance(metrics, dict)
+                and all(isinstance(k, str) and isinstance(v, (int, float))
+                        and not isinstance(v, bool) and v >= 0 for k, v in metrics.items())):
+            problems.append(f"task {key}: metrics must map names to non-negative numbers")
         workpath = task.get("workpath")
         if isinstance(workpath, str) and (
                 workpath.startswith("/") or ".." in Path(workpath).parts):

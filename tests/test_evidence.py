@@ -3,7 +3,7 @@ Evidence bundles: sealing, and the four checks that make one worth having.
 
 The tests that matter here are the forgeries. A bundle that verifies when
 nothing is wrong is unremarkable. What has to hold is that a bundle someone
-has quietly improved cannot pass — including the careful forgery, where the
+has quietly improved cannot pass, including the careful forgery, where the
 manifest is rebuilt so every hash matches and only the conclusion changed.
 That one is caught by replay, which is the check most evidence packages do
 not have.
@@ -124,10 +124,10 @@ class BundleTestCase(unittest.TestCase):
         self.addCleanup(holder.cleanup)
         self.tmp = holder.name
 
-    def run_cli(self, *args):
+    def run_cli(self, *args, cwd=None):
         return subprocess.run(
             [sys.executable, "-m", "clew.ledger.evidence", *args],
-            capture_output=True, text=True)
+            capture_output=True, text=True, cwd=cwd)
 
 
 class TestSealing(BundleTestCase):
@@ -254,7 +254,7 @@ class TestWitness(BundleTestCase):
     The check that closes the log's open gap.
 
     A truncated chain is internally consistent, so verify() on the log alone
-    passes — nothing inside a database can notice something that is no longer
+    passes, nothing inside a database can notice something that is no longer
     in it. A bundle notices, because it left the building carrying the head
     it saw.
     """
@@ -373,6 +373,20 @@ class TestEndToEnd(BundleTestCase):
         self.assertEqual(checked.returncode, 0, checked.stdout)
         for check in ("files", "log", "policy", "replay"):
             self.assertIn(check, checked.stdout)
+
+    def test_without_out_the_bundle_is_named_after_the_trigger(self):
+        plan = a_plan()
+        plan["trigger"] = "container build:1.2.3"
+        plan_path = Path(self.tmp) / "plan.json"
+        plan_path.write_text(json.dumps(plan))
+
+        built = self.run_cli("build", "--plan", str(plan_path), cwd=self.tmp)
+        self.assertEqual(built.returncode, 0, built.stderr)
+
+        made = [p for p in Path(self.tmp).iterdir() if p.is_dir()]
+        self.assertEqual(len(made), 1)
+        self.assertRegex(made[0].name, r"^container-build-1\.2\.3-\d{4}-\d{2}-\d{2}$")
+        self.assertEqual(self.run_cli("verify", str(made[0])).returncode, 0)
 
     def test_a_bundle_with_no_log_says_so_in_its_coverage(self):
         # Never claim completeness. A bundle anchored to no log head cannot

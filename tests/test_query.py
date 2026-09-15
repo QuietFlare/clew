@@ -2,7 +2,7 @@
 The query surface: what an auditor's question resolves to.
 
 One rule dominates these tests. An answer that asserts something must carry
-citations, and there must be no way to get one that does not — because the
+citations, and there must be no way to get one that does not, because the
 consumer on the other side is a language model whose fluent, confident prose
 an auditor cannot distinguish from an accurate one by reading it. Citations
 are what make a bad paraphrase checkable instead of persuasive.

@@ -1,90 +1,25 @@
 """
-Clew core — the remediation policy, versioned.
+The remediation policy: a versioned table, not an if-ladder.
 
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY. It maps four opaque dimensions onto one
-action and records which rule did it.
+A rule is a match dict, first match wins, an omitted dimension is a
+wildcard, and there is no other syntax, so an auditor can read the whole
+policy:
 
-WHY THIS EXISTS
----------------
-Clew's second claim is that the computation is deterministic and reproducible.
-A decision table written as an if-ladder cannot support that claim, for one
-reason: editing it silently re-interprets every plan ever produced. A plan
-from March says QUARANTINE; the code says QUARANTINE today; nobody can tell
-whether it said QUARANTINE in March. The history is unfalsifiable, which is
-the same as worthless.
-
-So the table becomes DATA with a version and a content hash, every decision
-names the rule that made it, and every plan carries the policy it was
-computed under. "Policy v1, rule R5, these hashes, re-run and get the same
-answer" is then a checkable sentence rather than a slogan.
-
-WHAT IS AND IS NOT VERSIONED HERE
----------------------------------
-This is the CORE decision table: given a contribution class, a storage state,
-whether the artifact is exclusively owned, and whether it is terminal, what
-must happen. It defines what the classes MEAN, so it is ours, not the
-customer's. Changing it changes the semantics of every historical plan, which
-is exactly why it needs a version.
-
-The customer's policy is a different object: which of their events map to
-which contribution class, what counts as published, what a given tier of
-withdrawal is allowed to reach. That lives in domains/ and is not this file.
-CLAUDE.md's "the customer authors the policy, we ship templates" is about
-that layer. Conflating the two would let a customer redefine SEPARABLE, and
-then no two Clew deployments would mean the same thing by the same word.
-
-RULES ARE MATCH DICTS, FIRST MATCH WINS
----------------------------------------
     {"id": "R3", "when": {"exclusive": True, "storage": "WRITABLE"},
      "action": "DESTROY", "because": "..."}
 
-An omitted dimension is a wildcard. This is not a rule engine and must not
-grow into one: no negation, no arithmetic, no expressions. The entire
-semantics is "does every named field equal this value", and the reason is
-that an auditor has to be able to read the policy. A condition language rich
-enough to be interesting is rich enough to be argued about.
+The table carries a version and a content hash, every decision names its
+rule, and every plan carries the policy it ran under, so a plan from March
+replays under March's table. This table defines what the classes mean, so
+Clew owns it. Mapping a site's events onto classes is the provider's job and
+lives elsewhere.
 
-AN UNVERIFIED DIMENSION IS NOT A VALUE
---------------------------------------
-Storage state is not lineage. Lineage says what was derived from what and is
-permanently true; storage says whether the bytes are still there and is true
-only at the instant you look. Whoever asks Clew a question may or may not be
-standing somewhere that can look.
-
-When a dimension is unverified, decide() is given None for it and evaluates
-the policy once per possible value:
-
-  - every value yields the same action  ->  that action is certain anyway,
-                                            and is returned normally
-  - the values disagree                 ->  no action is returned at all
-
-The second case is the whole point of the design. Guessing WRITABLE
-over-claims an obligation and wastes work; guessing DESTROYED yields
-ALREADY_GONE, which reads as "you have nothing to do" and is the one error
-this project exists not to make. Returning neither is the only honest answer,
-and it names which verdicts are still in play so the reader knows exactly
-what verifying the storage would settle.
-
-No new action is invented for this. The action enum is closed — a new verdict
-would change what remediation means — so an undetermined item simply HAS no
-action, and carries the candidates instead.
-
-TWO GUARDS SIT OUTSIDE THE RULE LIST
-------------------------------------
-  1. The contribution class is normalised before matching. Anything
-     unrecognised becomes IRREDUCIBLE first, and no rule can test for an
-     unrecognised class because validate() rejects such a rule.
-  2. Falling off the end of the rules yields QUARANTINE — not an error, and
-     not a pass. An incomplete policy is cautious rather than permissive.
-
-BE PRECISE ABOUT WHAT THAT GUARANTEES, THOUGH. It fixes the FACTS, not the
-VERDICT. A policy that maps IRREDUCIBLE to PURGE is expressible, and would be
-wrong, and Clew will run it. That is not a hole — it is the reason the table
-is data. Wrong logic in an if-ladder is invisible in a code review nobody
-does; wrong logic in a hashed, versioned, rationale-carrying policy file is
-sitting in the open with a rule id on it. There is a test named for this so
-that nobody later mistakes it for an oversight and "fixes" it by hardcoding
-verdicts back into core.
+A dimension passed as None is unverified, not a value: decide() runs once
+per possible value and returns no action when they disagree, naming the
+candidates instead. Unknown classes normalise to IRREDUCIBLE first, and
+falling off the end of the rules yields QUARANTINE. Neither guard fixes the
+verdict. A policy mapping IRREDUCIBLE to PURGE loads and runs, and is wrong
+in the open with a rule id on it, which is why the table is data.
 """
 
 import hashlib
@@ -95,16 +30,20 @@ from clew.graph import contribution
 
 # The dimensions a rule may test. A rule naming anything else is rejected at
 # load time rather than silently never matching.
-DIMENSIONS = ("contribution", "storage", "exclusive", "terminal")
+DIMENSIONS = ("contribution", "storage", "exclusive", "terminal", "mode")
+REMOVE, TRACE = "remove", "trace"
+MODES = (REMOVE, TRACE)
 
 VALID = {
     "contribution": set(contribution.CLASSES),
     "storage": set(contribution.STORAGE),
     "exclusive": {True, False},
     "terminal": {True, False},
+    "mode": set(MODES),
 }
 
-TYPES = {"storage": str, "exclusive": bool, "terminal": bool}
+TYPES = {"storage": str, "exclusive": bool, "terminal": bool, "mode": str}
+VERIFIABLE = ("storage", "exclusive", "terminal", "mode")
 
 ACTIONS = {
     contribution.PURGE, contribution.REGENERATE, contribution.QUARANTINE,
@@ -182,14 +121,14 @@ V1 = {
 #
 # WHY v2 EXISTS: in v1, "does it still exist?" is asked before "was it
 # published?". A published artifact whose working copy had been deleted came
-# back ALREADY_GONE — "nothing to do" — which is wrong. Deleting your copy of
+# back ALREADY_GONE, "nothing to do", which is wrong. Deleting your copy of
 # something does not un-publish it. The disclosure obligation survives the
 # bytes, and the same holds for material that has left under an agreement:
 # our copy being gone does not reach the partner's.
 #
 # The practical consequence is sharper than it first looks. Because R1 is the
 # only rule that can yield ALREADY_GONE, putting it first made EVERY verdict
-# depend on the storage state — so under v1 nothing at all is decidable
+# depend on the storage state, so under v1 nothing at all is decidable
 # without a disk check. Under v2 a published artifact resolves to NOTIFY_ONLY
 # whatever the disk says, because the answer genuinely does not depend on it.
 #
@@ -200,7 +139,7 @@ V1 = {
 # cannot happen by accident.
 #
 # RULE IDS ARE STABLE ACROSS VERSIONS. R2 is the same rule here as in v1, in
-# a different position — ids identify rules, not positions, so two plans on
+# a different position, ids identify rules, not positions, so two plans on
 # different versions remain comparable line by line.
 
 V2 = {
@@ -256,13 +195,31 @@ V2 = {
     ],
 }
 
-DEFAULT = V2
+# --------------------------------------------------------------------- v3
+#
+# WHY v3 EXISTS: v2 gave a corrected subject the same verdict as a removed
+# one, purge, which takes the old part out and never puts the new one back.
+# R9 adds the mode. Every other cell decides as under v2.
+
+V3 = {
+    "version": "v3",
+    "description": ("Clew's remediation table. A corrected subject's separable "
+                    "part is recomputed, not merely removed."),
+    "rules": [r for r in V2["rules"] if r["id"] not in ("R5", "R6", "R7", "R8")] + [
+        rule("R9", contribution.REGENERATE,
+             "The subject changed rather than left. Its part can be isolated, "
+             "so recompute that part and put it back; the rest stands.",
+             contribution=contribution.SEPARABLE, mode=TRACE),
+    ] + [r for r in V2["rules"] if r["id"] in ("R5", "R6", "R7", "R8")],
+}
+
+DEFAULT = V3
 
 # Every policy ever shipped, so a plan citing an old version can be replayed
 # under the table that was actually in force when it was computed. Entries
 # here are immutable: a version is a historical record, not a place to fix
 # things.
-REGISTRY = {policy["version"]: policy for policy in (V1, V2)}
+REGISTRY = {policy["version"]: policy for policy in (V1, V2, V3)}
 
 
 # ------------------------------------------------------------------ hashing
@@ -274,12 +231,9 @@ def canonical(policy):
 
 def fingerprint(policy):
     """
-    SHA-256 of the whole policy, description and rationales included.
-
-    Hashing the prose as well as the logic is intentional. Two policies that
-    decide identically but justify differently are not the same policy: the
-    rationale is what an assessor reads, and a quiet edit to it changes what
-    the organisation is on record as having meant.
+    SHA-256 of the whole policy, rationales included. Two policies that
+    decide alike but justify differently are not the same policy: the
+    rationale is what an assessor reads.
     """
     return hashlib.sha256(canonical(policy).encode("utf-8")).hexdigest()
 
@@ -299,13 +253,10 @@ class InvalidPolicy(ValueError):
 
 def validate(policy):
     """
-    Reject anything that could decide by accident. Returns the policy.
-
-    Every failure here is a refusal to load, never a warning. A policy with a
-    typo'd dimension name would otherwise load cleanly and silently never
-    match, and a rule that never matches is indistinguishable from a rule that
-    was deleted — except that the file still shows it, so everyone believes it
-    is in force.
+    Reject anything that could decide by accident; returns the policy. Every
+    failure refuses to load. A rule with a mistyped dimension would
+    otherwise never match, and a rule that never matches looks in force
+    while being absent.
     """
     if not isinstance(policy, dict):
         raise InvalidPolicy("policy must be an object")
@@ -370,34 +321,59 @@ def load(path):
     return validate(json.loads(Path(path).read_text()))
 
 
-def resolve_or_load(name_or_path):
-    """
-    A shipped version name, or a path to a policy file.
+POLICY_GROUP = "clew.policies"
 
-    Version names win when both could apply: `v1` should mean the v1 everyone
-    else means, not a file that happens to sit in the working directory under
-    that name.
+
+def available():
+    """
+    {version: policy}: the shipped tables, then every table a provider
+    registered under the entry-point group. An entry loads to a table dict
+    or the path of a JSON file, is validated, and overrides a shipped
+    version of the same name.
     """
     from pathlib import Path as _Path
+    from clew.contracts.registry import entry_points
 
-    if name_or_path in REGISTRY:
-        return resolve(name_or_path)
+    tables = dict(REGISTRY)
+    for name, dist, entry in entry_points(POLICY_GROUP):
+        try:
+            loaded = entry.load()
+            table = loaded if isinstance(loaded, dict) else json.loads(_Path(loaded).read_text())
+            table = validate(table)
+        except (InvalidPolicy, OSError, ValueError, TypeError) as bad:
+            raise InvalidPolicy(f"policy {name!r} from {dist}: {bad}")
+        if table["version"] != name:
+            raise InvalidPolicy(f"policy {name!r} from {dist} calls itself "
+                                f"{table['version']!r}; the entry point name and the "
+                                "table's version must agree")
+        tables[name] = table
+    return tables
+
+
+def resolve_or_load(name_or_path):
+    """A version name, shipped or registered, or a path. Names win over files."""
+    from pathlib import Path as _Path
+
+    tables = available()
+    if name_or_path in tables:
+        return tables[name_or_path]
     if not _Path(name_or_path).exists():
         raise InvalidPolicy(
-            f"{name_or_path!r} is neither a shipped version "
-            f"({', '.join(sorted(REGISTRY))}) nor a readable file")
+            f"{name_or_path!r} is neither a known version "
+            f"({', '.join(sorted(tables))}) nor a readable file")
     return load(name_or_path)
 
 
 def resolve(version):
-    """The shipped policy for a version string, for replaying an old plan."""
-    if version not in REGISTRY:
+    """The policy for a version string, for replaying an old plan."""
+    tables = available()
+    if version not in tables:
         raise InvalidPolicy(
-            f"unknown policy version {version!r}; shipped versions are "
-            f"{', '.join(sorted(REGISTRY))}. A plan citing a version this "
-            "build does not have cannot be replayed here — say so rather "
+            f"unknown policy version {version!r}; known versions are "
+            f"{', '.join(sorted(tables))}. A plan citing a version this "
+            "build does not have cannot be replayed here, say so rather "
             "than recomputing it under a different table.")
-    return REGISTRY[version]
+    return tables[version]
 
 
 # ----------------------------------------------------------------- deciding
@@ -408,7 +384,7 @@ def matches(when, facts):
 
 
 def _english(items):
-    """'a, b or c' — a list a person reads, not a join artefact."""
+    """'a, b or c', a list a person reads, not a join artefact."""
     if len(items) == 1:
         return items[0]
     return ", ".join(items[:-1]) + " or " + items[-1]
@@ -429,28 +405,14 @@ def _decide_known(facts, policy):
 
 
 def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
-           terminal=False, policy=None):
+           terminal=False, policy=None, mode=None):
     """
-    Resolve one affected artifact to exactly one action, and name the rule.
-
-    Returns {action, rule, because}. The policy's version and hash are not
-    repeated per decision — they belong once in the header of whatever
-    collects these, and hashing the policy 81 times to say the same thing
-    would be waste dressed up as rigour.
-
-    `None` on storage, exclusive or terminal means NOT VERIFIED, which is
-    different from any real value. See the module docstring: the policy is
-    evaluated against every combination of the possible values, and if
-    they disagree no action is returned. An undetermined result has action
-    None and a `possible` map of the candidate actions to the rules that
-    would produce them.
-
-    A value that is neither None nor one of the dimension's possible values
-    is an error, not a wildcard. Matching is by equality, so "writable"
-    would silently match no rule and fall through to QUARANTINE with a
-    plausible-looking citation. The contribution class is the exception,
-    by design: an unrecognised class is normalised to IRREDUCIBLE before
-    anything looks at it.
+    One action for one artifact, with the rule that chose it: {action, rule,
+    because}. None on storage, exclusive, terminal or mode means unverified:
+    the policy runs once per possible value, and if they disagree action is
+    None with a `possible` map of the candidates. A value outside a
+    dimension's set is an error, not a wildcard; only the contribution class
+    normalises, to IRREDUCIBLE.
     """
     policy = policy or DEFAULT
 
@@ -461,8 +423,9 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
         "storage": storage,
         "exclusive": exclusive,
         "terminal": terminal,
+        "mode": mode,
     }
-    for field in ("storage", "exclusive", "terminal"):
+    for field in VERIFIABLE:
         value = facts[field]
         # The type check is not pedantry: bool is a subclass of int, so 1
         # would otherwise pass as True.
@@ -473,8 +436,7 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
                 f"({sorted(VALID[field], key=str)}); pass None if it was "
                 "not verified")
 
-    unverified = [f for f in ("storage", "exclusive", "terminal")
-                  if facts[f] is None]
+    unverified = [f for f in VERIFIABLE if facts[f] is None]
     if not unverified:
         return _decide_known(facts, policy)
 
@@ -512,7 +474,7 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
 
 
 def remediate(contribution_class, storage=contribution.WRITABLE,
-              exclusive=False, terminal=False, policy=None):
+              exclusive=False, terminal=False, policy=None, mode=None):
     """The action alone, for callers that do not need the citation.
 
     None when the verdict is undetermined. Callers that treat a falsy action
@@ -520,4 +482,4 @@ def remediate(contribution_class, storage=contribution.WRITABLE,
     acting on this must handle None explicitly.
     """
     return decide(contribution_class, storage=storage, exclusive=exclusive,
-                  terminal=terminal, policy=policy)["action"]
+                  terminal=terminal, policy=policy, mode=mode)["action"]

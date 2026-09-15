@@ -1,50 +1,16 @@
 """
-Clew core — the pre-flight gate.
+The admission decision: opaque subject ids, opaque facts, and which fact
+types block or clear.
 
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY. It takes a set of opaque subject ids,
-a set of opaque facts about them, and a statement of which fact types block.
+A blast radius traverses work that happened. A gate looks at a list of
+inputs before anything runs. Three outcomes: BLOCKED, CLEARED and UNKNOWN,
+where the log has nothing to say. UNKNOWN is its own outcome because a gate
+that treats it as clear goes green while checking nothing, the day an
+identifier is mistyped or the wrong log is named.
 
-WHAT A GATE IS, AND WHY IT IS NOT A BLAST RADIUS
-------------------------------------------------
-Everything else in Clew answers a question after the fact: this went wrong,
-what must happen now. A gate asks the opposite question, before anything runs:
-is any of this material something we are not allowed to use?
-
-The two are not variations on each other. A blast radius traverses a graph of
-work that already happened. A gate looks at a list of inputs and a log of
-facts, and there is no graph yet because nothing has run.
-
-THREE OUTCOMES, NOT TWO
------------------------
-    BLOCKED   a fact in effect says do not use this
-    CLEARED   a fact in effect says it is fine
-    UNKNOWN   the log has nothing to say about this subject at all
-
-The third one is the entire reason this file is careful. A gate that reports
-UNKNOWN as "not blocked" passes everything it failed to check, and the day
-someone mistypes an identifier — or points at the wrong log, or connects with
-a role that cannot read — it goes green while checking nothing.
-
-That is the same failure this project has now made twice: an absent answer
-being reported as a clean one. So UNKNOWN is a distinct outcome, it is
-counted, and the caller must decide explicitly what to do with it.
-
-LATEST EFFECTIVE FACT WINS
---------------------------
-Decisions get reversed. A subject withdrawn in March and reinstated in June
-is usable in July, and a gate that only ever accumulated prohibitions would
-be wrong about that in the direction of refusing legitimate work.
-
-So for each subject, the LATEST DECISIVE FACT IN EFFECT decides — ordered by
-effective_from, which is when the decision was made in the world, not by
-recorded_at, which is merely when we heard. Two facts effective on the same
-date are broken by log order, because the log is the only tiebreak that
-cannot be back-dated by whoever entered them.
-
-Facts effective in the FUTURE relative to the question do not count. Asking
-"was this usable on 1 March" must not be answered with a decision taken in
-June, or every historical gate result becomes unreproducible the moment
-someone records something new.
+For each subject the latest decisive fact in effect decides, ordered by
+effective_from with log order as the tiebreak. Facts effective after the
+question's date do not count, so a historical answer stays reproducible.
 """
 
 from clew.ledger.eventlog import in_effect, instant, now
@@ -56,14 +22,9 @@ UNKNOWN = "UNKNOWN"
 
 def decisive_facts(entries, blocking, clearing, as_of=None):
     """
-    The facts that can decide anything, in the order they took effect.
-
-    `blocking` and `clearing` are sets of opaque type names. Core does not
-    know what any of them mean — a domain decides which of its vocabulary
-    belongs in which set, and that mapping is the customer's to author.
-
-    Timestamps are compared as instants, never as text: two offsets spell
-    the same moment differently, and text order is not time order.
+    The facts that can decide anything, in effective order. `blocking` and
+    `clearing` are opaque type names the provider chose. Timestamps compare
+    as instants, never as text.
     """
     decisive = set(blocking) | set(clearing)
     relevant = [e for e in entries if e["event_type"] in decisive]
@@ -113,19 +74,11 @@ def status_by_subject(subjects, entries, blocking, clearing, as_of=None):
 def decide(subjects, entries, blocking, clearing, as_of=None,
            unknown_blocks=True):
     """
-    The gate's verdict, with everything needed to defend it.
-
-    `unknown_blocks` defaults True. A gate exists to stop work that should
-    not proceed, and the caller who cannot say whether a subject is permitted
-    has not established that it is. Turning it off is a real and sometimes
-    correct choice — a pilot run against a log that only covers part of an
-    estate — but it must be a choice someone made, not a default they
-    inherited without noticing.
-
-    `as_of` defaults to now and the value used is recorded in the result.
-    A result that said "as of: nothing in particular" could never be
-    re-derived once the log grew, because nobody would know which facts
-    were in view when it was decided.
+    The verdict with what is needed to defend it. `unknown_blocks` defaults
+    True: a caller who cannot say a subject is permitted has not established
+    it, and turning that off must be a choice someone made. `as_of` defaults
+    to now and is recorded, so the result can be re-derived after the log
+    grows.
     """
     if as_of is None:
         as_of = now()

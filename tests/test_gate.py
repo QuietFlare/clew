@@ -117,7 +117,7 @@ class TestLatestEffectiveWins(unittest.TestCase):
 
 class TestAsOf(unittest.TestCase):
     """
-    'Was this run permitted when we ran it?' — a different question from
+    'Was this run permitted when we ran it?', a different question from
     'is it permitted now', and both have to be answerable.
     """
 
@@ -219,8 +219,8 @@ class TestCliFailsClosed(unittest.TestCase):
         # The one that matters most. An unreachable log is not an absence of
         # prohibitions, and a green build here would be a lie.
         #
-        # Two ways of not reaching it — no driver installed, or nothing
-        # listening — and the assertion is on the property both must have
+        # Two ways of not reaching it, no driver installed, or nothing
+        # listening, and the assertion is on the property both must have
         # rather than on either message. Pinning one string would have let
         # the other path regress to exit 0 unnoticed.
         result = self.run_gate(
@@ -269,7 +269,7 @@ class TestCliFailsClosed(unittest.TestCase):
             "--dsn", "postgresql://nowhere/none")
         self.assertNotEqual(result.returncode, 0)
         self.assertNotIn("Traceback", result.stderr)
-        self.assertIn("cannot read --samplesheet", result.stderr)
+        self.assertIn("cannot read the patient inputs", result.stderr)
 
     def test_the_shipped_policy_template_is_valid_json_and_names_types(self):
         template = json.loads((ROOT / "clew" / "data" / "gate-policy.example.json").read_text())

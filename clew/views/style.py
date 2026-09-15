@@ -1,40 +1,15 @@
 """
-Clew — the QuietFlare report stylesheet.
+The QuietFlare report stylesheet.
 
-Tokens are copied verbatim from quietflare.net, in the same HSL triplet
-form and under the same names, so a change on the site is a copy rather
-than a translation.
+Tokens are copied from quietflare.net in the same HSL form and names: accent
+25 95% 53%, foreground 215 28% 17%, primary 222 47% 11%, steel 215 16% 47%,
+border 214 20% 88%, background 210 40% 98%, radius .5rem.
 
-    --accent      25 95% 53%    the orange in "Flare"
-    --foreground  215 28% 17%   ink
-    --primary     222 47% 11%   near-black
-    --steel       215 16% 47%   muted text
-    --border      214 20% 88%
-    --background  210 40% 98%
-    --radius      .5rem
-
-LIGHT ONLY, DELIBERATELY
-------------------------
-The site is light and these pages match it. Every colour is painted
-explicitly rather than inherited, so the page holds its own appearance on
-a dark host background instead of borrowing one.
-
-NO NETWORK, AND THE REAL FACES
-------------------------------
-The site loads Inter and Inter Tight from a font host. A report cannot:
-one that fetches anything stops opening on a machine with no access, and
-these get emailed and archived. So the faces are embedded as woff2 data
-URIs instead, which costs about 185 KB and buys a page that looks like
-QuietFlare wherever it is opened.
-
-ORANGE IS BRAND, NEVER STATUS
------------------------------
-The accent sits at hue 25, which is where "warning" normally lives. If
-both used it, a reader could not tell "this is QuietFlare" from "this
-needs attention". So orange is reserved for identity (wordmark, eyebrow
-labels, links, focus) and an unsettled verdict is rendered in steel
-rather than amber. That is also truer to what UNDETERMINED means: not
-alarming, unanswered.
+Light only, every colour painted explicitly, so the page holds its look on a
+dark host. Fonts are embedded as woff2 data URIs, about 185 KB, because a
+report that fetches anything stops opening offline and these get emailed and
+archived. Orange is identity, never status: an unsettled verdict is rendered
+in steel, which is truer to what UNDETERMINED means.
 """
 
 from clew.views.fonts import FACES

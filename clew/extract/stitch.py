@@ -27,13 +27,10 @@ def prefix_graph(label, graph):
 
 def stitch(labelled_graphs):
     """
-    Merge prefixed graphs and rewrite EXTERNAL edges whose digest another
-    run produced. Returns (graph, bridges).
-
-    When several tasks in other runs produced the same digest, the edge is
-    bridged to every one of them: the consumer read those bytes, and which
-    task wrote them cannot be told apart by content. Choosing one would
-    drop the others from every blast radius.
+    Merge prefixed graphs and bridge EXTERNAL edges whose digest another run
+    produced. Returns (graph, bridges). Every producer of one digest gets
+    the edge: content cannot tell them apart, and picking one would drop the
+    rest from every blast radius.
     """
     merged = {"tasks": {}, "edges": [], "outputs": {}, "output_details": {}}
     prefixed = {label: prefix_graph(label, g) for label, g in labelled_graphs.items()}

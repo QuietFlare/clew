@@ -55,8 +55,8 @@ a published artifact resolves without one, because the answer does not
 depend on it:
 
 ```bash
-clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv \
-    --subject donor_003 --assertions clew/data/assertions.json --policy v1
+clew impact --graph clew/data/graph5.json --trigger patient:donor_003 \
+    --samplesheet clew/data/donors.csv --assertions clew/data/assertions.json --policy v1
 ```
 
 ```

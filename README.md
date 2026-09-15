@@ -20,8 +20,12 @@ A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 ## Install
 
 ```bash
-pip install clew-lineage
+pip install "clew-lineage[all]"
 ```
+
+That is the engine plus every provider it ships. `[nextflow]`,
+`[snakemake]`, `[cromwell]`, `[horus]`, `[dnanexus]` or `[latch]` installs
+one, and the bare `clew-lineage` is the engine alone.
 
 ```bash
 clew demo
@@ -82,12 +86,17 @@ One command per engine turns a run into a graph.
 
 | Engine | Command |
 |---|---|
-| Nextflow, including Seqera Platform | `clew extract-store --store .lineage --run <run> --json-out graph.json` |
-| Snakemake | `clew extract-snakemake --workdir . --json-out graph.json` |
-| Cromwell and WDL, including Terra | `clew extract-cromwell --metadata metadata.json --json-out graph.json` |
-| Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract-horus --run-dir <run> --json-out graph.json` |
-| DNAnexus | `clew extract-dnanexus --analysis <id> --json-out graph.json` |
-| Latch | `clew extract-latch --execution <id> --json-out graph.json` |
+| Nextflow, including Seqera Platform | `clew extract nextflow --store .lineage --run <run> --json-out graph.json` |
+| Snakemake | `clew extract snakemake --workdir . --json-out graph.json` |
+| Cromwell and WDL, including Terra | `clew extract cromwell --metadata metadata.json --json-out graph.json` |
+| Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract horus --run-dir <run> --json-out graph.json` |
+| DNAnexus | `clew extract dnanexus --analysis <id> --json-out graph.json` |
+| Latch | `clew extract latch --execution <id> --json-out graph.json` |
+
+`clew extract` lists every engine it knows, and `clew providers` shows
+every adapter and extractor installed with the package each came from.
+An engine or pipeline that is not there is one subclass away: see
+[providers](docs/providers.md).
 
 Or skip the file: `reclaim`, `drift` and `digest` take `--runs` pointing
 at the engine's own record, a `.lineage` store or a horus-lineage root,
@@ -108,7 +117,8 @@ no credentials. A gate can block a run before it starts.
 
 [Storage](docs/storage.md), [event log](docs/event-log.md),
 [policy](docs/policy.md), [evidence](docs/evidence.md), [gate](docs/gate.md),
-[auditor surfaces](docs/auditors.md), [architecture](docs/architecture.md).
+[auditor surfaces](docs/auditors.md), [architecture](docs/architecture.md),
+[providers](docs/providers.md) for adding your own pipeline or engine.
 
 ## Status
 

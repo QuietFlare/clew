@@ -1,42 +1,19 @@
 """
-Clew — what must happen downstream when something upstream turns out invalid.
+What must happen downstream when something upstream turns out invalid.
 
-Three triggers, one engine:
+    clew impact --graph g.json --trigger patient:donor_003 --samplesheet sheet.csv
+    clew impact --graph g.json --container gatk4
+    clew impact --graph g.json --input genome.fasta
+    clew impact --graph g.json --pipeline qbc    # whatever the adapter has pending
 
-    # consent withdrawal (a source is removed)
-    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --subject donor_003
+A removal takes a source away: an artifact that exists only because of it
+can be destroyed, which is what `exclusive` means. A defect or reference
+update is traced: every artifact is still wanted, so `exclusive` is False
+and the worst verdict is QUARANTINE.
 
-    # tool defect (every artifact a container touched is suspect)
-    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --container gatk4
-
-    # reference / load-bearing input update
-    clew impact --graph clew/data/graph5.json --samplesheet clew/data/donors.csv --input genome.fasta
-
-    # externally-asserted facts (publication) change the verdicts
-    ... --subject donor_003 --assertions assertions.json
-
-Wires the sarek domain adapter to the core traversal. All this file does is
-translate between them and print the result; it holds no logic of its own.
-
-TWO KINDS OF TRIGGER, ONE DELIBERATE DIFFERENCE
------------------------------------------------
-A withdrawal REMOVES A SOURCE. Ownership matters: an artifact that exists
-only because of the withdrawn donor has nothing left to serve, so it can be
-destroyed outright. That is what `exclusive` means.
-
-A tool defect or reference update CASTS DOUBT. Nothing is owned by the
-trigger — every affected artifact is still wanted, it just cannot be trusted.
-So `exclusive` is always False for these: the worst verdict is QUARANTINE,
-never DESTROY. Collapsing that distinction would delete data people need.
-
-WHAT THIS DOES NOT KNOW
------------------------
-Classes are assigned from pipeline evidence alone: was the script and
-container recorded, and does the artifact still exist on disk.
-
-Publication is an assertion carried in from outside via --assertions, with
-an actor and a date. MTA transfers and physical destruction are not modelled
-yet. Anything unknown fails closed to IRREDUCIBLE.
+Classes come from pipeline evidence alone. Publication is an assertion
+carried in through --assertions with an actor and a date. Anything unknown
+fails closed to IRREDUCIBLE.
 """
 
 import argparse
@@ -51,28 +28,22 @@ from clew.graph import blast_radius as core
 from clew.graph import contribution
 from clew.ledger import policy
 from clew.ledger.policy import UNDETERMINED
-from clew.domains import rnaseq, sarek, viralrecon
+from clew.contracts import Adapter, discover
 from clew.views import report
-from clew.graph import triggers
+from clew.contracts import trigger as triggers
+from clew.contracts.trigger import REMOVE, TRACE, ENGINE_KINDS, Mode
 from clew.graph.contribution import classify
 from clew.graph.graph import (
     MATCH_NAME_ONLY,
-    container_entry_nodes,
     container_matches,
     describe,
-    external_input_entry_nodes,
     external_input_matches,
     load_assertions,
     outputs_for,
     resolve_workdirs,
 )
-from clew.domains import snakemake as snakemake_domain
-from clew.domains.nfcore import index_results, published_copies
+from clew.graph.results import index_results, published_copies
 
-# Which adapter translates between this pipeline's vocabulary and core's.
-# Adding a pipeline = adding a module in domains/ and one entry here.
-DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq,
-           "snakemake": snakemake_domain}
 
 
 def graph_notes(graph):
@@ -125,19 +96,9 @@ def print_notes(heading, notes):
         print()
 
 
-def label_keys(graph):
-    """Every label key any task or artifact in the graph carries."""
-    keys = set()
-    for task in graph["tasks"].values():
-        keys.update(task.get("labels") or {})
-    for edge in graph["edges"]:
-        keys.update(edge.get("labels") or {})
-    return keys
-
-
-def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
+def print_plan(adapter, graph, subject, entry_nodes, affected, exclusive_set,
                published, results_index=None, active_policy=None,
-               work_root=None):
+               work_root=None, kind_name=None, mode=TRACE):
     """Classify every affected task and print the remediation plan."""
     published_checked = (results_index is not None
                          and bool(graph.get("output_details")))
@@ -166,9 +127,24 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
             graph, task_hash, task_hash in exclusive_set, published=published,
             work_root=work_root, resolved=resolved,
         )
-        # The domain's storage check only sees the workdir. If the scratch
+        # The engine classifies from evidence alone. An adapter that knows the
+        # step (a concatenation is separable, a trained model is not) may say
+        # so, and the plan records who said it.
+        asserted = adapter.contribution(graph, task_hash, kind_name) if adapter else None
+        if asserted is not None:
+            if asserted not in contribution.CLASSES:
+                raise SystemExit(
+                    f"adapter {adapter.name!r} returned {asserted!r} as the class of "
+                    f"{task_hash}; classes are {', '.join(contribution.CLASSES)}")
+            if asserted != facts["contribution"]:
+                facts["reason"] = (f"class {asserted} asserted by adapter {adapter.name} "
+                                   f"(evidence alone said {facts['contribution']}); "
+                                   + facts["reason"])
+            facts["contribution"] = asserted
+            facts["class_asserted_by"] = adapter.name
+        # The adapter's storage check only sees the workdir. If the scratch
         # copy is gone but published copies are known to exist, the artifact
-        # is NOT already gone — those copies are precisely what remediation
+        # is NOT already gone, those copies are precisely what remediation
         # must reach. Scratch cleanup must never launder an obligation.
         # A published copy IS a verified sighting, whether the scratch copy
         # was checked and gone or never checked at all. Those copies are
@@ -190,11 +166,13 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
             facts["reason"] += ("; workdir removed, published tree not "
                                 "checked (no --results, or no output sizes "
                                 "in the graph)")
+        facts["mode"] = mode.value
         decision = policy.decide(
             facts["contribution"],
             storage=facts["storage"],
             exclusive=facts["exclusive"],
             terminal=facts["terminal"],
+            mode=facts["mode"],
             policy=active_policy,
         )
         plan.append((task_hash, facts, decision))
@@ -211,10 +189,10 @@ def print_plan(domain, graph, subject, entry_nodes, affected, exclusive_set,
     for action in sorted(by_action):
         rows = by_action[action]
         if action == UNDETERMINED:
-            print(f"\n  {action}  ({len(rows)})  — no verdict; see below")
+            print(f"\n  {action}  ({len(rows)}), no verdict; see below")
             print(f"    {rows[0][2]['because']}")
         else:
-            print(f"\n  {action}  ({len(rows)})  — {contribution.explain(action)}")
+            print(f"\n  {action}  ({len(rows)}), {contribution.explain(action)}")
             # One rule decided this whole group; print it once with its
             # rationale rather than repeating an id against every task.
             print(f"    rule {rows[0][2]['rule']}: {rows[0][2]['because']}")
@@ -246,19 +224,56 @@ def count_undetermined(plan):
     return sum(1 for _, _, decision in plan if decision["action"] is None)
 
 
-def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
+def plan_cost(graph, plan):
+    """
+    Per verdict, the sum of every metric the affected tasks carry, and how
+    many tasks carried none under that name. The names are the provider's.
+    Recorded figures are a floor on a rerun, never an estimate of one.
+    """
+    by_action = {}
+    for task_hash, _, decision in plan:
+        action = decision["action"] or UNDETERMINED
+        bucket = by_action.setdefault(action, {"tasks": 0, "metrics": {}, "missing": {}})
+        bucket["tasks"] += 1
+        metrics = graph["tasks"].get(task_hash, {}).get("metrics") or {}
+        for name, value in metrics.items():
+            bucket["metrics"][name] = round(bucket["metrics"].get(name, 0) + value, 6)
+    for bucket in by_action.values():
+        for name in bucket["metrics"]:
+            bucket["missing"][name] = 0
+    for task_hash, _, decision in plan:
+        bucket = by_action[decision["action"] or UNDETERMINED]
+        metrics = graph["tasks"].get(task_hash, {}).get("metrics") or {}
+        for name in bucket["missing"]:
+            if name not in metrics:
+                bucket["missing"][name] += 1
+    return {"by_action": by_action,
+            "caveat": "sums of what the engine recorded for the original tasks; a rerun "
+                      "costs at least the recorded figure, and tasks missing one add an "
+                      "unknown amount"}
+
+
+def print_cost(cost):
+    rows = [(a, b) for a, b in cost["by_action"].items() if b["metrics"]]
+    if not rows:
+        return
+    print("\nCOST OF THIS PLAN")
+    for action, bucket in sorted(rows):
+        parts = [f"{value:g} {name}" for name, value in sorted(bucket["metrics"].items())]
+        gaps = [f"{n} without {name}" for name, n in sorted(bucket["missing"].items()) if n]
+        line = f"  {action} {bucket['tasks']} task(s): " + ", ".join(parts)
+        if gaps:
+            line += "; " + ", ".join(gaps)
+        print(line)
+    print(f"  {cost['caveat']}")
+
+
+def plan_to_dict(adapter, graph, subject, entry_nodes, plan, results_index=None,
                  active_policy=None, notes=()):
     """
-    The remediation plan as data, for scripts and CI rather than eyes.
-
-    Deliberately clock-free: the same inputs must produce byte-identical
-    output, because "re-run it and get the same answer" is the whole basis
-    of Clew's evidence claim. Whoever stores this can wrap it with a
-    timestamp; Clew itself only states what follows from the inputs.
-
-    Carries the policy version AND its hash. The version alone is a label
-    anyone can print; the hash is what makes two parties able to prove they
-    were reading the same table.
+    The plan as data for scripts and CI. Clock-free, so the same inputs give
+    byte-identical output. Carries the policy version and its hash; the hash
+    is what lets two parties prove they read the same table.
     """
     forward = core.forward_index(graph["edges"])
     tree = core.evidence_tree(entry_nodes, forward)
@@ -275,6 +290,7 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
             # an estimate: a fan-out landing on a cluster is expensive
             # whatever a clock says. Empty for engines that run one machine.
             "target": task.get("target", ""),
+            **({"metrics": task["metrics"]} if task.get("metrics") else {}),
             # None when undetermined. A consumer treating a falsy action as
             # "nothing to do" is the exact failure this guards against, so
             # `possible` is present precisely when `action` is not.
@@ -285,7 +301,10 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
             "storage": facts["storage"],
             "exclusive": facts["exclusive"],
             "terminal": facts["terminal"],
+            "mode": facts["mode"],
             "reason": facts["reason"],
+            **({"class_asserted_by": facts["class_asserted_by"]}
+               if "class_asserted_by" in facts else {}),
         }
         # What a re-run script needs, for the artifacts it must rebuild.
         if action == "REGENERATE":
@@ -315,6 +334,7 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
         "tasks_total": len(graph["tasks"]),
         "tasks_affected": len(plan),
         "actions": dict(sorted(counts.items())),
+        "cost": plan_cost(graph, plan),
         "plan": items,
         "caveats": [
             "classes assigned from pipeline evidence only "
@@ -334,73 +354,160 @@ def plan_to_dict(domain, graph, subject, entry_nodes, plan, results_index=None,
     }
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Compute a blast radius and remediation plan.")
-    parser.add_argument("--graph", required=True, help="graph JSON from an extractor")
-    parser.add_argument(
-        "--samplesheet",
-        help="nf-core samplesheet CSV. Needed only for --subject:\n"
-             "is the one thing a domain has to resolve.")
-    parser.add_argument("--pipeline", choices=sorted(DOMAINS), default="sarek",
-                        help="which domain adapter reads the samplesheet and names")
+def per_trigger_path(path, trigger):
+    """plan.json -> plan.subject-SPC-0412.json"""
+    if not path or path == "-":
+        return path
+    p = Path(path)
+    tag = f"{trigger['kind']}-{trigger['value']}".replace("/", "_")
+    return str(p.with_name(f"{p.stem}.{tag}{p.suffix}"))
+
+
+def pending_triggers(adapter):
+    """The adapter's pending triggers, checked before any is asked."""
+    from clew.contracts.adapter import check
+    pending = adapter.pending()
+    if not isinstance(pending, list):
+        raise SystemExit(f"{adapter.name}: pending() must return a list")
+    for i, trigger in enumerate(pending):
+        problems = check(trigger)
+        if problems:
+            raise SystemExit(f"{adapter.name}: pending trigger {i}: {'; '.join(problems)}")
+    return pending
+
+
+def answer_each(args, adapter, argv):
+    """One plan per pending trigger. A bad trigger fails its answer, not the batch."""
+    triggers_to_ask = pending_triggers(adapter)
+    failed = []
+    for trigger in triggers_to_ask:
+        spec = f"{trigger['kind']}:{trigger['value']}"
+        who = trigger.get("asserted_by")
+        when = trigger.get("date")
+        print("=" * 70)
+        print(f"TRIGGER {spec}" + (f"  asserted by {who}" if who else "")
+              + (f" on {when}" if when else ""))
+        print("=" * 70)
+        call = list(argv) + ["--trigger", spec]
+        for flag, value in (("--json", args.json_out), ("--html", args.html_out)):
+            if value:
+                call = [a for a in call if a != flag and a != value]
+                call += [flag, per_trigger_path(value, trigger)]
+        try:
+            main(call)
+        except SystemExit as stop:
+            failed.append((spec, str(stop)))
+            print(f"FAILED {spec}: {stop}", file=sys.stderr)
+        print()
+    print(f"{len(triggers_to_ask)} triggers, {len(failed)} failed")
+    return 1 if failed else 0
+
+
+def parser_for(adapters, adapter):
+    parser = argparse.ArgumentParser(
+        description="Compute a blast radius and remediation plan.",
+        conflict_handler="resolve")
+    parser.add_argument("--graph", help="graph JSON from an extractor")
+    parser.add_argument("--runs", metavar="DIR",
+                        help="the engine's record instead of --graph, read through "
+                             "whichever installed extractor recognises it; with --json, "
+                             "the derived graph is written beside the plan")
+    parser.add_argument("--run", help="which run under --runs; default: the latest")
+    parser.add_argument("--pipeline", choices=sorted(adapters), default="sarek",
+                        help="which adapter's trigger kinds apply")
     trigger = parser.add_mutually_exclusive_group()
     trigger.add_argument(
-        "--subject", "--donor", dest="subject",
-        help="withdraw a subject: a donor, a batch, a specimen. What "
-             "one is belongs to the domain adapter, not here. --donor "
-             "is the former name and still works.")
-    trigger.add_argument("--container", help="flag every task run in a matching container")
-    trigger.add_argument(
         "--trigger",
-        help="kind:value, for example container:gatk4, script:prep.py, "
-             "input:genome.fa or subject:batch_017. An unknown kind is "
-             "read as a label key, so a graph that carries "
-             "labels: {tissue: liver} answers tissue:liver with no "
-             "adapter and no new flag.")
-    trigger.add_argument("--input", dest="input_file",
-                         help="invalidate an external input file by basename")
-    parser.add_argument("--mode", choices=("remove", "distrust"),
-                        help="what kind of wrong: remove = the source must be "
-                             "taken out (withdrawal; exclusive artifacts can be "
-                             "destroyed); distrust = the data is suspect but "
-                             "still wanted (contamination, defects; worst case "
-                             "quarantine). Defaults: remove for --donor, "
-                             "distrust for --container/--input.")
+        help="kind:value, for example container:gatk4, input:genome.fa or "
+             "patient:donor_003. Kinds are this pipeline's, then the engine's "
+             "(container, script, process, input), then any label key the "
+             "graph carries. A bare kind prints the reach of every value.")
+    trigger.add_argument("--container", help="short for --trigger container:X")
+    trigger.add_argument("--input", dest="input_file", help="short for --trigger input:X")
+    parser.add_argument("--mode", choices=("remove", "trace"),
+                        help="remove = the source is removed and what only it "
+                             "fed can be destroyed; trace = follow what it touched, "
+                             "everything stays, worst case quarantine. Defaults "
+                             "to what the kind declares.")
     parser.add_argument("--assertions", help="JSON file of externally-asserted facts")
     parser.add_argument("--policy", metavar="VERSION|PATH",
-                        help="a shipped policy version (v1, v2) or a policy "
-                             "JSON file. Defaults to the current table. Pin "
-                             "this to replay a historical plan under the "
-                             "table that was in force when it was computed.")
+                        help="a shipped policy version (v1, v2) or a policy JSON "
+                             "file. Defaults to the current table.")
     parser.add_argument("--files", action="store_true", help="list affected output files")
     parser.add_argument("--html", dest="html_out", metavar="PATH",
-                        help="write one self-contained HTML page, "
-                             "or - for stdout")
+                        help="write one self-contained HTML page, or - for stdout")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
                         help="also write the plan as JSON ('-' for stdout)")
     parser.add_argument("--work-root", metavar="DIR",
-                        help="the run's work directory, so Clew can check "
-                             "whether each task's artifacts still exist. "
-                             "Without it no storage claim is made, and any "
-                             "verdict that depends on storage is reported "
-                             "UNDETERMINED rather than guessed.")
+                        help="the run's work directory, so storage can be checked; "
+                             "without it storage-dependent verdicts are UNDETERMINED")
     parser.add_argument("--results", metavar="DIR",
-                        help="the run's published results directory. Needed "
-                             "with --work-root: a task whose scratch was "
-                             "cleaned is only ALREADY_GONE once its published "
-                             "copies were also looked for. Plan items name "
-                             "the copies found. Needs a graph that records "
-                             "output sizes (store, work or horus extractors).")
-    args = parser.parse_args(argv)
+                        help="the run's published results directory, checked with "
+                             "--work-root before anything reads ALREADY_GONE")
+    for kind in adapter.triggers.values():
+        kind.add_arguments(parser)
+    return parser
 
-    domain = DOMAINS[args.pipeline]
+
+def spec_of(args):
+    if args.trigger:
+        return args.trigger
+    if args.container:
+        return f"container:{args.container}"
+    if args.input_file:
+        return f"input:{args.input_file}"
+    return None
+
+
+def print_reach(graph, entry):
+    """One line per value of the kind: how far each reaches."""
+    radius = core.blast_radius(graph, entry)
+    print(f"{len(graph['tasks'])} tasks, {len(graph['edges'])} edges, {len(entry)} values\n")
+    print(f"{'value':<12} {'entry':>6} {'affected':>9} {'exclusive':>10} {'shared':>7}")
+    for value in sorted(radius):
+        r = radius[value]
+        print(f"{value:<12} {len(entry[value]):>6} {len(r['affected']):>9} "
+              f"{len(r['exclusive']):>10} {len(r['shared']):>7}")
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    adapters = discover(Adapter)
+    first = argparse.ArgumentParser(add_help=False)
+    first.add_argument("--pipeline", choices=sorted(adapters), default="sarek")
+    chosen, _ = first.parse_known_args(argv)
+    adapter = adapters[chosen.pipeline]
+    args = parser_for(adapters, adapter).parse_args(argv)
+
+    spec = spec_of(args)
+    if not spec:
+        if adapter.pending():
+            return answer_each(args, adapter, argv)
+        raise SystemExit(
+            "nothing to ask: give --trigger kind:value, or --container / --input. "
+            f"This pipeline's kinds: {', '.join(adapter.triggers) or 'none'}; the "
+            f"engine's: {', '.join(ENGINE_KINDS)}. A bare --trigger kind prints "
+            "the reach of every value.")
+
     try:
         active_policy = (policy.resolve_or_load(args.policy)
                          if args.policy else policy.DEFAULT)
     except policy.InvalidPolicy as bad:
         # Refuse to compute rather than compute under a table nobody vetted.
         raise SystemExit(f"policy rejected: {bad}")
-    graph = core.load_graph(args.graph)
+    if bool(args.graph) == bool(args.runs):
+        raise SystemExit("give --graph or --runs, not both")
+    if args.runs:
+        from clew.extract.runs import Runs
+        graph = Runs(args.runs).load(args.run)
+        if args.json_out and args.json_out != "-":
+            # The plan must be re-derivable from a file someone can hash and
+            # hand over, not from a directory that may have changed since.
+            derived = Path(args.json_out).with_suffix(".graph.json")
+            derived.write_text(json.dumps(graph, indent=2))
+            print(f"graph derived from {args.runs} ({graph['run']['name']}) written to {derived}\n")
+    else:
+        graph = core.load_graph(args.graph)
     results_index = index_results(args.results) if args.results else None
     if args.results and not graph.get("output_details"):
         print("note: this graph records no output sizes, so published "
@@ -409,163 +516,90 @@ def main(argv=None):
     notes = graph_notes(graph)
     print_notes("WHAT THIS GRAPH DOES NOT COVER", notes)
 
-    if args.trigger:
-        kind, value = triggers.parse(args.trigger)
-        if kind == "subject" and args.samplesheet:
-            # A samplesheet is how a subject resolves on an nf-core graph,
-            # whose tasks carry no labels. Same path as --subject, so the
-            # documented spelling and the flag give one answer.
-            args.subject, args.trigger = value, None
-        elif kind == "container":
-            args.container = args.container or value
-    # Only a subject trigger needs a domain to resolve one. Container and
-    # input triggers are graph questions, so asking one should not require
-    # naming a pipeline or producing its samplesheet. A samplesheet with no
-    # subject asks for the per-subject table, so it is loaded whenever given.
-    if args.subject and not args.samplesheet:
+    kind_name, value = triggers.parse(spec)
+    kind = triggers.lookup(adapter, kind_name, graph)
+    if kind is None:
         raise SystemExit(
-            "--subject needs --samplesheet: resolving a subject to the "
-            "nodes it enters at is the one thing a domain does.")
-    doubt = args.trigger or args.container or args.input_file
-    if not doubt and not args.samplesheet:
+            f"unknown trigger kind {kind_name!r}: not one this pipeline declares "
+            f"({', '.join(adapter.triggers) or 'none'}), not an engine kind "
+            f"({', '.join(ENGINE_KINDS)}), and no task or edge in this graph "
+            f"carries a {kind_name!r} label.")
+    mode = Mode(args.mode) if args.mode else kind.mode
+    if mode is REMOVE and kind.mode is not REMOVE:
         raise SystemExit(
-            "nothing to ask: give --container, --input or --trigger, or "
-            "--samplesheet with --subject. --samplesheet alone prints the "
-            "reach of every subject.")
-    donors = domain.load_subjects(args.samplesheet) if args.samplesheet else {}
+            f"--mode remove needs a kind that owns something; {kind_name!r} can only "
+            "be traced, it does not remove a source.")
+
+    entry = kind.resolve(graph, value, args)
+    if value is None:
+        print_reach(graph, entry)
+        return
     published = load_assertions(args.assertions)
 
-    # --- doubt triggers: single subject, nothing exclusive -------------------
-    if args.trigger or args.container or args.input_file:
-        if args.mode == "remove":
-            # Removal needs an owner: "exclusive" only means something when
-            # other subjects exist to compare against. A retracted upstream
-            # dataset is a real remove-shaped input trigger, but computing
-            # its exclusive set needs multi-root traversal we don't do yet.
-            raise SystemExit(
-                "--mode remove requires a subject trigger (--subject); "
-                "container and input triggers cast doubt, they do not remove "
-                "an owned source.")
-        if args.trigger:
-            kind, value = triggers.parse(args.trigger)
-            subjects = triggers.resolve(graph, kind, value)
-            if not next(iter(subjects.values())):
-                if kind in triggers.KINDS or kind in label_keys(graph):
-                    raise SystemExit(f"no task matches {args.trigger!r}.")
-                hint = (" For an nf-core run the subject comes from the "
-                        "samplesheet: --subject X --samplesheet sheet.csv, "
-                        "or this trigger with --samplesheet."
-                        if kind == "subject" else "")
-                raise SystemExit(
-                    f"no task matches {args.trigger!r}: nothing in this "
-                    f"graph carries a {kind!r} label, so a {kind}: trigger "
-                    f"cannot be resolved from the graph alone.{hint}")
-        elif args.container:
-            subjects = container_entry_nodes(graph, args.container)
-        else:
-            subjects = external_input_entry_nodes(graph, args.input_file)
-
-        subject, entry_nodes = next(iter(subjects.items()))
+    if kind.mode is TRACE:
+        subject, entry_nodes = next(iter(entry.items()))
         if not entry_nodes:
-            raise SystemExit(f"no tasks match {subject}")
-        input_name = args.input_file or (value if args.trigger and kind == "input" else None)
-        trigger_notes = (container_notes(graph, args.container) if args.container
-                         else input_notes(graph, input_name) if input_name else [])
+            raise SystemExit(f"no task matches {subject}")
+        trigger_notes = (container_notes(graph, value) if kind_name == "container"
+                         else input_notes(graph, value) if kind_name == "input" else [])
         print_notes("TRIGGER NOTES", trigger_notes)
         notes = notes + trigger_notes
-
-        radius = core.blast_radius(graph, subjects)
-        affected = radius[subject]["affected"]
-        # Doubt, not removal: every artifact is still wanted. See header.
-        plan = print_plan(domain, graph, subject, entry_nodes, affected,
-                          exclusive_set=set(), published=published,
-                          results_index=results_index,
-                          active_policy=active_policy,
-                          work_root=args.work_root)
-        print_caveats(bool(published), active_policy,
-                      undetermined=count_undetermined(plan))
-        # Last on stdout on purpose: with --json -, a consumer can split at
-        # the final '{' and parse cleanly.
-        write_outputs(args.json_out, args.html_out, domain, graph, subject, entry_nodes, plan,
-                      results_index, active_policy, notes)
-        return
-
-    # --- withdrawal: exclusive/shared computed against the other donors ------
-    entry = domain.subject_entry_nodes(graph, donors)
-    radius = core.blast_radius(graph, entry)
-
-    if not args.subject:
-        print(f"{len(graph['tasks'])} tasks, {len(graph['edges'])} edges, "
-              f"{len(donors)} subjects\n")
-        print(f"{'subject':<12} {'entry':>6} {'affected':>9} {'exclusive':>10} {'shared':>7}")
-        for donor in sorted(radius):
-            r = radius[donor]
-            print(f"{donor:<12} {len(entry[donor]):>6} {len(r['affected']):>9} "
-                  f"{len(r['exclusive']):>10} {len(r['shared']):>7}")
-        return
-
-    if args.subject not in radius:
-        raise SystemExit(f"unknown subject {args.subject!r}; known: {', '.join(sorted(radius))}")
-
-    result = radius[args.subject]
-    if not entry[args.subject]:
-        # Zero entry nodes is a failed attribution, not a clean result. The
-        # samplesheet id matched no task tag, which is what an id mismatch
-        # between LIMS, samplesheet and pipeline looks like.
-        tagged = sum(len(nodes) for nodes in entry.values())
-        hint = (" No task tag matched ANY subject in the samplesheet: the "
-                "ids in the samplesheet and the tags in the run disagree."
-                if not tagged else "")
-        raise SystemExit(
-            f"{args.subject!r} is in the samplesheet but no task in the "
-            f"graph carries its tag. Not attributable, not clean.{hint}")
-    mode = args.mode or "remove"
-    if mode == "remove":
-        # Withdrawal: the subject's exclusive artifacts have nothing left to
-        # serve and can be destroyed.
-        label = f"withdrawal of {args.subject}"
-        exclusive = result["exclusive"]
+        radius = core.blast_radius(graph, entry)
+        affected, exclusive, label = radius[subject]["affected"], set(), subject
     else:
-        # Contamination / swap / QC failure: the subject's data is WRONG, not
-        # withdrawn. Every artifact is still wanted once the cause is fixed,
-        # so nothing is owned-and-destroyable; worst case is quarantine.
-        label = f"distrust of {args.subject}"
-        exclusive = set()
-    plan = print_plan(domain, graph, label, entry[args.subject],
-                      result["affected"], exclusive, published,
-                      results_index=results_index, active_policy=active_policy,
-                      work_root=args.work_root)
+        if not entry[value]:
+            # Zero entry nodes is a failed attribution, not a clean result.
+            tagged = sum(len(nodes) for nodes in entry.values())
+            hint = (f" No task matched ANY {kind_name}: the ids and the run disagree."
+                    if not tagged else "")
+            raise SystemExit(f"{value!r} is a known {kind_name} but no task in the "
+                             f"graph carries it. Not attributable, not clean.{hint}")
+        radius = core.blast_radius(graph, entry)
+        result = radius[value]
+        entry_nodes = entry[value]
+        if mode is REMOVE:
+            # Withdrawal: what only this value fed has nothing left to serve.
+            label, exclusive = f"removal of {value}", result["exclusive"]
+        else:
+            # Contamination, swap, QC failure: the data is wrong, not removed.
+            label, exclusive = f"trace of {value}", set()
+        affected = result["affected"]
 
-    if args.files:
+    plan = print_plan(adapter, graph, label, entry_nodes, affected, exclusive,
+                      published, results_index=results_index,
+                      active_policy=active_policy, work_root=args.work_root,
+                      kind_name=kind_name, mode=mode)
+
+    if args.files and kind.mode is REMOVE:
         exclusive_files = outputs_for(graph, result["exclusive"])
         shared_files = outputs_for(graph, result["shared"])
-        print(f"\nFILES exclusive to {args.subject}: {len(exclusive_files)}")
+        print(f"\nFILES exclusive to {value}: {len(exclusive_files)}")
         for path in exclusive_files[:20]:
             print(f"    {path}")
         if len(exclusive_files) > 20:
             print(f"    ... {len(exclusive_files) - 20} more")
-        print(f"\nFILES shared with other donors: {len(shared_files)}")
+        print(f"\nFILES shared with others: {len(shared_files)}")
         for path in shared_files[:20]:
             print(f"    {path}")
         if len(shared_files) > 20:
             print(f"    ... {len(shared_files) - 20} more")
 
-    print_caveats(bool(published), active_policy,
-                  undetermined=count_undetermined(plan))
-    # Last on stdout on purpose: with --json -, a consumer can split at the
-    # final '{' and parse cleanly.
-    write_outputs(args.json_out, args.html_out, domain, graph, label, entry[args.subject], plan,
+    print_cost(plan_cost(graph, plan))
+    print_caveats(bool(published), active_policy, undetermined=count_undetermined(plan),
+                  asserted=sum(1 for _, facts, _ in plan if 'class_asserted_by' in facts))
+    # Last on stdout on purpose: with --json -, a consumer can split at the final '{'.
+    write_outputs(args.json_out, args.html_out, adapter, graph, label, entry_nodes, plan,
                   results_index, active_policy, notes)
 
 
-def write_outputs(json_out, html_out, domain, graph, subject, entry_nodes,
+def write_outputs(json_out, html_out, adapter, graph, subject, entry_nodes,
                   plan, results_index=None, active_policy=None, notes=()):
     """
     Render the plan in whichever formats were asked for, building it once.
     """
     if not json_out and not html_out:
         return
-    built = plan_to_dict(domain, graph, subject, entry_nodes, plan,
+    built = plan_to_dict(adapter, graph, subject, entry_nodes, plan,
                          results_index, active_policy, notes)
     if html_out:
         report.write(built, html_out)
@@ -584,13 +618,17 @@ def write_json(json_out, built):
         print(f"\nwrote {json_out}")
 
 
-def print_caveats(have_assertions, active_policy=None, undetermined=0):
+def print_caveats(have_assertions, active_policy=None, undetermined=0, asserted=0):
     stamp = policy.identify(active_policy or policy.DEFAULT)
     print("\n" + "-" * 60)
     print(f"Computed under policy {stamp['policy_version']}, "
           f"sha256 {stamp['policy_hash']}.")
-    print("Classes assigned from pipeline evidence only (script + container "
-          "recorded, artifact present on disk).")
+    if asserted:
+        print(f"{asserted} class(es) asserted by the adapter, recorded per item; the rest "
+              "from pipeline evidence (script + container recorded, artifact on disk).")
+    else:
+        print("Classes assigned from pipeline evidence only (script + container "
+              "recorded, artifact present on disk).")
     if have_assertions:
         print("Publication status from the assertions file; recorded as an "
               "external claim with actor and date, not verified by Clew.")

@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from clew.extract import runs
 
-FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 def graph(name):
@@ -144,54 +143,6 @@ class StoreRuns(unittest.TestCase):
         g = runs.Runs(self.root).load("first_run")
         self.assertEqual(g["output_details"]["aa/1"][0]["digest"], "sha256:old")
         self.assertEqual(g["published"]["p.txt"]["digest"], "sha256:old")
-
-class LineageStoreRuns(unittest.TestCase):
-    """A session-id prefix names a resume chain; its newest run stands for it."""
-
-    def setUp(self):
-        from tests.test_lineage_store import RUN_A, RUN_B, RUN_C, CHAIN, OTHER
-        self.root = Path(tempfile.mkdtemp())
-        history = self.root / ".history"
-        history.mkdir()
-        (history / RUN_A).write_text(f"2026-08-01 10:00:00 CEST\tfirst_run\t{CHAIN}\tlid://{RUN_A}\n")
-        (history / RUN_B).write_text(f"2026-08-02 10:00:00 CEST\tsecond_run\t{CHAIN}\tlid://{RUN_B}\n")
-        (history / RUN_C).write_text(f"2026-08-03 10:00:00 CEST\tother_run\t{OTHER}\tlid://{RUN_C}\n")
-        self.run_b = RUN_B
-
-    def tearDown(self):
-        shutil.rmtree(self.root)
-
-    def test_a_session_prefix_resolves_to_the_chain_s_newest_run(self):
-        store = runs.Runs(self.root)
-        self.assertEqual(store.resolve("session-ch"), ("second_run", self.run_b))
-        self.assertEqual(store.resolve("bbbb"), ("second_run", self.run_b))
-
-    def test_a_prefix_spanning_two_sessions_is_still_ambiguous(self):
-        with self.assertRaises(SystemExit):
-            runs.Runs(self.root).resolve("session-")
-
-
-class HorusRuns(unittest.TestCase):
-    def test_a_single_run_directory(self):
-        store = runs.Runs(FIXTURES / "horus_run")
-        self.assertEqual(store.kind, "horus-run")
-        self.assertEqual(store.records()[0]["timestamp"], "2026-09-02T09:01:34.050766+00:00")
-        g = store.load()
-        self.assertEqual(g["run"]["name"], "horus_run")
-        self.assertTrue(any(d.get("digest", "").startswith("sha256:")
-                            for ds in g["output_details"].values() for d in ds))
-
-    def test_a_root_of_run_directories(self):
-        root = Path(tempfile.mkdtemp())
-        try:
-            shutil.copytree(FIXTURES / "horus_run", root / "run-1")
-            shutil.copytree(FIXTURES / "horus_run", root / "run-2")
-            store = runs.Runs(root)
-            self.assertEqual(store.kind, "horus")
-            self.assertEqual(sorted(n for n, _, _ in store.names()), ["run-1", "run-2"])
-            self.assertEqual(store.sidecar_path("run-1"), root / ".clew" / "run-1.digests.json")
-        finally:
-            shutil.rmtree(root)
 
 
 if __name__ == "__main__":

@@ -1,52 +1,19 @@
 """
-Clew core — contribution class and remediation.
+Contribution classes, storage states and actions: the vocabulary.
 
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY. It defines what removability means and
-what follows from it. Domain adapters decide which of their events map to
-which class; they do not get to invent new ones.
+Given B = f(A1 ... An), removing Ai is SEPARABLE when some g gives B' = g(B,
+Ai), REGENERABLE when f can be re-run without Ai, and IRREDUCIBLE otherwise.
+The axis is invertibility with respect to one input. The enum is closed: a
+provider maps its events onto these classes and cannot add one.
 
-THE CLASSES
------------
-Given B = f(A1 ... An), remove Ai:
+Storage mutability is a second, independent dimension. Whether a remediation
+is possible and whether it is executable are different questions.
 
-    SEPARABLE     There is an efficient g where B' = g(B, Ai).
-                  Invertible IN THE OUTPUT - subtract the contribution
-                  without re-running f.
+An unknown class becomes IRREDUCIBLE. Over-claiming remediation wastes work;
+under-claiming tells someone their data is gone when it is not.
 
-    REGENERABLE   No such g, but f is available and re-runnable, so
-                  B' = f(A1 ... without Ai).
-                  Invertible VIA RE-EXECUTION.
-
-    IRREDUCIBLE   Neither.
-
-The axis is invertibility of a derivation with respect to one input. It is not
-ring theory - do not claim an algebraic pedigree for it.
-
-The enum is CLOSED. If a domain could add a fourth class, core would not know
-how to traverse it and determinism would be lost.
-
-STORAGE MUTABILITY is a second, orthogonal dimension. A contribution can be
-SEPARABLE while the artifact is physically unwritable. Whether a remediation
-is POSSIBLE and whether it is EXECUTABLE are different questions, and the
-answer is the join of the two.
-
-WHAT LIVES HERE, AND WHAT DOES NOT
-----------------------------------
-This file owns the VOCABULARY: the classes, the storage states, the actions,
-and the fail-closed normalisation. It does not decide anything.
-
-Deciding — which combination of dimensions yields which action — lives in
-core/policy.py, as a versioned table with a content hash. The split is not
-tidiness. The words have to be stable for Clew to mean anything, while the
-table has to be versioned so a plan from March can be replayed under the
-table that was in force in March. Stable and versioned are different
-requirements, so they are different files.
-
-FAIL CLOSED
------------
-Unknown class becomes IRREDUCIBLE. The two error directions are not symmetric:
-over-claiming remediation wastes work, under-claiming tells someone their data
-is gone when it is not. Only the second one ends up in front of a regulator.
+Which combination yields which action belongs to the policy, versioned in
+policy.py. The words here must stay stable; the table must be versioned.
 """
 
 from clew.graph.graph import local_workdir
@@ -70,7 +37,7 @@ STORAGE = (WRITABLE, WORM, DESTROYED)
 # --- remediation actions ----------------------------------------------------
 
 PURGE = "PURGE"                    # remove the contribution, artifact survives
-REGENERATE = "REGENERATE"          # recompute without the withdrawn source
+REGENERATE = "REGENERATE"          # recompute without the removed source
 QUARANTINE = "QUARANTINE"          # cannot remediate; block further use
 DESTROY = "DESTROY"                # the artifact exists only because of this
                                    # subject; remove it entirely
@@ -105,27 +72,11 @@ def explain(action):
 
 def storage_state(task, work_root=None):
     """
-    Whether the task's artifacts are still on disk — or None for "not checked".
-
-    NONE IS NOT A THIRD OUTCOME, IT IS THE ABSENCE OF ONE. Storage is a live
-    property of the world, and the person asking Clew a question is often not
-    standing where the pipeline ran: a different host, a CI runner, a laptop
-    reading a graph someone emailed them. Guessing there is not conservative
-    in either direction, so this refuses.
-
-    In particular DESTROYED is now only ever returned after actually looking
-    and not finding. It used to be returned whenever `is_dir()` was false,
-    which fired identically when the path was never recorded, when the volume
-    was not mounted, when the graph came from another machine, and when the
-    fixtures were anonymised for publication. All of those became
-    ALREADY_GONE — "no longer exists; nothing to do" — which is the one error
-    direction this project exists not to make. A false negative that silences
-    an obligation is worth more care than a false positive that wastes work.
-
-    `work_root` is the caller saying where to look. Where under it the task
-    ran is the graph's `workpath`, or for older hashed-layout graphs the last two
-    components of the recorded path; see graph.local_workdir. A task whose
-    directory cannot be placed under the root is not checked, not gone.
+    Whether the task's artifacts are on disk, or None for not checked. None
+    is the absence of an answer: DESTROYED is returned only after looking
+    under `work_root` and not finding, never because a path was unrecorded,
+    unmounted or from another machine. Those used to read ALREADY_GONE, the
+    one error this project must not make. See graph.local_workdir.
     """
     return storage_at(local_workdir(task, work_root))
 
@@ -141,14 +92,10 @@ def classify(graph, task_hash, exclusive, published=None, work_root=None,
              resolved=None):
     """
     Contribution class and storage for one affected task, from pipeline
-    evidence alone: a task whose script and container were recorded can be
-    re-executed (REGENERABLE); one without fails closed to IRREDUCIBLE.
-    Publication arrives as an external assertion and sets `terminal`.
-
-    `storage` is None unless `work_root` says where to look. A caller that
-    has already placed every task with graph.resolve_workdirs passes the
-    map as `resolved`, so its refusals (shared directories, a root nothing
-    exists under) hold here too. See storage_state.
+    evidence: a recorded script and container mean REGENERABLE, otherwise
+    IRREDUCIBLE. Publication arrives as an assertion and sets terminal.
+    storage is None unless work_root says where to look; pass `resolved`
+    from graph.resolve_workdirs to keep its refusals.
     """
     task = graph["tasks"].get(task_hash, {})
     if resolved is not None:

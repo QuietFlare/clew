@@ -43,7 +43,7 @@ class TestPlanJson(unittest.TestCase):
 
     def test_every_item_states_its_basis(self):
         # A decided item cites the rule that decided it. An undecided one has
-        # no rule to cite, and must instead carry the candidates — so that a
+        # no rule to cite, and must instead carry the candidates, so that a
         # missing action is never mistakable for "nothing to do".
         for item in self.payload["plan"]:
             self.assertTrue(item["because"], item["task"])
@@ -55,7 +55,7 @@ class TestPlanJson(unittest.TestCase):
                 self.assertGreater(len(item["possible"]), 1, item["task"])
 
     def test_the_cited_rule_actually_yields_the_stated_action(self):
-        # Guards against the citation drifting from the verdict — a plan whose
+        # Guards against the citation drifting from the verdict, a plan whose
         # rule ids are decorative would be worse than one with none.
         from clew.ledger import policy
         by_id = {r["id"]: r for r in policy.DEFAULT["rules"]}
@@ -87,7 +87,7 @@ class TestPlanJson(unittest.TestCase):
     def test_regenerable_items_carry_recorded_evidence(self):
         # Whether a task's action is REGENERATE or ALREADY_GONE depends on
         # live disk state; what must ALWAYS hold is that REGENERABLE tasks
-        # carry the recorded script and container — that recording is what
+        # carry the recorded script and container, that recording is what
         # the classification was based on.
         regen = [i for i in self.payload["plan"]
                  if i["contribution"] == "REGENERABLE"]

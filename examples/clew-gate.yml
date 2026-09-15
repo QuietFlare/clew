@@ -78,7 +78,7 @@ jobs:
   #   steps:
   #     - run: |
   #         clew impact --pipeline sarek --graph graph.json \
-  #           --samplesheet samplesheet.csv --donor "$SUBJECT" \
+  #           --trigger "patient:$SUBJECT" --samplesheet samplesheet.csv \
   #           --work-root work/ --json plan.json
   #         clew evidence build --out clew-evidence/ \
   #           --plan plan.json --input graph.json --input samplesheet.csv

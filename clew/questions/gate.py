@@ -1,39 +1,18 @@
 """
-Clew — the pre-flight gate. Compliance as a build check, not a PDF.
+The pre-flight gate: compliance as a build check.
 
-    clew gate --pipeline sarek --samplesheet samplesheet.csv \
-        --dsn "$CLEW_DSN" --block-on Withdrawn --clear-on Reinstated \
-        --out bundle/
+    clew gate --pipeline sarek --samplesheet sheet.csv --dsn "$CLEW_DSN" \
+        --block-on Withdrawn --clear-on Reinstated --out bundle/
 
-Exit 0 to proceed, 1 to stop. Run it before the pipeline, in CI, so that
-using material nobody is allowed to use fails the build the way a failing
-test does — at the point where it is cheap, rather than in a remediation
-exercise two years later.
+Exit 0 to proceed, 1 to stop. Every way of failing to establish that the
+inputs are permitted exits non-zero: an unreachable log, no blocking types
+given, a subject the log has never heard of (unless --allow-unknown), a
+blocked subject. A green build must mean checked and permitted.
 
-FAIL CLOSED, EVERYWHERE, ON EVERYTHING
---------------------------------------
-Every way this command can fail to establish that the inputs are permitted
-exits non-zero:
-
-    the log is unreachable          -> stop
-    no blocking types were given    -> stop (a gate with nothing to block on
-                                       is not a lenient gate, it is no gate)
-    a subject is UNKNOWN to the log -> stop, unless --allow-unknown says
-                                       someone decided otherwise
-    a subject is BLOCKED            -> stop
-
-A green build must mean "checked and permitted". If it can also mean "could
-not check", the check is decorative, and a decorative compliance gate is
-worse than none: it manufactures a record of diligence that did not happen.
-
-THE IDENTIFIER TRAP
--------------------
-The samplesheet names subjects in one vocabulary and the log in another, and
-nothing makes them agree. A typo, a prefix, a different column, and every
-subject comes back UNKNOWN — which is why UNKNOWN stops the build by default
-and why the report always states how many subjects the log had ever heard of.
-A gate that goes green having recognised none of its inputs is the exact
-failure this design is arranged to make loud.
+The samplesheet and the log name subjects in different vocabularies and
+nothing makes them agree, so the report always states how many subjects the
+log recognised. A gate that goes green having recognised none of its inputs
+is the failure this command is arranged to make loud.
 """
 
 import argparse
@@ -45,21 +24,16 @@ from pathlib import Path
 
 from clew.ledger import bundle
 from clew.ledger import gate as core_gate
-from clew.domains import rnaseq, sarek, viralrecon
-
-DOMAINS = {"sarek": sarek, "viralrecon": viralrecon, "rnaseq": rnaseq}
+from clew.contracts import REMOVE, Adapter, discover
 
 CHECKED = "GateChecked"
 
 
 def load_gate_policy(args):
     """
-    Which fact types stop a build, and which release it.
-
-    Deliberately not defaulted. Clew ships no opinion about what your event
-    types mean or which of them should stop work — that is the customer's
-    policy, and guessing it here would be shipping truth rather than a
-    template. See gate-policy.example.json.
+    Which fact types stop a build and which release it. No default: what
+    your event types mean is your policy, and a default here would be
+    shipping truth. See gate-policy.example.json.
     """
     if args.gate_policy:
         try:
@@ -98,10 +72,21 @@ def load_gate_policy(args):
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    adapters = discover(Adapter)
+    first = argparse.ArgumentParser(add_help=False)
+    first.add_argument("--pipeline", choices=sorted(adapters), default="sarek")
+    adapter = adapters[first.parse_known_args(argv)[0].pipeline]
+    removable = [k for k, t in adapter.triggers.items() if t.mode is REMOVE]
     parser = argparse.ArgumentParser(
-        description="Stop a pipeline run whose inputs are not permitted.")
-    parser.add_argument("--samplesheet", required=True)
-    parser.add_argument("--pipeline", choices=sorted(DOMAINS), default="sarek")
+        description="Stop a pipeline run whose inputs are not permitted.",
+        conflict_handler="resolve")
+    parser.add_argument("--pipeline", choices=sorted(adapters), default="sarek")
+    parser.add_argument("--kind", choices=sorted(adapter.triggers),
+                        default=removable[0] if removable else None,
+                        help="which of this pipeline's trigger kinds lists the inputs to check")
+    for kind in adapter.triggers.values():
+        kind.add_arguments(parser)
     parser.add_argument("--dsn", default=os.environ.get("CLEW_DSN"),
                         help="the event log holding the facts; $CLEW_DSN")
     parser.add_argument("--gate-policy", metavar="PATH",
@@ -117,7 +102,7 @@ def main(argv=None):
     parser.add_argument("--allow-unknown", action="store_true",
                         help="do not stop on subjects the log has never heard "
                              "of. A real choice for a log covering part of an "
-                             "estate — but it must be a choice.")
+                             "estate, but it must be a choice.")
     parser.add_argument("--out", metavar="DIR",
                         help="seal the result into an evidence bundle")
     parser.add_argument("--force", action="store_true",
@@ -129,12 +114,15 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     policy = load_gate_policy(args)
-    domain = DOMAINS[args.pipeline]
+    if not args.kind:
+        raise SystemExit(
+            f"pipeline {args.pipeline!r} declares no trigger kind that owns inputs, "
+            "so there is nothing to list and check. Stopping.")
     try:
-        subjects = sorted(domain.load_subjects(args.samplesheet))
+        subjects = sorted(adapter.triggers[args.kind].values(args))
     except OSError as exc:
         raise SystemExit(
-            f"cannot read --samplesheet {args.samplesheet}: {exc.strerror}. "
+            f"cannot read the {args.kind} inputs: {exc.strerror} ({exc.filename}). "
             "Stopping: no inputs were checked.")
 
     if args.as_of:
@@ -170,7 +158,7 @@ def main(argv=None):
         as_of=args.as_of, unknown_blocks=not args.allow_unknown)
     result["as_of_given"] = args.as_of is not None
     result["gate_policy"] = policy
-    result["samplesheet"] = str(args.samplesheet)
+    result["inputs"] = {"kind": args.kind, "samplesheet": getattr(args, "samplesheet", None)}
     result["log_head"] = log_head
 
     report(result, policy, log_head)

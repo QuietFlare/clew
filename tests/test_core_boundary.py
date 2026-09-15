@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 PACKAGE = Path(__file__).resolve().parent.parent / "clew"
-CLEAN = ["graph", "ledger"]
+CLEAN = ["graph", "ledger", "contracts"]
 # Command modules talk to people and may use their words. Only the library
 # modules under a clean package are held to the rule.
 COMMANDS = {"evidence.py", "logbook.py", "rulebook.py"}
@@ -36,11 +36,11 @@ FORBIDDEN = [
 
 ALLOWED = {
     "graph": set(),
-    "domains": {"graph"},
-    "ledger": {"graph"},
-    "extract": {"graph", "domains"},
+    "contracts": {"graph"},
+    "ledger": {"graph", "contracts"},
+    "extract": {"graph", "contracts"},
     "views": {"graph", "ledger"},
-    "questions": {"graph", "domains", "ledger", "extract", "views"},
+    "questions": {"graph", "ledger", "extract", "views", "contracts"},
 }
 
 IMPORT = re.compile(r"^\s*(?:from|import)\s+clew\.(\w+)", re.MULTILINE)
@@ -73,6 +73,82 @@ class TestBoundary(unittest.TestCase):
                     if target != package and target not in allowed:
                         offences.append(f"{package}/{path.name} imports clew.{target}")
         self.assertEqual(offences, [], "\n".join(offences))
+
+
+PROVIDERS = Path(__file__).resolve().parent.parent / "providers"
+# What a provider may import from clew: the graph, the contracts, and the
+# engine-side extract tools. Not another provider, not the questions.
+PROVIDER_ALLOWED = {"graph", "contracts", "extract"}
+PROVIDER_IMPORT = re.compile(r"^\s*(?:from|import)\s+clew\.provider\.(\w+)", re.MULTILINE)
+
+
+def declared_entry_points(pyproject, group):
+    """[(name, module)] under one entry-point group. A regex, since tomllib is 3.11+."""
+    text = pyproject.read_text()
+    section = re.search(rf'^\[project\.entry-points\."{re.escape(group)}"\]\n(.*?)(?=^\[|\Z)',
+                        text, re.M | re.S)
+    if not section:
+        return []
+    return re.findall(r'^([\w-]+)\s*=\s*"([^"]+)"', section.group(1), re.M)
+
+
+class TestProviders(unittest.TestCase):
+    """The built-ins are held to what a third-party provider could do."""
+
+    def test_providers_reach_only_the_public_surface(self):
+        offences = []
+        for package in sorted(PROVIDERS.glob("*/clew/provider/*")):
+            for path in sorted(package.glob("*.py")):
+                text = path.read_text()
+                for target in IMPORT.findall(text):
+                    if target != "provider" and target not in PROVIDER_ALLOWED:
+                        offences.append(f"{package.name}/{path.name} imports clew.{target}")
+                for other in PROVIDER_IMPORT.findall(text):
+                    if other != package.name:
+                        offences.append(f"{package.name}/{path.name} imports provider {other}")
+        self.assertEqual(offences, [], "\n".join(offences))
+
+    def test_namespace_levels_carry_no_init(self):
+        # clew and clew.provider are namespace packages. An __init__.py at
+        # either level, in any distribution, claims the whole package for that
+        # one directory and every other provider silently stops registering.
+        offences = [str(p.relative_to(PACKAGE.parent))
+                    for p in (PACKAGE / "__init__.py", PACKAGE / "provider" / "__init__.py")
+                    if p.exists()]
+        for dist in sorted(PROVIDERS.glob("*")):
+            for level in (dist / "clew" / "__init__.py",
+                          dist / "clew" / "provider" / "__init__.py"):
+                if level.exists():
+                    offences.append(str(level.relative_to(PACKAGE.parent)))
+        self.assertEqual(offences, [], "namespace level has an __init__.py:\n  "
+                         + "\n  ".join(offences))
+
+    def test_every_provider_is_discoverable(self):
+        # Each provider directory must be reachable through the namespace, and
+        # every entry point its pyproject declares must import and register.
+        import importlib
+        from clew.contracts import Adapter, Extractor
+        groups = {"clew.adapters": Adapter, "clew.extractors": Extractor}
+        offences = []
+        for dist in sorted(PROVIDERS.glob("*")):
+            name = next((dist / "clew" / "provider").glob("*")).name
+            try:
+                importlib.import_module(f"clew.provider.{name}")
+            except ImportError as exc:
+                offences.append(f"{dist.name}: clew.provider.{name} not importable: {exc}")
+                continue
+            for group, contract in groups.items():
+                for key, module in declared_entry_points(dist / "pyproject.toml", group):
+                    importlib.import_module(module)
+                    if key not in contract.registered:
+                        offences.append(f"{dist.name}: {group} entry {key!r} imported "
+                                        f"{module} but nothing registered under that name")
+        self.assertEqual(offences, [], "\n".join(offences))
+
+    def test_no_provider_code_remains_in_the_engine(self):
+        self.assertFalse((PACKAGE / "domains").exists())
+        self.assertEqual(sorted(p.name for p in (PACKAGE / "extract").glob("*.py")),
+                         ["__init__.py", "digest.py", "runs.py", "stitch.py"])
 
 
 if __name__ == "__main__":

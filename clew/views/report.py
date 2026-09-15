@@ -1,26 +1,12 @@
 """
-Clew — one self-contained HTML page for a single impact plan.
+One self-contained HTML page for a single impact plan.
 
     clew impact --graph g.json --trigger input:reference.dat --html plan.html
 
-The evidence dashboard renders sealed bundles, which is right for an
-audit and heavy for the question "what does this change reach, and where
-does it run". This renders one plan, straight from `clew impact`, with
-the same rules the dashboard follows:
-
-    one file, no scripts, no network, prints legibly, and no generation
-    timestamp, so the same plan always renders to the same bytes
-
-It borrows the dashboard's stylesheet and helpers rather than growing a
-second set. Two surfaces answering the same question two ways would
-eventually disagree, and on that day nobody could say which was wrong.
-
-WHAT IS NOT KNOWN IS SHOWN
---------------------------
-Undetermined verdicts and the limits of the cost figures sit at the top,
-in the same weight as everything else. A page that renders gaps in small
-grey text below the fold manufactures a clean bill of health out of an
-incomplete record.
+Same rules as the dashboard: one file, no scripts, no network, prints
+legibly, no timestamp. It borrows the dashboard's stylesheet and helpers so
+the two cannot disagree. Undetermined verdicts and the limits of the cost
+figures sit at the top at full weight.
 """
 
 import argparse
@@ -56,12 +42,9 @@ CONTRIBUTION_KIND = {
 
 def possible_actions(item):
     """
-    The actions a task could take once storage is known.
-
-    `possible` maps each candidate action to the rule that would produce
-    it, and is present precisely when `action` is not. Rendering it as a
-    blank cell would read as "nothing to do", which is the failure the
-    plan format guards against.
+    The actions a task could take once storage is known. `possible` is
+    present exactly when `action` is not; a blank cell would read as nothing
+    to do.
     """
     possible = item.get("possible")
     if isinstance(possible, dict):
@@ -156,13 +139,8 @@ def by_target(plan):
 
 def by_process(plan):
     """
-    Rolled up by process. Nobody acts on one task at a time, and a flat
-    list of 183 rows is not a thing anyone reads.
-
-    The target column appears only when something recorded one. An
-    engine that runs a whole workflow on one machine has no host to
-    report, and a column of "not recorded" is noise pretending to be
-    information.
+    Rolled up by process, since nobody acts on 183 rows one at a time. The
+    target column appears only when an engine recorded one.
     """
     shown = any(i.get("target") for i in plan["plan"])
 

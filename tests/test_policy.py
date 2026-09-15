@@ -1,8 +1,7 @@
 """
 The versioned remediation table.
 
-Two jobs here. The first is the decision table itself, tested exhaustively —
-these assertions moved over from test_contribution.py unchanged when the
+Two jobs here. The first is the decision table itself, tested exhaustively, these assertions moved over from test_contribution.py unchanged when the
 table became data, which is the point: turning an if-ladder into rules had to
 change nothing about what Clew decides.
 
@@ -24,9 +23,9 @@ from clew.graph import contribution as c
 from clew.ledger import policy as p
 
 # Every combination the engine can present, including classes it should never
-# see. 4 x 3 x 2 x 2.
+# see. 4 x 3 x 2 x 2 x 2.
 SPACE = list(product(list(c.CLASSES) + ["GARBAGE"], c.STORAGE,
-                     (True, False), (True, False)))
+                     (True, False), (True, False), p.MODES))
 
 
 class TestDecisionTable(unittest.TestCase):
@@ -64,8 +63,9 @@ class TestDecisionTable(unittest.TestCase):
                 c.QUARANTINE)
 
     def test_separable_shared(self):
-        self.assertEqual(p.remediate(c.SEPARABLE), c.PURGE)
-        self.assertEqual(p.remediate(c.SEPARABLE, storage=c.WORM), c.REGENERATE)
+        self.assertEqual(p.remediate(c.SEPARABLE, mode=p.REMOVE), c.PURGE)
+        self.assertEqual(p.remediate(c.SEPARABLE, storage=c.WORM, mode=p.REMOVE),
+                         c.REGENERATE)
 
     def test_regenerable_shared(self):
         self.assertEqual(p.remediate(c.REGENERABLE), c.REGENERATE)
@@ -81,9 +81,9 @@ class TestDecisionTable(unittest.TestCase):
         self.assertEqual(p.remediate("MYSTERY"), c.QUARANTINE)
 
     def test_every_combination_yields_one_known_action_and_a_rule(self):
-        for klass, storage, exclusive, terminal in SPACE:
+        for klass, storage, exclusive, terminal, mode in SPACE:
             decision = p.decide(klass, storage=storage, exclusive=exclusive,
-                                terminal=terminal)
+                                terminal=terminal, mode=mode)
             self.assertIn(decision["action"], p.ACTIONS)
             self.assertTrue(decision["rule"])
             self.assertNotEqual(c.explain(decision["action"]), "unknown action")
@@ -93,16 +93,16 @@ class TestRulesAreReachable(unittest.TestCase):
     def test_no_rule_is_dead(self):
         # A rule that can never match is indistinguishable from a deleted one,
         # except that the file still shows it and everyone believes it applies.
-        reached = {p.decide(k, storage=s, exclusive=e, terminal=t)["rule"]
-                   for k, s, e, t in SPACE}
-        declared = {rule["id"] for rule in p.V1["rules"]}
+        reached = {p.decide(k, storage=s, exclusive=e, terminal=t, mode=m)["rule"]
+                   for k, s, e, t, m in SPACE}
+        declared = {rule["id"] for rule in p.DEFAULT["rules"]}
         self.assertEqual(declared - reached, set())
 
     def test_the_builtin_table_never_falls_through(self):
         # The fallthrough guard is for policies that are wrong. Ours must not
         # be relying on it.
-        reached = {p.decide(k, storage=s, exclusive=e, terminal=t)["rule"]
-                   for k, s, e, t in SPACE}
+        reached = {p.decide(k, storage=s, exclusive=e, terminal=t, mode=m)["rule"]
+                   for k, s, e, t, m in SPACE}
         self.assertNotIn(p.FALLTHROUGH_RULE, reached)
 
 
@@ -126,7 +126,7 @@ class TestFingerprint(unittest.TestCase):
         self.assertNotEqual(p.fingerprint(p.V1), p.fingerprint(altered))
 
     def test_reordering_rules_changes_the_hash(self):
-        # Order is semantics here — first match wins.
+        # Order is semantics here, first match wins.
         altered = json.loads(json.dumps(p.V1))
         altered["rules"][0], altered["rules"][1] = (altered["rules"][1],
                                                    altered["rules"][0])
@@ -206,7 +206,7 @@ class TestVersionsAreImmutable(unittest.TestCase):
     A shipped version is a historical record, not a place to fix things.
 
     Plans cite a version and a hash. If a version can be edited in place, the
-    label is a lie and the hash proves nothing — a January plan would replay
+    label is a lie and the hash proves nothing, a January plan would replay
     under a table nobody had in January. So the hashes are frozen here as
     literals: editing a shipped policy fails this test, and the fix is to add
     a version, never to change one.
@@ -215,6 +215,7 @@ class TestVersionsAreImmutable(unittest.TestCase):
     FROZEN = {
         "v1": "dbb59de6d85fc0f87f4bc7d490b6ce34f8bf9222875386a721ec4e18f3ee0461",
         "v2": "e6ba60ffe6763949106eca86f7888c3cc3e28c920fd999ce275d708153152642",
+        "v3": "12e8068b4f8a5fd18f64e014e10a6de13b3fec7c3abd03871c3f333585bcc266",
     }
 
     def test_shipped_hashes_have_not_moved(self):
@@ -255,6 +256,42 @@ class TestVersionsAreImmutable(unittest.TestCase):
             p.remediate(c.REGENERABLE, storage=c.DESTROYED, terminal=True,
                         policy=p.resolve("v2")),
             c.NOTIFY_ONLY)
+
+
+class TestV3(unittest.TestCase):
+    """v3 adds the mode: a corrected separable part is recomputed, not purged."""
+
+    def test_removed_is_purged_and_corrected_is_regenerated(self):
+        gone = p.decide(c.SEPARABLE, mode=p.REMOVE)
+        changed = p.decide(c.SEPARABLE, mode=p.TRACE)
+        self.assertEqual((gone["action"], gone["rule"]), (c.PURGE, "R5"))
+        self.assertEqual((changed["action"], changed["rule"]), (c.REGENERATE, "R9"))
+
+    def test_v2_never_saw_the_difference(self):
+        for mode in p.MODES:
+            self.assertEqual(p.remediate(c.SEPARABLE, mode=mode, policy=p.V2), c.PURGE)
+
+    def test_mode_matters_only_for_a_separable_writable_shared_artifact(self):
+        for klass, storage, exclusive, terminal, _ in SPACE:
+            a = p.remediate(klass, storage=storage, exclusive=exclusive,
+                            terminal=terminal, mode=p.REMOVE)
+            b = p.remediate(klass, storage=storage, exclusive=exclusive,
+                            terminal=terminal, mode=p.TRACE)
+            differs = (klass == c.SEPARABLE and storage == c.WRITABLE
+                       and not exclusive and not terminal)
+            self.assertEqual(a != b, differs, (klass, storage, exclusive, terminal))
+
+    def test_an_unknown_mode_is_withheld_not_guessed(self):
+        decision = p.decide(c.SEPARABLE, mode=None)
+        self.assertIsNone(decision["action"])
+        self.assertEqual(decision["possible"], {c.PURGE: "R5", c.REGENERATE: "R9"})
+
+    def test_v3_is_v2_plus_one_rule(self):
+        self.assertEqual([r["id"] for r in p.V3["rules"]],
+                         ["R2", "R1", "R3", "R4", "R9", "R5", "R6", "R7", "R8"])
+        by_id = {r["id"]: r for r in p.V3["rules"]}
+        for r in p.V2["rules"]:
+            self.assertEqual(by_id[r["id"]], r)
 
 
 class TestLoadAndResolve(unittest.TestCase):
@@ -342,9 +379,8 @@ class TestUnverifiedStorage(unittest.TestCase):
     """
     storage=None means NOT CHECKED, which is not one of the three values.
 
-    The old behaviour returned DESTROYED whenever a workdir did not resolve —
-    on another host, with an unmounted volume, from an extractor that records
-    no workdir at all — and DESTROYED becomes ALREADY_GONE, "nothing to do".
+    The old behaviour returned DESTROYED whenever a workdir did not resolve, on another host, with an unmounted volume, from an extractor that records
+    no workdir at all, and DESTROYED becomes ALREADY_GONE, "nothing to do".
     That is the one error direction this project exists not to make, so an
     unchecked dimension now yields no verdict rather than a convenient one.
     """
@@ -380,7 +416,7 @@ class TestUnverifiedStorage(unittest.TestCase):
     def test_under_v1_nothing_is_decidable_without_checking_storage(self):
         # A consequence of R1 being first: DESTROYED always yields
         # ALREADY_GONE, and no other rule can, so every unchecked item
-        # disagrees with itself. Under v1, storage MUST be verified — which
+        # disagrees with itself. Under v1, storage MUST be verified, which
         # is half of why v2 exists.
         for klass, exclusive, terminal in product(c.CLASSES, (True, False),
                                                   (True, False)):
@@ -447,7 +483,7 @@ class TestEveryDimensionIsChecked(unittest.TestCase):
     def test_agreement_over_an_unverified_terminal_is_a_real_answer(self):
         # Published or not, a DESTROYED artifact under v1 is ALREADY_GONE.
         decision = p.decide(c.REGENERABLE, storage=c.DESTROYED, terminal=None,
-                            policy=p.V1)
+                            mode=p.REMOVE, policy=p.V1)
         self.assertEqual(decision["action"], c.ALREADY_GONE)
         self.assertIn("terminal unverified", decision["because"])
 
@@ -478,14 +514,15 @@ class TestReplay(unittest.TestCase):
                              "this organisation does not purge in place",
                              contribution=c.SEPARABLE)],
         })
-        self.assertEqual(p.remediate(c.SEPARABLE), c.PURGE)
-        self.assertEqual(p.remediate(c.SEPARABLE, policy=strict), c.QUARANTINE)
+        self.assertEqual(p.remediate(c.SEPARABLE, mode=p.REMOVE), c.PURGE)
+        self.assertEqual(p.remediate(c.SEPARABLE, mode=p.REMOVE, policy=strict),
+                         c.QUARANTINE)
 
     def test_decisions_are_stable_across_repeated_calls(self):
-        first = [p.decide(k, storage=s, exclusive=e, terminal=t)
-                 for k, s, e, t in SPACE]
-        second = [p.decide(k, storage=s, exclusive=e, terminal=t)
-                  for k, s, e, t in SPACE]
+        first = [p.decide(k, storage=s, exclusive=e, terminal=t, mode=m)
+                 for k, s, e, t, m in SPACE]
+        second = [p.decide(k, storage=s, exclusive=e, terminal=t, mode=m)
+                  for k, s, e, t, m in SPACE]
         self.assertEqual(first, second)
 
 

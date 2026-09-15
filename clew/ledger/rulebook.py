@@ -1,23 +1,16 @@
 """
-Clew — the remediation policy, from the command line.
+The remediation policy from the command line.
 
     clew rulebook show
     clew rulebook export --out policy_v1.json
     clew rulebook check policy_v1.json
     clew rulebook register --dsn "$CLEW_DSN" --actor qa.lead@example.org
 
-WHY REGISTER A POLICY IN THE EVENT LOG
---------------------------------------
-A plan cites a policy version and hash. That is only worth something if the
-claim "v1 hashed to dbb59de6... and we adopted it on this date" is itself a
-recorded fact rather than something recomputed later from whatever the code
-says today. So adoption is an event, with an actor and an effective date, in
-the same append-only log as everything else.
-
-The full policy goes into the event body, not a pointer to it. A pointer to
-code is worthless six months and four releases later; the log has to hold the
-actual table so an old plan can be replayed even if this build no longer
-ships that version.
+Adoption is an event in the log with an actor and an effective date, so "v1
+hashed to dbb59de6 and we adopted it on this date" is a recorded fact rather
+than something recomputed from today's code. The whole table goes into the
+event body, not a pointer, so an old plan replays after the build that
+shipped that version is gone.
 """
 
 import argparse
@@ -61,7 +54,7 @@ def cmd_show(args):
     print("       Outside the rule list, where no policy can remove it.")
     print()
     print("The class is normalised before matching: anything unrecognised is")
-    print("IRREDUCIBLE first. That fixes the facts, not the verdict — a policy")
+    print("IRREDUCIBLE first. That fixes the facts, not the verdict, a policy")
     print("that decides badly will be honoured, and will be identifiable by")
     print("version, hash and rule id when someone asks why.")
 
@@ -93,7 +86,7 @@ def cmd_check(args):
     print(f"  sha256  {stamp['policy_hash']}")
     print(f"  {len(loaded['rules'])} rules")
     print()
-    print("Valid means well-formed and decidable — every rule can fire, names")
+    print("Valid means well-formed and decidable, every rule can fire, names")
     print("a known action, and carries a rationale. It does not mean correct.")
     print("Whether the table says the right thing is the author's to defend.")
     return 0
@@ -101,12 +94,8 @@ def cmd_check(args):
 
 def cmd_diff(args):
     """
-    What changed between two policies, by rule id.
-
-    Ids identify rules rather than positions, so a rule that moved is
-    reported as moved rather than as one deletion and one addition. Order is
-    semantics here — first match wins — so a pure reorder is a real change
-    and has to read like one.
+    What changed between two policies, by rule id, so a moved rule reads as
+    moved. First match wins, so a pure reorder is a real change.
     """
     before, after = policy.resolve_or_load(args.before), policy.resolve_or_load(args.after)
     a, b = policy.identify(before), policy.identify(after)

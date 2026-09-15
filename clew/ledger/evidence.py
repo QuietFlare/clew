@@ -1,37 +1,26 @@
 """
-Clew — build and check evidence bundles.
+Build and check evidence bundles.
 
-    # seal a plan, the policy it used, and the log entries behind it
-    clew evidence build --out bundle/ --plan plan.json \
-        --dsn "$CLEW_DSN" --input graph.json --input donors.csv
-
-    # anyone, anywhere, with Python and nothing else
+    clew evidence build --plan plan.json --dsn "$CLEW_DSN" \
+        --input graph.json               # -> container-build-1.2.3-2026-09-15/
+    clew evidence build --out bundle/ --plan plan.json
     clew evidence verify bundle/
-
-    # countersigning is delegated, not invented
     clew evidence sign bundle/ --key ~/.ssh/id_ed25519
     clew evidence verify bundle/ --allowed-signers allowed_signers
 
-WHY THE VERIFIER TAKES NO CREDENTIALS
--------------------------------------
-`verify` reads a directory. It does not connect to the database, does not
-call us, and does not need the driver installed. An assessor who does not
-trust the party that produced a bundle must be able to check it anyway, and
-any step that routes through the producer's infrastructure defeats that.
-
-WHY BUILDING IS SEPARATE FROM COMPUTING
----------------------------------------
-clew impact answers a question. This packages an answer that was already given.
-Keeping them apart means a bundle can only ever contain a plan that was
-produced independently — sealing cannot quietly recompute something on more
-convenient terms on its way into the folder.
+verify reads a directory: no database, no driver, no call home, so an
+assessor who does not trust the producer can still check. Building is
+separate from computing so a bundle can only hold a plan produced
+independently; sealing cannot recompute on more convenient terms.
 """
 
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
+from datetime import datetime, timezone
 import sys
 from pathlib import Path
 
@@ -60,7 +49,7 @@ def open_log(dsn):
 
 def resolve_policy_for(plan, override):
     """
-    The exact table the plan was decided under — never a substitute.
+    The exact table the plan was decided under, never a substitute.
 
     A plan citing a version this build does not ship cannot be sealed here.
     Quietly bundling today's table instead would produce a bundle whose replay
@@ -70,12 +59,13 @@ def resolve_policy_for(plan, override):
         document = policy_module.resolve_or_load(override)
     else:
         version = plan.get("policy_version")
-        if version not in policy_module.REGISTRY:
+        known = policy_module.available()
+        if version not in known:
             raise SystemExit(
                 f"the plan cites policy {version!r}, which this build does not "
-                f"ship ({', '.join(sorted(policy_module.REGISTRY))}). Pass "
+                f"know ({', '.join(sorted(known))}). Pass "
                 "--policy pointing at the table it was computed under.")
-        document = policy_module.resolve(version)
+        document = known[version]
 
     stated = plan.get("policy_hash")
     actual = policy_module.fingerprint(document)
@@ -88,12 +78,8 @@ def resolve_policy_for(plan, override):
 
 def record_inputs(paths):
     """
-    Source files by content hash, with the basename only.
-
-    Keyed by hash rather than by path so the same inputs give the same
-    bundle whatever directory they were read from: a bundle hash that
-    changed because someone typed ./graph.json instead of graph.json
-    would be a reproducibility claim with a hole in it.
+    Source files by content hash with basename only, so the same inputs give
+    the same bundle from any directory.
     """
     inputs = {}
     for path in paths or []:
@@ -106,6 +92,17 @@ def record_inputs(paths):
                 "record it once")
         inputs[digest] = {"name": name, "bytes": Path(path).stat().st_size}
     return inputs
+
+
+def default_out(plan, today=None):
+    """
+    <trigger>-<date>, so the name says what the bundle answers. The date is
+    in the name only; nothing sealed depends on the clock.
+    """
+    trigger = str(plan.get("trigger") or "plan")
+    slug = re.sub(r"[^a-z0-9._]+", "-", trigger.lower()).strip("-.") or "plan"
+    day = today or datetime.now(timezone.utc).date().isoformat()
+    return f"{slug}-{day}"
 
 
 def continue_from(previous_dir, since):
@@ -132,6 +129,7 @@ def continue_from(previous_dir, since):
 
 def cmd_build(args):
     plan = load_json(args.plan)
+    args.out = args.out or default_out(plan)
     policy_document = resolve_policy_for(plan, args.policy)
     previous, previous_head = continue_from(args.previous, args.since)
 
@@ -319,12 +317,9 @@ def cmd_verify(args):
 
 def cmd_witness(args):
     """
-    Hold a live log up against a bundle that has already left the building.
-
-    Deliberately a separate command from `verify`. Verifying a bundle needs
-    no credentials and must stay that way; this one needs the log, and
-    folding it into `verify` would make the credential-free property look
-    optional when it is the whole design.
+    Hold a live log against a bundle that has left the building. Separate
+    from verify on purpose: verify needs no credentials, and folding this in
+    would make that look optional.
     """
     from clew.ledger import eventlog
 
@@ -363,7 +358,7 @@ def check_signature(directory, allowed_signers):
 
     # Ask the signature who signed it, then check that claim against the
     # allowed_signers file. Verifying requires naming a principal, and an
-    # auditor holding a bundle has no reason to know one in advance — the
+    # auditor holding a bundle has no reason to know one in advance, the
     # useful output here is WHO attested to it, which this recovers.
     found = subprocess.run(
         ["ssh-keygen", "-Y", "find-principals", "-s", str(signature),
@@ -393,12 +388,9 @@ def check_signature(directory, allowed_signers):
 
 def cmd_sign(args):
     """
-    Countersign the manifest with ssh-keygen. Clew implements no crypto.
-
-    The manifest is the right thing to sign: it already covers every file by
-    hash, so one signature over it attests to the whole bundle, and the
-    signature can be added, replaced or made by several parties without any
-    of the sealed content changing.
+    Countersign the manifest with ssh-keygen; Clew implements no crypto. The
+    manifest covers every file by hash, so one signature attests to the
+    bundle and can be added or replaced without touching sealed content.
     """
     if not shutil.which("ssh-keygen"):
         raise SystemExit("ssh-keygen not found; it ships with OpenSSH")
@@ -423,7 +415,8 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
 
     build = sub.add_parser("build", help="seal a plan into a bundle")
-    build.add_argument("--out", required=True, metavar="DIR")
+    build.add_argument("--out", metavar="DIR",
+                       help="bundle directory; default <trigger>-<date>")
     build.add_argument("--plan", required=True,
                        help="plan JSON from clew impact --json")
     build.add_argument("--policy", metavar="VERSION|PATH",

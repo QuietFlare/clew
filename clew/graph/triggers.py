@@ -1,20 +1,12 @@
 """
-Clew core — locating where something bad enters a graph.
+Where something bad enters a graph.
 
-A trigger names what went wrong and resolves to the nodes it entered at.
-Every kind answers the same question, and they differ only in where they
-look:
-
-    container:toolkit-2.1   a node field
-    script:prep.py          a node field
-    input:reference.dat     an EXTERNAL edge's filename
-    subject:batch_017       a node's label
-    site:north              also a node's label
-
-Anything not a known kind is read as a label key, so a graph carrying
-`labels: {site: north}` answers `site:north` without a line of code
-being added here. That is the point: a vocabulary travels inside the
-graph rather than being compiled into the tool.
+A trigger names what went wrong and resolves to the nodes it entered at:
+container:toolkit-2.1 and script:prep.py match a node field,
+input:reference.dat an EXTERNAL edge's filename, subject:batch_017 a label.
+Any other kind is read as a label key, so a graph carrying labels: {site:
+north} answers site:north with no code added here. The vocabulary travels
+inside the graph.
 """
 
 from clew.graph.graph import container_matches, external_input_entry_nodes
@@ -40,6 +32,16 @@ def container(graph, value):
 def external_filename(graph, value):
     """Nodes that consumed an EXTERNAL file with this basename or a companion."""
     return external_input_entry_nodes(graph, value)[f"input:{value}"]
+
+
+def label_keys(graph):
+    """Every label key any task or edge carries."""
+    keys = set()
+    for task in graph["tasks"].values():
+        keys.update(task.get("labels") or {})
+    for edge in graph["edges"]:
+        keys.update(edge.get("labels") or {})
+    return keys
 
 
 def label(key):

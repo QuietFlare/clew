@@ -22,7 +22,7 @@ jobs:
   tests:
     uses: QuietFlare/ci-workflows/.github/workflows/python-test.yml@v1
     with:
-      test-command: 'python3 -m unittest discover -s tests'
+      test-command: 'make dev test'
       # 3.9 is what macOS ships, so it is the floor people actually hit.
       python-versions: '["3.9", "3.11", "3.13"]'
 
@@ -48,7 +48,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install the driver
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt && make dev
 
       - name: Run the full suite against Postgres
         env:

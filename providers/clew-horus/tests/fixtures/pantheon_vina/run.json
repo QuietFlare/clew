@@ -1,0 +1,47 @@
+{
+  "format": "horus-lineage/v1",
+  "run": "01724523d075657e",
+  "run_scope": null,
+  "run_directory": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-clew/4edf8cb5-4d50-46bc-88ef-972a18882a45/scratchpad/pantheon/workflows/drug-discovery/w02-autodock-vina-docking/horus_workflow_results",
+  "workflow": {
+    "id": "fd048832-c03b-4930-84bd-0c65e14c2710",
+    "slug": null,
+    "name": "AutoDock Vina Docking"
+  },
+  "started_at": "2026-09-11T13:00:57.015337+00:00",
+  "finished_at": "2026-09-11T13:01:51.486135+00:00",
+  "status": "completed",
+  "definition": {
+    "file": "definition.json",
+    "sha256": "76a234ed4e2249a8081819824df4ada3b5331e02119790215ed49e12fc68dd9a"
+  },
+  "source": {
+    "file": "workflow.yaml",
+    "sha256": "9be209d58ffa9e71bccb2b90743ff84b90251570a205ce1514735a1f64866e85"
+  },
+  "code": [
+    {
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-clew/4edf8cb5-4d50-46bc-88ef-972a18882a45/scratchpad/pantheon/workflows/drug-discovery/w02-autodock-vina-docking/scripts/dock.py",
+      "size": 6303,
+      "sha256": "3abc82b62943c4904c3f5ca20635b7b9e29baeb8be3235e3ec0a527116050610",
+      "role": "script"
+    },
+    {
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-clew/4edf8cb5-4d50-46bc-88ef-972a18882a45/scratchpad/pantheon/workflows/drug-discovery/w02-autodock-vina-docking/scripts/prep.py",
+      "size": 13267,
+      "sha256": "00433c43fceed003d96a90d7f8e76d31ca2b9992b341a519647782fbbb5e0d2a",
+      "role": "script"
+    },
+    {
+      "path": "/private/tmp/claude-501/-Users-seemajagadeesh-workspace-BioTechJourney-clew/4edf8cb5-4d50-46bc-88ef-972a18882a45/scratchpad/pantheon/workflows/drug-discovery/w02-autodock-vina-docking/scripts/summary.py",
+      "size": 6654,
+      "sha256": "c390f67b6ecbdd504650bcc691d7f78bd93ba3bb396678a56c9c21220cf8a757",
+      "role": "script"
+    }
+  ],
+  "tasks": [
+    "prep",
+    "dock",
+    "summary"
+  ]
+}

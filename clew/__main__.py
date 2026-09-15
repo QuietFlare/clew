@@ -13,7 +13,7 @@ COMMANDS = {
     "demo": ("clew.demo",
              "the shipped sample run: three triggers, one engine"),
     "impact": ("clew.questions.impact",
-               "what a withdrawal, defect or update reaches, and what to do"),
+               "what a removal, defect or update reaches, and what to do"),
     "gate": ("clew.questions.gate",
              "block a run whose inputs the log says are not usable"),
     "reclaim": ("clew.questions.reclaim",
@@ -30,26 +30,26 @@ COMMANDS = {
                   "one self-contained HTML page over sealed bundles"),
     "mcp": ("clew.views.mcp_server",
             "read-only MCP server over sealed bundles, for auditors"),
+    "extract": ("clew.extract",
+                "build a graph from an engine's record: clew extract <engine>"),
+    "providers": ("clew.providers",
+                  "every domain and extractor installed, and the package each came from"),
     "stitch": ("clew.extract.stitch",
                "join run graphs where one run consumed another's outputs"),
     "digest": ("clew.extract.digest",
                "hash a run's files once, for graphs without content digests"),
-    "extract-store": ("clew.extract.nextflow_store",
-                      "build a graph from the engine's native lineage store"),
-    "extract-crate": ("clew.extract.rocrate",
-                      "build a graph from a Workflow Run RO-Crate"),
-    "extract-work": ("clew.extract.nextflow_work",
-                     "build a graph from work/ symlinks, any engine version"),
-    "extract-horus": ("clew.extract.horus",
-                      "build a graph from a horus-lineage run directory"),
-    "extract-dnanexus": ("clew.extract.dnanexus",
-                         "build a graph from a DNAnexus analysis"),
-    "extract-latch": ("clew.extract.latch",
-                      "build a graph from a Latch execution"),
-    "extract-cromwell": ("clew.extract.cromwell",
-                         "build a graph from Cromwell workflow metadata"),
-    "extract-snakemake": ("clew.extract.snakemake",
-                          "build a graph from Snakemake's metadata store"),
+}
+
+# The names extractors had before `clew extract <engine>`. Still accepted.
+ALIASES = {
+    "extract-store": "nextflow",
+    "extract-work": "nextflow-work",
+    "extract-crate": "ro-crate",
+    "extract-horus": "horus",
+    "extract-dnanexus": "dnanexus",
+    "extract-latch": "latch",
+    "extract-cromwell": "cromwell",
+    "extract-snakemake": "snakemake",
 }
 
 
@@ -66,12 +66,14 @@ def usage():
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] in ("-V", "--version"):
-        from clew import __version__
-        print(f"clew {__version__}")
+        from importlib.metadata import version
+        print(f"clew {version('clew-lineage')}")
         return 0
     if not argv or argv[0] in ("-h", "--help"):
         print(usage())
         return 0
+    if argv[0] in ALIASES:
+        argv = ["extract", ALIASES[argv[0]]] + argv[1:]
     if argv[0] not in COMMANDS:
         print(f"clew: unknown command {argv[0]!r}\n\n{usage()}",
               file=sys.stderr)

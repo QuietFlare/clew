@@ -14,8 +14,8 @@ someone emailed over. So Clew does not check unless you tell it where to
 look:
 
 ```bash
-clew impact --graph graph.json --samplesheet samplesheet.csv \
-    --subject donor_003 --work-root /path/to/work
+clew impact --graph graph.json --trigger patient:donor_003 \
+    --samplesheet samplesheet.csv --work-root /path/to/work
 ```
 
 Each extractor records where under the engine's root a task ran, as
