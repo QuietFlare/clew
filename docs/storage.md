@@ -14,8 +14,8 @@ someone emailed over. So Clew does not check unless you tell it where to
 look:
 
 ```bash
-clew impact --graph graph.json --samplesheet samplesheet.csv \
-    --subject donor_003 --work-root /path/to/work
+clew impact --graph graph.json --trigger patient:donor_003 \
+    --samplesheet samplesheet.csv --work-root /path/to/work
 ```
 
 Each extractor records where under the engine's root a task ran, as
@@ -33,7 +33,7 @@ nothing is checked. Both print one warning on stderr.
 
 Without `--work-root`, storage is unverified and any verdict that depends on
 it comes back `UNDETERMINED` rather than guessed. Verdicts that hold
-whatever the disk says are still returned. Under policy v2 a published
+whatever the disk says are still returned. A released
 artifact is `NOTIFY_ONLY` either way, and that is an answer, not a guess:
 
 ```

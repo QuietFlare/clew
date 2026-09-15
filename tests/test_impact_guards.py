@@ -14,7 +14,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clew.domains import nfcore
+from clew.graph import results
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -61,7 +61,7 @@ class TestCleanedScratch(unittest.TestCase):
     def plan(self, tmp, *extra):
         graph, sheet = write_graph(tmp)
         out = run_impact("--graph", str(graph), "--samplesheet", str(sheet),
-                         "--subject", "donor_001", "--json", "-", *extra).stdout
+                         "--trigger", "patient:donor_001", "--json", "-", *extra).stdout
         return json.loads(out[out.index("{"):])["plan"][0]
 
     def test_gone_workdir_is_undetermined_until_results_are_checked(self):
@@ -72,7 +72,7 @@ class TestCleanedScratch(unittest.TestCase):
         self.assertIsNone(item["action"])
         self.assertIsNone(item["storage"])
         self.assertIn("ALREADY_GONE", item["possible"])
-        self.assertIn("published tree not checked", item["reason"])
+        self.assertIn("published tree not checked", item["evidence"])
 
     def test_gone_workdir_and_empty_results_is_already_gone(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -92,7 +92,7 @@ class TestCleanedScratch(unittest.TestCase):
             results = Path(tmp, "results"); results.mkdir()
             graph, sheet = write_graph(tmp)
             result = run_impact("--graph", str(graph), "--samplesheet", str(sheet),
-                                "--subject", "donor_001", "--json", "-",
+                                "--trigger", "patient:donor_001", "--json", "-",
                                 "--work-root", str(work), "--results", str(results))
             item = json.loads(result.stdout[result.stdout.index("{"):])["plan"][0]
         self.assertIsNone(item["action"])
@@ -117,35 +117,38 @@ class TestCleanedScratch(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "a", "sample").mkdir(parents=True)
             Path(tmp, "a", "sample", "f.txt").write_text("abc")
-            index = nfcore.index_results(tmp)
+            index = results.index_results(tmp)
         self.assertEqual(index[("f.txt", 3)], ["a/sample/f.txt"])
-        self.assertEqual(index[("sample", nfcore.DIRECTORY)], ["a/sample"])
+        self.assertEqual(index[("sample", results.DIRECTORY)], ["a/sample"])
 
 
-class TestSubjectTrigger(unittest.TestCase):
-    """
-    `--trigger subject:X` is the documented spelling of `--subject X`. It
-    used to bypass the domain adapter, so on an nf-core graph it found
-    nothing while the flag worked.
-    """
+class TestKindTrigger(unittest.TestCase):
+    """A kind the adapter declares resolves through the adapter, with its own flag."""
 
     def test_with_a_samplesheet_it_is_the_withdrawal_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             graph, sheet = write_graph(tmp)
             result = run_impact("--graph", str(graph), "--samplesheet", str(sheet),
-                                "--trigger", "subject:donor_001", "--json", "-")
+                                "--trigger", "patient:donor_001", "--json", "-")
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout[result.stdout.index("{"):])
-        self.assertEqual(payload["trigger"], "withdrawal of donor_001")
+        self.assertEqual(payload["trigger"], "removal of donor_001")
         self.assertEqual(payload["entry_tasks"], ["aa/000001"])
 
     def test_without_a_samplesheet_the_message_points_at_one(self):
         with tempfile.TemporaryDirectory() as tmp:
             graph, _ = write_graph(tmp)
-            result = run_impact("--graph", str(graph), "--trigger", "subject:donor_001")
+            result = run_impact("--graph", str(graph), "--trigger", "patient:donor_001")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("carries a 'subject' label", result.stderr)
-        self.assertIn("--samplesheet", result.stderr)
+        self.assertIn("--samplesheet is required", result.stderr)
+
+    def test_a_kind_nobody_declares_is_refused_by_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            graph, _ = write_graph(tmp)
+            result = run_impact("--graph", str(graph), "--trigger", "specimen:x")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unknown trigger kind 'specimen'", result.stderr)
+        self.assertIn("patient", result.stderr)
 
 
 class TestGraphLimitsAreShown(unittest.TestCase):
@@ -176,35 +179,35 @@ class TestUnattributableSubject(unittest.TestCase):
             sheet.write_text("patient,sample\ndonor_001,donor_001\n"
                              "donor_999,donor_999\n")
             result = run_impact("--graph", str(graph), "--samplesheet",
-                                str(sheet), "--subject", "donor_999")
+                                str(sheet), "--trigger", "patient:donor_999")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Not attributable", result.stderr)
-        self.assertNotIn("ids in the samplesheet", result.stderr)
+        self.assertNotIn("the ids and the run disagree", result.stderr)
 
     def test_total_mismatch_names_the_likely_cause(self):
         with tempfile.TemporaryDirectory() as tmp:
             graph, sheet = write_graph(tmp)
             sheet.write_text("patient,sample\nLIMS-0001,LIMS-0001\n")
             result = run_impact("--graph", str(graph), "--samplesheet",
-                                str(sheet), "--subject", "LIMS-0001")
+                                str(sheet), "--trigger", "patient:LIMS-0001")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("ids in the samplesheet and the tags in the run disagree",
-                      result.stderr)
+        self.assertIn("No task matched ANY patient", result.stderr)
 
 
 if __name__ == "__main__":
     unittest.main()
 
 
-class TestSamplesheetAlone(unittest.TestCase):
-    """--samplesheet with no --subject prints the reach of every subject."""
+class TestBareKind(unittest.TestCase):
+    """--trigger kind with no value prints the reach of every value of that kind."""
 
-    def test_the_table_lists_every_subject(self):
+    def test_the_table_lists_every_value(self):
         result = run_impact(
             "--graph", str(ROOT / "clew" / "data" / "graph5.json"),
+            "--trigger", "patient",
             "--samplesheet", str(ROOT / "clew" / "data" / "donors.csv"))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("5 subjects", result.stdout)
+        self.assertIn("5 values", result.stdout)
         for subject in ("donor_001", "donor_003", "donor_005"):
             self.assertIn(subject, result.stdout)
 

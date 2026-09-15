@@ -22,7 +22,7 @@ infrastructure defeats that.
 ```
   ok   files      6 files, all hashes match
   ok   log        2 entries re-chain to the recorded head (seq 2)
-  ok   policy     v2 matches the hash the plan cites
+  ok   policy     v1 matches the hash the plan cites
   ok   replay     all 57 verdicts recompute identically from the bundled facts and policy
   ok   signature  sealed by qa.lead@example.org
 ```
@@ -43,7 +43,7 @@ item's `possible` map is recomputed, so "one of three" cannot quietly
 become "one of one". The header's `actions` counts and `tasks_affected`
 are recomputed from the items. A fact recorded as `null` on any dimension
 is unverified and evaluated over every value it could take, so a plan with
-`terminal: null` cannot replay to `NOTIFY_ONLY`. A fact outside its
+`released: null` cannot replay to `NOTIFY_ONLY`. A fact outside its
 dimension's possible values, `"writable"` for `"WRITABLE"` say, is a
 discrepancy rather than a silent fall-through.
 

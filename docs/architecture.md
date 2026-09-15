@@ -23,7 +23,7 @@ flowchart TB
     end
     ENG -- extract --> G["One graph<br/>tasks, edges, content digests"]
     DIG["clew digest<br/>hashes a run once"] --> G
-    PA --> DOM["domains/<br/>subject &rarr; graph nodes"]
+    PA --> DOM["provider adapters<br/>subject &rarr; graph nodes"]
     G --> Q
     DOM --> Q
     subgraph Q["questions/"]
@@ -41,14 +41,21 @@ clew/graph/      the one graph: loading, triggers, traversal, contribution
                  classes, digest indexes. Imports nothing else from clew.
 clew/ledger/     versioned policy, event log, evidence bundles, the gate
                  decision, the query surface, and their commands.
-clew/domains/    the layer allowed to know about sarek, samplesheets, donors.
-clew/extract/    one extractor per engine, all emitting the same JSON,
-                 plus stitch, digest, and runs, which reads the engine's
-                 record directly.
+clew/contracts/  the two provider contracts, Adapter and Extractor, and
+                 how a named subclass registers itself. What a third-party
+                 package imports. Imports only graph.
+clew/extract/    the clew extract command, and the engine-neutral tools:
+                 runs, which reads an engine's record through whichever
+                 installed extractor recognises it, stitch, and digest.
+providers/       six distributions, one per engine, each installing into
+                 clew.provider.<name> and built as a third party would
+                 build one. clew-nextflow also carries the nf-core
+                 adapters. See ADR 0010.
 clew/questions/  one module per question asked of the graph: impact,
                  reclaim, drift, gate.
 clew/views/      dashboard, one page per question, MCP server.
-tests/           stdlib unittest.
+tests/           the engine's tests. Each provider's are in its own tests/.
+                 All stdlib unittest.
 ```
 
 Packages import downward only. `graph/` imports nothing from clew, and
@@ -57,12 +64,14 @@ lives in `questions/` and imports `clew.graph`, which is also the public
 API: `load_graph`, `blast_radius`, `classify`, `parse_trigger`,
 `resolve_trigger`.
 
-The vocabulary boundary is enforced by a grep. `graph/` and `ledger/` must
-never mention a sample, a donor, a consent, or a workflow engine. Adding a
-new domain, say AI training data with opt-out semantics, means adding a
-directory rather than editing the engine. Both rules are
-[tests/test_core_boundary.py](../tests/test_core_boundary.py). An unenforced
-rule stays true right up until it doesn't.
+The vocabulary boundary is enforced by a grep. `graph/`, `ledger/` and
+`contracts/` must never mention a sample, a donor, a consent, or a workflow
+engine. Adding a new domain, say AI training data with opt-out semantics,
+means adding a provider package rather than editing the engine, and the
+six shipped providers are held to the same rule: they import the graph,
+the contracts and the extract tools, never a question and never each
+other. All of it is [tests/test_core_boundary.py](../tests/test_core_boundary.py).
+An unenforced rule stays true right up until it doesn't.
 
 ## Identity
 
@@ -75,10 +84,13 @@ them; `clew digest` supplies them for runs that were recorded without.
 ## Tests
 
 ```bash
-python3 -m unittest discover -s tests
+make test
 ```
 
-471 tests need nothing installed. Another 25 exercise the log's storage
+That runs the engine's suite, then each provider's from its own `tests/`
+with its own fixtures. A provider's tests use only what a third party
+could: the installed engine and the provider itself. Most tests need
+nothing but the checkout installed editable (`make dev`). Another 25 exercise the log's storage
 behaviour, the role grants, the triggers and concurrent appends, and skip
 unless you point them at a database you own:
 
@@ -125,7 +137,7 @@ change to any of them is a new ADR that supersedes the old, not an edit.
 ## Not built
 
 A log identity, so bundles from different logs are detected rather than
-distinguished. A subject-facing transparency log. Domain adapters beyond
+distinguished. A subject-facing transparency log. Adapters beyond
 nf-core pipelines, though the generic label trigger covers engines that
 record labels, Horus among them. Storage backends other than a local
 filesystem for reclaim and digest.

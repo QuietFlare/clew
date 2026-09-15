@@ -1,40 +1,17 @@
 """
-Clew — the event log, from the command line.
+The event log from the command line.
 
-    # once, as the database owner: table, guards, and the two roles
-    clew log --dsn "$CLEW_ADMIN_DSN" init \
-        --writer-password "$W" --auditor-password "$A"
-
-    # thereafter, as the writer role, which holds INSERT and SELECT only
+    clew log --dsn "$CLEW_ADMIN_DSN" init --writer-password W --auditor-password A
     clew log --dsn "$CLEW_DSN" append --type ContainerDefectReported \
         --subject "gatk4:4.2.1" --actor qa.lead@example.org \
-        --effective-from 2026-08-10T00:00:00+00:00 \
-        --body '{"defect":"BQSR miscalibration","reference":"JIRA QA-4471"}'
-
-    # by anyone, including someone who does not trust us
+        --effective-from 2026-08-10T00:00:00+00:00 --body '{"defect": "..."}'
     clew log --dsn "$CLEW_AUDIT_DSN" verify
 
-THREE DSNs, THREE IDENTITIES
-----------------------------
-That is not ceremony. The owner can drop a trigger; the writer cannot edit;
-the auditor cannot write. If the pipeline runs as the owner, the separation
-that makes this log worth having is gone, and no amount of Clew code can put
-it back. Use different credentials, and keep the owner's out of CI.
-
-WHY A SEPARATE ENTRY POINT FROM clew impact
-----------------------------------------
-Recording a fact and computing over it are different acts by different people
-at different times. A coordinator enters a withdrawal months before anyone
-runs a blast radius against it. Collapsing the two into one command would
-imply they happen together, and would quietly invite writing a fact into the
-log as a side effect of asking a question about it. Facts get their own door.
-
-EVENT TYPES ARE NOT VALIDATED HERE, ON PURPOSE
-----------------------------------------------
---type takes any string. Core defines no vocabulary; a domain adapter decides
-what its types mean. Rejecting an unknown type here would put a domain's
-vocabulary in core's entry point, which is the boundary this project exists
-to keep. What the log guarantees is that whatever was written stays written.
+Three DSNs, three identities: the owner can drop a trigger, the writer
+cannot edit, the auditor cannot write. A pipeline that runs as the owner has
+thrown the separation away. Recording a fact is a separate command from
+computing over it, done by a different person at a different time. --type
+takes any string; the vocabulary is the provider's, not the log's.
 """
 
 import argparse
@@ -53,7 +30,7 @@ def cmd_init(conn, args):
                            auditor_password=args.auditor_password)
     print(f"database {result['database']}, schema {result['schema']}")
     print(f"  {result['writer']:<16} SELECT, INSERT   (cannot UPDATE, DELETE "
-          f"or TRUNCATE — never granted, and cannot self-grant)")
+          f"or TRUNCATE, never granted, and cannot self-grant)")
     print(f"  {result['auditor']:<16} SELECT")
     print()
     print("Connect the pipeline as the writer. Keep the owner's credentials")
@@ -106,7 +83,7 @@ def cmd_verify(conn, args):
         print("This proves no entry was EDITED. It does not prove none were")
         print("dropped from the end, or that the whole chain was not rebuilt")
         print("by someone holding the owner's credentials. Anchor this head")
-        print("hash outside the database — an evidence bundle, a build log —")
+        print("hash outside the database, an evidence bundle, a build log , ")
         print("and those become detectable too.")
         return 0
     print(f"FAILED at seq {result['broken_at']}")

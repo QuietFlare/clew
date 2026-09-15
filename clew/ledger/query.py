@@ -1,47 +1,14 @@
 """
-Clew core — the query surface an auditor's questions land on.
+The read surface an auditor's questions land on. Subjects, triggers and fact
+types are opaque strings.
 
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY. Subjects, triggers and fact types are
-opaque strings throughout.
+The dashboard and the MCP server both answer through here, so they cannot
+drift apart. Every answer carries its citations: log sequence numbers, entry
+hashes, rule ids and bundle hashes. answer() requires them.
 
-WHY THIS EXISTS SEPARATELY FROM EVERYTHING ELSE
------------------------------------------------
-Two surfaces need to answer the same questions: a dashboard someone reads,
-and a set of tools a language model calls on an auditor's behalf. If each
-grew its own way of assembling answers they would drift, and the day they
-disagreed nobody could say which one was wrong.
-
-So both go through here, and here has one rule.
-
-EVERY ANSWER CARRIES ITS CITATIONS
-----------------------------------
-Not as a convention — structurally. `answer()` requires them, and there is no
-path through this module that produces a conclusion without the log sequence
-numbers, entry hashes, rule ids and bundle hashes a reader can go and check
-independently.
-
-That matters most for the model-driven surface. A language model given loose
-facts will produce fluent, confident, occasionally wrong prose, and an
-auditor cannot tell the difference by reading it. A model given facts that
-arrive welded to their citations produces prose an auditor can check line by
-line, and a wrong paraphrase becomes visible rather than persuasive.
-
-CLEW ANSWERS WHAT IT RECORDED. IT DOES NOT ADVISE.
---------------------------------------------------
-There is deliberately no query here that resolves to "you are compliant",
-"this is acceptable", or "no further action is required". Every answer is a
-statement about what is in the log and what the deterministic core computed
-from it. Whether that satisfies an obligation is a judgement belonging to
-whoever has the authority to defend it, and a tool that offered to make it
-would be an attester — which this project has said, from the beginning, it
-is not.
-
-COVERAGE TRAVELS WITH THE ANSWER
---------------------------------
-Every result carries what it does NOT cover. An auditor reading a list of
-three facts about a subject has no way to know whether that is the whole
-history or the part that happened to be instrumented, and silence reads as
-completeness. So it is said, every time, in the answer itself.
+No query resolves to "compliant" or "no further action". Each is a statement
+about what the log holds and what the core computed from it. Every result
+also says what it does not cover, because silence reads as completeness.
 """
 
 import json
@@ -59,13 +26,8 @@ GATE_CHECKED = "GateChecked"
 
 def body_of(entry):
     """
-    An entry's body as a structure, whether it arrived parsed or as text.
-
-    The two sources genuinely differ and both are correct. A live log hands
-    back parsed bodies because that is what code wants; a sealed bundle
-    carries the canonical TEXT, because text is what was hashed and a bundle
-    that re-serialised it might not re-hash to the same value. Queries should
-    not have to know which one they are reading.
+    An entry's body as a structure, whether it arrived parsed (a live log)
+    or as canonical text (a bundle, where the text is what was hashed).
     """
     body = entry.get("body")
     if isinstance(body, str):
@@ -117,7 +79,7 @@ def cite_rule(policy_document, rule_id):
             return {"kind": "policy_rule", "rule": rule_id,
                     "policy_version": policy_document["version"],
                     "policy_hash": policy_module.fingerprint(policy_document),
-                    "action": rule["action"], "because": rule["because"]}
+                    "action": rule["action"], "reason": rule["reason"]}
     return {"kind": "policy_rule", "rule": rule_id,
             "policy_version": policy_document["version"],
             "policy_hash": policy_module.fingerprint(policy_document),
@@ -128,12 +90,9 @@ def cite_rule(policy_document, rule_id):
 
 def subject_history(entries, subject):
     """
-    Everything the log holds about one subject, in the order it took effect.
-
-    Ordered by effective_from rather than by entry order, because the
-    question behind this is almost always "what happened, and when", not
-    "what did you type, and when". Both timestamps travel with every entry so
-    the gap between them stays visible.
+    Everything the log holds about one subject, ordered by effective_from:
+    the question is what happened and when, not what was typed and when.
+    Both timestamps travel with each entry.
     """
     matching = sorted((e for e in entries if e["subject"] == subject),
                       key=lambda e: (instant(e["effective_from"]), e["seq"]))
@@ -205,12 +164,8 @@ def policy_history(entries):
 
 def policy_in_force(entries, as_of):
     """
-    The table in force on a date, as the log records it — not as code says.
-
-    A plan's own header names the policy it used, and that is authoritative
-    for that plan. This answers the different question an assessor asks: what
-    was this organisation operating under at the time, according to its own
-    records.
+    The table in force on a date as the log records it, which is what an
+    assessor asks. A plan's own header stays authoritative for that plan.
     """
     adoptions = [e for e in entries
                  if e["event_type"] == POLICY_ADOPTED
@@ -259,7 +214,7 @@ def verdict(plan, policy_document, task):
             "citations": [],
             "coverage": [
                 f"{task!r} is not in this plan. That means it was not in the "
-                "blast radius of this trigger — not that it is unaffected by "
+                "blast radius of this trigger, not that it is unaffected by "
                 "anything.",
             ],
         }
@@ -292,13 +247,9 @@ def verdict(plan, policy_document, task):
             "action": item.get("action"),
             "possible": item.get("possible"),
             "rule": item.get("rule"),
-            "because": item.get("because"),
-            "facts": {
-                "contribution": item.get("contribution"),
-                "storage": item.get("storage"),
-                "exclusive": item.get("exclusive"),
-                "terminal": item.get("terminal"),
-            },
+            "reason": item.get("reason"),
+            "facts": {k: item.get(k) for k in
+                      ("contribution", "storage", "scope", "released", "mode")},
             "evidence_path": item.get("evidence_path"),
             "published_copies": item.get("published_copies"),
             "explanation": contribution_module.explain(item["action"])
@@ -338,13 +289,9 @@ def plan_summary(plan):
 
 def unaffected(plan, task):
     """
-    'Prove this task was NOT touched.' The negative question, answered.
-
-    Worth its own query because it is the one an assessor actually asks at
-    submission, and because answering it well means being precise about what
-    was searched. A task absent from a plan is outside the blast radius of
-    THAT trigger, computed over THAT graph. It is not a statement about
-    everything that ever happened to it.
+    The negative question: was this task touched. A task absent from a plan
+    is outside that trigger's radius over that graph, and nothing more; the
+    answer says what was searched.
     """
     listed = any(i["task"] == task for i in plan.get("plan", []))
     return answer(

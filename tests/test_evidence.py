@@ -3,7 +3,7 @@ Evidence bundles: sealing, and the four checks that make one worth having.
 
 The tests that matter here are the forgeries. A bundle that verifies when
 nothing is wrong is unremarkable. What has to hold is that a bundle someone
-has quietly improved cannot pass — including the careful forgery, where the
+has quietly improved cannot pass, including the careful forgery, where the
 manifest is rebuilt so every hash matches and only the conclusion changed.
 That one is caught by replay, which is the check most evidence packages do
 not have.
@@ -55,25 +55,24 @@ def a_plan(policy_document=None):
         ("t2", "REGENERABLE", "DESTROYED", False, False),
         ("t3", "REGENERABLE", "WRITABLE", True, False),
         ("t4", "IRREDUCIBLE", "WRITABLE", False, True),
-        # Published AND destroyed: the one combination v1 and v2 disagree on,
-        # so a plan without it would replay happily under either table and
-        # the wrong-policy check would pass for the wrong reason.
+        # Released AND destroyed: release must win, and a plan without the
+        # combination would not notice a table that asks existence first.
         ("t5", "REGENERABLE", "DESTROYED", False, True),
     ]
     items = []
     for task, klass, storage, exclusive, terminal in facts:
         decision = policy_module.decide(klass, storage=storage,
-                                        exclusive=exclusive, terminal=terminal,
+                                        scope=(policy_module.EXCLUSIVE if exclusive else policy_module.SHARED), released=terminal,
                                         policy=policy_document)
         items.append({
             "task": task, "process": "P", "name": task,
             "action": decision["action"], "rule": decision["rule"],
-            "because": decision["because"], "contribution": klass,
-            "storage": storage, "exclusive": exclusive, "terminal": terminal,
-            "reason": "test",
+            "reason": decision["reason"], "contribution": klass,
+            "storage": storage, "scope": (policy_module.EXCLUSIVE if exclusive else policy_module.SHARED), "released": terminal,
+            "evidence": "test",
         })
     return {
-        "clew_plan_version": 1,
+        "clew_plan_version": 2,
         **policy_module.identify(policy_document),
         "trigger": "test:trigger",
         "tasks_total": 10,
@@ -124,10 +123,10 @@ class BundleTestCase(unittest.TestCase):
         self.addCleanup(holder.cleanup)
         self.tmp = holder.name
 
-    def run_cli(self, *args):
+    def run_cli(self, *args, cwd=None):
         return subprocess.run(
             [sys.executable, "-m", "clew.ledger.evidence", *args],
-            capture_output=True, text=True)
+            capture_output=True, text=True, cwd=cwd)
 
 
 class TestSealing(BundleTestCase):
@@ -254,7 +253,7 @@ class TestWitness(BundleTestCase):
     The check that closes the log's open gap.
 
     A truncated chain is internally consistent, so verify() on the log alone
-    passes — nothing inside a database can notice something that is no longer
+    passes, nothing inside a database can notice something that is no longer
     in it. A bundle notices, because it left the building carrying the head
     it saw.
     """
@@ -314,7 +313,8 @@ class TestPolicyCheck(BundleTestCase):
 
     def test_a_swapped_policy_is_caught(self):
         # The plan and the table it was decided under cannot drift apart.
-        plan = a_plan(policy_module.V2)
+        other = policy_module.validate(dict(policy_module.V1, version="other"))
+        plan = a_plan(other)
         check = bundle.verify_policy(plan, policy_module.V1)
         self.assertFalse(check["ok"])
         self.assertIn("hashes to", check["detail"])
@@ -350,11 +350,13 @@ class TestReplay(BundleTestCase):
         self.assertIn("rule", check["detail"])
 
     def test_replaying_under_the_wrong_policy_is_caught(self):
-        # A v1 plan does not reproduce under v2. Bundling today's table with
-        # yesterday's plan would produce a bundle that passes for the wrong
-        # reason, which is worse than no bundle.
+        # Bundling a stricter table with a plan decided under v1 would give a
+        # bundle that passes for the wrong reason, which is worse than none.
+        strict = policy_module.validate({"version": "strict", "rules": [
+            policy_module.rule("S1", "QUARANTINE", "never regenerate",
+                               contribution="REGENERABLE")] + policy_module.V1["rules"]})
         plan = a_plan(policy_module.V1)
-        self.assertFalse(bundle.verify_replay(plan, policy_module.V2)["ok"])
+        self.assertFalse(bundle.verify_replay(plan, strict)["ok"])
 
 
 class TestEndToEnd(BundleTestCase):
@@ -373,6 +375,20 @@ class TestEndToEnd(BundleTestCase):
         self.assertEqual(checked.returncode, 0, checked.stdout)
         for check in ("files", "log", "policy", "replay"):
             self.assertIn(check, checked.stdout)
+
+    def test_without_out_the_bundle_is_named_after_the_trigger(self):
+        plan = a_plan()
+        plan["trigger"] = "container build:1.2.3"
+        plan_path = Path(self.tmp) / "plan.json"
+        plan_path.write_text(json.dumps(plan))
+
+        built = self.run_cli("build", "--plan", str(plan_path), cwd=self.tmp)
+        self.assertEqual(built.returncode, 0, built.stderr)
+
+        made = [p for p in Path(self.tmp).iterdir() if p.is_dir()]
+        self.assertEqual(len(made), 1)
+        self.assertRegex(made[0].name, r"^container-build-1\.2\.3-\d{4}-\d{2}-\d{2}$")
+        self.assertEqual(self.run_cli("verify", str(made[0])).returncode, 0)
 
     def test_a_bundle_with_no_log_says_so_in_its_coverage(self):
         # Never claim completeness. A bundle anchored to no log head cannot
@@ -411,8 +427,10 @@ class TestEndToEnd(BundleTestCase):
         plan = a_plan(policy_module.V1)
         plan_path = Path(self.tmp) / "plan.json"
         plan_path.write_text(json.dumps(plan))
+        other = Path(self.tmp) / "other.json"
+        other.write_text(json.dumps(dict(policy_module.V1, version="other")))
         built = self.run_cli("build", "--out", str(Path(self.tmp) / "b"),
-                             "--plan", str(plan_path), "--policy", "v2")
+                             "--plan", str(plan_path), "--policy", str(other))
         self.assertNotEqual(built.returncode, 0)
         self.assertIn("policy mismatch", built.stderr)
 
@@ -559,14 +577,14 @@ class TestReplayCoversTheWholePlan(BundleTestCase):
         # An undetermined item's candidates are its whole content. "One of
         # three" quietly becoming "one of one" reads as settled.
         decision = policy_module.decide("REGENERABLE", storage=None,
-                                        exclusive=True)
+                                        scope=policy_module.EXCLUSIVE)
         plan = a_plan()
         plan["plan"].append({
             "task": "t6", "process": "P", "name": "t6", "action": None,
-            "rule": None, "because": decision["because"],
+            "rule": None, "reason": decision["reason"],
             "possible": {"ALREADY_GONE": "R1"},
             "contribution": "REGENERABLE", "storage": None,
-            "exclusive": True, "terminal": False, "reason": "test"})
+            "scope": "exclusive", "released": False, "evidence": "test"})
         plan["tasks_affected"] = 6
         plan["actions"] = action_counts(plan["plan"])
         check = bundle.verify_replay(plan, policy_module.DEFAULT)
@@ -576,7 +594,7 @@ class TestReplayCoversTheWholePlan(BundleTestCase):
 
     def test_a_null_terminal_cannot_replay_to_a_settled_verdict(self):
         plan = a_plan()
-        plan["plan"][0].update(terminal=None, storage=None,
+        plan["plan"][0].update(released=None, storage=None,
                                action="NOTIFY_ONLY", rule="R2")
         check = bundle.verify_replay(plan, policy_module.DEFAULT)
         self.assertFalse(check["ok"])
@@ -698,24 +716,3 @@ class TestEndToEndForgeries(BundleTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class TestPreviousBundle(BundleTestCase):
-    """--previous must name a sealed bundle, and say so when it does not."""
-
-    def run_cli(self, *args):
-        return subprocess.run(
-            [sys.executable, "-m", "clew.ledger.evidence", *args],
-            capture_output=True, text=True)
-
-    def test_a_directory_with_no_manifest_is_refused_with_a_message(self):
-        plan_path = Path(self.tmp) / "plan.json"
-        plan_path.write_text(json.dumps(a_plan()))
-        empty = Path(self.tmp) / "not-a-bundle"
-        empty.mkdir()
-        result = self.run_cli("build", "--out", str(Path(self.tmp) / "b"),
-                              "--plan", str(plan_path),
-                              "--previous", str(empty))
-        self.assertNotEqual(result.returncode, 0)
-        self.assertNotIn("Traceback", result.stderr)
-        self.assertIn("not a sealed bundle", result.stderr)

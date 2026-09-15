@@ -1,0 +1,313 @@
+"""
+The extractor traps that cost real time. Each test here is a regression
+guard for a bug that produced FALSE NEGATIVES, the graph reporting donor
+data as absent when it was present.
+"""
+
+import json
+import os
+import sys
+import tempfile
+import subprocess
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
+from clew.provider.nextflow import extractor_work as ex
+
+
+class TestTargetToHash(unittest.TestCase):
+    """Trap 1: stage-<uuid>/ and tmp/ paths parse as plausible task hashes."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.work = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_stage_dir_is_external_not_a_task(self):
+        # 3e/d2a534 looks exactly like a task hash. It is not one.
+        target = self.work / "stage-b3809b93-aaaa" / "3e" / "d2a534xxxx" / "genome.fasta"
+        self.assertEqual(ex.target_to_hash(target, self.work), "EXTERNAL")
+
+    def test_tmp_dir_is_external_not_a_task(self):
+        target = self.work / "tmp" / "53" / "aabbccdd" / "workflow_summary_mqc.yaml"
+        self.assertEqual(ex.target_to_hash(target, self.work), "EXTERNAL")
+
+    def test_path_outside_work_is_external(self):
+        outside = Path(self.tmp.name).parent / "somewhere-else" / "input.fastq.gz"
+        self.assertEqual(ex.target_to_hash(outside, self.work), "EXTERNAL")
+
+    def test_real_task_path_resolves_to_abbreviated_hash(self):
+        target = self.work / "fc" / "861a98deadbeef0123" / "reads.bam"
+        self.assertEqual(ex.target_to_hash(target, self.work), "fc/861a98")
+
+
+class TestNumberedSubdirectories(unittest.TestCase):
+    """
+    Trap 3: aggregating tasks stage inputs in numbered subdirectories
+    (./1/, ./18/). Walking only the top level made MULTIQC appear to have
+    1 input instead of 20, hiding exactly the many-into-one nodes this
+    project exists to track.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+
+        # Producer task: ab/123456... makes two files.
+        self.producer = self.work / "ab" / "123456aaaa0000"
+        self.producer.mkdir(parents=True)
+        (self.producer / "report_one.txt").write_text("x")
+        (self.producer / "report_two.txt").write_text("y")
+
+        # Aggregator task: cd/abcdef... consumes one file at top level and
+        # one inside a numbered subdirectory, the MULTIQC pattern.
+        self.aggregator = self.work / "cd" / "abcdef0000aaaa"
+        (self.aggregator / "1").mkdir(parents=True)
+        os.symlink(self.producer / "report_one.txt",
+                   self.aggregator / "report_one.txt")
+        os.symlink(self.producer / "report_two.txt",
+                   self.aggregator / "1" / "report_two.txt")
+        (self.aggregator / "aggregate.html").write_text("out")
+
+        # Weblog for exactly this run.
+        self.jsonl = root / "run.jsonl"
+        lines = [
+            {"trace": {"hash": "ab/123456", "task_id": 1, "name": "PRODUCE",
+                       "process": "PRODUCE", "container": "img", "status": "COMPLETED",
+                       "workdir": str(self.producer), "script": "make"}},
+            {"trace": {"hash": "cd/abcdef", "task_id": 2, "name": "AGGREGATE",
+                       "process": "AGGREGATE", "container": "img", "status": "COMPLETED",
+                       "workdir": str(self.aggregator), "script": "agg"}},
+        ]
+        self.jsonl.write_text("\n".join(json.dumps(l) for l in lines))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_workpath_is_the_directory_relative_to_the_work_root(self):
+        tasks, *_ = ex.extract(self.jsonl, self.work)
+        self.assertEqual(tasks["ab/123456"]["workpath"], "ab/123456aaaa0000")
+        self.assertEqual(tasks["cd/abcdef"]["workpath"], "cd/abcdef0000aaaa")
+
+    def test_inputs_inside_numbered_subdirs_are_found(self):
+        tasks, edges, outputs, details, missing = ex.extract(
+            self.jsonl, self.work)
+        self.assertEqual(missing, [])
+
+        agg_edges = [e for e in edges if e["consumer"] == "cd/abcdef"]
+        # Both inputs, not just the top-level one. This is the regression.
+        self.assertEqual(len(agg_edges), 2)
+        self.assertTrue(all(e["producer"] == "ab/123456" for e in agg_edges))
+        filenames = {e["filename"] for e in agg_edges}
+        self.assertIn("1/report_two.txt", filenames)
+
+    def test_outputs_exclude_symlinked_inputs(self):
+        tasks, edges, outputs, details, missing = ex.extract(
+            self.jsonl, self.work)
+        self.assertEqual(outputs["cd/abcdef"], ["aggregate.html"])
+
+    def test_only_this_runs_tasks_are_loaded(self):
+        # Trap 2: work/ accumulates every run ever executed. A task folder on
+        # disk that is not in the JSONL must not appear in the graph.
+        stray = self.work / "ee" / "ffffff00001111"
+        stray.mkdir(parents=True)
+        (stray / "old_run.txt").write_text("z")
+
+        tasks, edges, outputs, details, missing = ex.extract(
+            self.jsonl, self.work)
+        self.assertEqual(set(tasks), {"ab/123456", "cd/abcdef"})
+
+
+class TestCopyStagedRunsAreRefused(unittest.TestCase):
+    """
+    stageInMode 'copy' and 'link' leave no symlinks, and cloud executors
+    stage from object storage the same way. An empty graph from such a run
+    would report every task as having no inputs, a false negative dressed
+    up as an answer, so the CLI must refuse instead.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+        taskdir = self.work / "ab" / "123456aaaa0000"
+        taskdir.mkdir(parents=True)
+        # Inputs staged by COPY: regular files, no symlinks anywhere.
+        (taskdir / "input.fastq").write_text("copied, not linked")
+        (taskdir / "out.bam").write_text("result")
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text(json.dumps(
+            {"trace": {"hash": "ab/123456", "task_id": 1, "name": "ALIGN",
+                       "process": "ALIGN", "container": "img",
+                       "status": "COMPLETED"}}) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_cli_exits_nonzero_and_points_at_the_lineage_store(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "clew.provider.nextflow.extractor_work",
+             "--jsonl", str(self.jsonl), "--work", str(self.work)],
+            capture_output=True, text=True,
+            cwd=Path(__file__).resolve().parents[3])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no symlinks", result.stderr)
+        self.assertIn("clew extract nextflow", result.stderr)
+
+class TestMissingWorkDirectoriesAreRefused(unittest.TestCase):
+    """
+    A task whose directory is gone contributes no edges, so a withdrawal
+    stops short of everything it fed. On the real sarek run against an
+    empty work root this wrote 81 tasks and 0 edges, exit 0, and a
+    withdrawal reported 15 affected instead of 16.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+        self.work.mkdir()
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text("\n".join(json.dumps(
+            {"trace": {"hash": h, "task_id": i, "name": n, "process": n,
+                       "container": "img", "status": "COMPLETED"}})
+            for i, (h, n) in enumerate(
+                [("ab/123456", "ALIGN"), ("cd/abcdef", "STATS")], 1)) + "\n")
+        self.out = root / "graph.json"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_cli(self, *extra):
+        return subprocess.run(
+            [sys.executable, "-m", "clew.provider.nextflow.extractor_work",
+             "--jsonl", str(self.jsonl), "--work", str(self.work),
+             "--json-out", str(self.out), *extra],
+            capture_output=True, text=True,
+            cwd=Path(__file__).resolve().parents[3])
+
+    def test_refused_by_default_naming_the_tasks(self):
+        result = self.run_cli()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("2 of 2 tasks have no work directory", result.stderr)
+        self.assertIn("ab/123456", result.stderr)
+        self.assertIn("--allow-partial", result.stderr)
+        self.assertFalse(self.out.exists())
+
+    def test_allow_partial_records_the_gap_on_the_graph(self):
+        result = self.run_cli("--allow-partial")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("ab/123456", result.stdout)
+        graph = json.loads(self.out.read_text())
+        self.assertEqual(len(graph["coverage"]), 1)
+        self.assertIn("2 of the run's tasks have no work directory", graph["coverage"][0])
+        self.assertIn("cd/abcdef", graph["coverage"][0])
+
+
+class TestPrefixCollisionIsRefused(unittest.TestCase):
+    """
+    Two directories sharing the six-character prefix cannot be told apart
+    by the abbreviated hash; every symlink into either would be credited
+    to one task. Refuse rather than merge.
+    """
+
+    def test_two_directories_under_one_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp) / "work"
+            (work / "ab" / "123456aaaa0000").mkdir(parents=True)
+            (work / "ab" / "123456bbbb0000").mkdir(parents=True)
+            with self.assertRaises(SystemExit) as refused:
+                ex.find_workdir(work, "ab/123456")
+            self.assertIn("2 work directories", str(refused.exception))
+            self.assertIn("123456bbbb0000", str(refused.exception))
+
+
+class TestOutputSizesAreRecorded(unittest.TestCase):
+    """
+    Sizes must be read while the work tree still exists. A published copy
+    keeps its name and byte count but gets a new path and mtime, so
+    (basename, size) is the only join key that survives publishDir, and
+    the workdir is usually deleted soon after the run.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.work = root / "work"
+        taskdir = self.work / "ab" / "123456aaaa0000"
+        taskdir.mkdir(parents=True)
+        (taskdir / "counts.tsv").write_text("x" * 4812)
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text(json.dumps(
+            {"trace": {"hash": "ab/123456", "task_id": 1, "name": "COUNT",
+                       "process": "COUNT", "container": "img",
+                       "status": "COMPLETED"}}) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_each_output_carries_its_size(self):
+        _, _, _, details, _ = ex.extract(self.jsonl, self.work)
+        self.assertEqual(details["ab/123456"],
+                         [{"file": "counts.tsv", "size": 4812}])
+
+class TestPassThroughFilesLoseTheirProducer(unittest.TestCase):
+    """
+    A documented limitation, pinned so it cannot change unnoticed.
+
+    When a task re-emits an input unchanged, Nextflow stages that file for
+    the next task by pointing at the original rather than at the
+    intermediate copy. The hop is absent from the filesystem, so this
+    extractor records the consumer as externally fed. The lineage store,
+    which records channel lineage, keeps the edge.
+
+    If someone teaches the extractor to recover it, this test should fail
+    and be rewritten. It exists so that is a decision, not an accident.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        asset = root / "assets" / "report.qmd"
+        asset.parent.mkdir(parents=True)
+        asset.write_text("template")
+
+        self.work = root / "work"
+        # Producer forwards the asset untouched.
+        forwarder = self.work / "ab" / "123456aaaa0000"
+        forwarder.mkdir(parents=True)
+        os.symlink(asset, forwarder / "report.qmd")
+        (forwarder / "made_here.txt").write_text("real output")
+
+        # Consumer receives it, staged straight from the asset.
+        consumer = self.work / "cd" / "abcdef0000aaaa"
+        consumer.mkdir(parents=True)
+        os.symlink(asset, consumer / "report.qmd")
+        os.symlink(forwarder / "made_here.txt", consumer / "made_here.txt")
+
+        self.jsonl = root / "run.jsonl"
+        self.jsonl.write_text("\n".join(json.dumps(
+            {"trace": {"hash": h, "task_id": i, "name": n, "process": n,
+                       "container": "img", "status": "COMPLETED"}})
+            for i, (h, n) in enumerate(
+                [("ab/123456", "FORWARD"), ("cd/abcdef", "CONSUME")], 1)) + "\n")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_forwarded_file_reads_as_external_but_real_output_does_not(self):
+        _, edges, _, _, _ = ex.extract(self.jsonl, self.work)
+        by_file = {e["filename"]: e["producer"]
+                   for e in edges if e["consumer"] == "cd/abcdef"}
+        # The limitation: the forwarded file loses its producer.
+        self.assertEqual(by_file["report.qmd"], "EXTERNAL")
+        # Genuinely produced files are unaffected, which bounds the damage.
+        self.assertEqual(by_file["made_here.txt"], "ab/123456")
+
+if __name__ == "__main__":
+    unittest.main()

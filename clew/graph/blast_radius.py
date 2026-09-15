@@ -1,26 +1,10 @@
 """
-Clew core — blast radius.
+Blast radius: from a set of start nodes, everything downstream.
 
-Given a graph and a set of starting nodes, find everything downstream.
-
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY.
-No wet-lab or workflow-engine vocabulary of any kind. It sees opaque node ids
-and typed edges. Everything domain-specific lives in domains/. (CLAUDE.md
-greps this directory for the forbidden words; even naming them here would
-trip the check, which is why this sentence is vague on purpose.)
-
-If you ever need to write one of those words here, the design is wrong: the
-knowledge belongs in a domain adapter that translates before calling in.
-
-DIRECTION
----------
-The extractor records edges BACKWARDS, because that is how a filesystem stores
-them: a consumer holds a pointer to its producer.
-
-    edge = {consumer: B, producer: A}     meaning "B was made from A"
-
-A withdrawal travels FORWARDS: something at the source is revoked, and we need
-everything built on top of it. So we invert the edges before traversing.
+Opaque node ids and typed edges only; vocabulary lives in providers. The
+extractor records edges backwards, consumer to producer, because that is how
+a filesystem stores them. A removal travels forwards, so the edges are
+inverted before traversal.
 """
 
 import json
@@ -74,17 +58,10 @@ def reachable(start_nodes, forward):
 
 def evidence_tree(start_nodes, forward):
     """
-    One breadth-first pass from every start node: {node: parent}, with
-    parent None for the start nodes themselves.
-
-    Computed once per trigger and read once per affected task. The earlier
-    per-target depth-first walk kept no visited set, so every scatter-gather
-    stage multiplied the paths it had to enumerate; fifty subjects with
-    three interval stages did not finish. This is linear in edges.
-
-    Sorted, not incidental set order: which chain is recorded must not depend
-    on the interpreter's hash seed, because re-running on the same inputs
-    has to give byte-identical output.
+    One breadth-first pass from every start node: {node: parent}, None for
+    the start nodes. Linear in edges; the earlier per-target depth-first
+    walk did not finish on fifty subjects. Sorted, so the recorded chain
+    does not depend on the hash seed.
     """
     parent = {node: None for node in start_nodes}
     queue = deque(sorted(start_nodes))
@@ -120,28 +97,11 @@ def paths_to(start_nodes, target, forward, limit=1):
 
 def blast_radius(graph, subjects):
     """
-    Core entry point.
-
-    `subjects` maps an opaque subject id to the nodes where that subject's
-    material enters the graph:
-
-        {"subject-a": ["80/10c05c"], "subject-b": ["9b/e1fa4d"], ...}
-
-    Core does not know or care what a subject is. The domain adapter decides.
-
-    Returns, for each subject:
-        affected   every node reachable from that subject
-        exclusive  reachable from this subject and NO other
-        shared     reachable from this subject and at least one other
-
-    WHY THE SPLIT MATTERS
-    ---------------------
-    It maps straight onto remediation. A node built only from one subject can
-    be removed outright. A node built from several cannot - the others still
-    need it, so it has to be rebuilt without the withdrawn one.
-
-    This function does not assign a contribution class. It reports structure.
-    Classification needs the class on each edge, which does not exist yet.
+    Core entry point. `subjects` maps an opaque id to the nodes where its
+    material enters. Returns per subject: affected (all reachable),
+    exclusive (reachable from this subject only) and shared. Exclusive nodes
+    can be removed outright; shared ones must be rebuilt without the
+    removed input. Structure only, no classes.
     """
     forward = forward_index(graph["edges"])
 

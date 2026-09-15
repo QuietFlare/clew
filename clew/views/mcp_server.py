@@ -1,51 +1,18 @@
 """
-Clew — an MCP server, so an auditor can ask questions in their own words.
+An MCP server over sealed bundles, so an auditor can ask in their own words.
 
     clew mcp --bundles /path/to/bundles
 
-Speaks MCP over stdin/stdout as newline-delimited JSON-RPC 2.0. No SDK, no
-dependency: the protocol is small enough that adding one would cost more than
-it saved.
+JSON-RPC 2.0 over stdin/stdout, no SDK. Clew ships no model and calls none;
+the auditor's client supplies the conversation. The tools compute from the
+bundles deterministically, so a model cannot change what comes back, and no
+path leads from its output into a verdict. Nothing here writes: recording a
+fact is clew log, run by a person with an actor identity.
 
-WHY THIS IS A SERVER AND NOT A CHATBOT
---------------------------------------
-Clew ships no model and calls none. It exposes tools; the auditor's own MCP
-client supplies the conversation. That is not modesty about scope, it is the
-architecture:
-
-  - Nothing here can be talked into a different answer. The tools compute
-    from the log and the sealed bundles, deterministically, and a model
-    calling them cannot change what comes back.
-  - The auditor's organisation chooses the model, and keeps whatever
-    controls it already has over which models may see its data.
-  - "No AI in the decision path" stays literally true. There is no path from
-    a model's output back into a verdict — verdicts were computed before
-    this process started, by code that has never seen a prompt.
-
-The model's job is to find the right evidence and read it out. It is a
-skilled index, not a witness.
-
-READ-ONLY BY CONSTRUCTION
--------------------------
-No tool here writes anything, and the server never opens a connection that
-could. It reads sealed bundles from a directory. Recording a fact is
-clew log, run by a person with an actor identity, and it stays that way —
-an auditor's chat session is the last place a new fact should be able to
-enter a compliance record.
-
-WHAT THE MODEL IS TOLD, AND WHY IT IS TOLD IT HERE
---------------------------------------------------
-The `instructions` returned at initialize are the guardrail. A model handed
-loose facts about compliance will produce fluent, confident, occasionally
-wrong prose, and an auditor cannot tell the difference by reading it. So
-every tool returns facts welded to their citations, and the instructions say
-plainly: quote them, never conclude compliance, and say when you do not know.
-
-That is a guardrail, not a guarantee. A model can still paraphrase badly.
-What the design buys is that a bad paraphrase sits next to the log sequence
-number and rule id that contradict it, so it is checkable rather than merely
-persuasive. Anyone deploying this should assume the prose is a convenience
-and the citations are the record.
+Every tool returns facts with their citations, and the initialize
+instructions tell the model to quote them, never conclude compliance, and
+say when it does not know. A bad paraphrase then sits next to the log
+sequence number and rule id that contradict it.
 """
 
 import argparse
@@ -70,7 +37,7 @@ record was computed before you started, by deterministic code, and is
 identified by a policy version, a rule id and a hash. You find those and read
 them out. You do not produce verdicts, and you cannot change one.
 
-ALWAYS QUOTE THE CITATIONS. Every result carries a `citations` list — log
+ALWAYS QUOTE THE CITATIONS. Every result carries a `citations` list, log
 sequence numbers, entry hashes, rule ids, policy hashes. Put them in your
 answer. An auditor must be able to leave your reply and go and check it in
 the record without asking you anything further. An answer without its
@@ -85,7 +52,7 @@ belonging to people with the authority to defend them.
 
 READ `coverage` OUT LOUD. Every result carries what it does not cover. An
 empty list of facts about a subject means nothing was recorded under that
-identifier — not that nothing happened. An item with no verdict is
+identifier, not that nothing happened. An item with no verdict is
 unanswered, not clean. Say so explicitly; silence will be read as
 completeness and that is the failure mode this record exists to prevent.
 
@@ -235,7 +202,7 @@ TOOLS = [
         "description": "Every recorded fact about one subject, in the order "
                        "the facts took effect, with the actor who asserted "
                        "each and both timestamps. An empty result means "
-                       "nothing was recorded under that identifier — not "
+                       "nothing was recorded under that identifier, not "
                        "that nothing happened.",
         "inputSchema": {
             "type": "object",
@@ -412,7 +379,7 @@ def main(argv=None):
     print(f"clew: {len(store[0])} bundles, {len(store[1])} log entries, "
           f"read-only", file=sys.stderr)
     if store[2]:
-        print(f"clew: WARNING — {len(store[2])} sequence conflicts; these "
+        print(f"clew: WARNING, {len(store[2])} sequence conflicts; these "
               f"bundles were sealed from different logs. Every answer drawn "
               f"from the combined history says so.", file=sys.stderr)
 
@@ -426,7 +393,7 @@ def main(argv=None):
             respond(None, error={"code": -32700, "message": "parse error"})
             continue
         if not isinstance(message, dict):
-            # Valid JSON, wrong shape — a bare string or list parses fine and
+            # Valid JSON, wrong shape, a bare string or list parses fine and
             # then has no .get(). One malformed line must not end a session an
             # auditor is in the middle of.
             respond(None, error={"code": -32600,

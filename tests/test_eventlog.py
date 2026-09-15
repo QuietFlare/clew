@@ -7,7 +7,7 @@ bundle has a JSON file and a Python interpreter. If verifying our claims
 required installing a database driver and standing up a server, "anyone can
 check this without us" would be a slogan rather than a fact.
 
-Storage behaviour — the role grants, the triggers, concurrent appends — lives
+Storage behaviour, the role grants, the triggers, concurrent appends, lives
 in test_eventlog_postgres.py and needs a server.
 """
 

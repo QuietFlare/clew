@@ -13,15 +13,14 @@ and it improves by contact with practitioners.
 
 After that, in rough order:
 
-- A domain adapter for a pipeline you use. See `clew/domains/`. A new
-  adapter is usually a few dozen lines on top of `nfcore.py`, plus a
-  regression test pinning real numbers from a real run.
+- A domain adapter for a pipeline you use, or an extractor for an engine
+  Clew cannot read. Both are one subclass in your own package, found by
+  name. [docs/providers.md](docs/providers.md) walks through each with
+  examples. A regression test pinning real numbers from a real run is
+  what makes an adapter trustworthy.
 - A bug report with a graph. A wrong blast radius is the most serious class
   of bug here, above all one that reports something as unaffected when it
   is not. Attach the graph JSON if you can share it.
-- An extractor for another engine or provenance format. Every extractor
-  emits the same graph JSON, so `clew/extract/horus.py` is a good
-  model.
 
 ## Ground rules for code
 
@@ -39,10 +38,21 @@ After that, in rough order:
   decides. An auditor asking why something was flagged must get a policy
   version, hashes, and a re-run that agrees.
 
-Run the suite before opening a pull request:
+The engine and the six providers under `providers/` are separate
+distributions. Install all seven editable first, or nothing registers:
 
 ```bash
-python3 -m unittest discover -s tests
+make dev
+```
+
+Pass `PYTHON=` if the first `python3` on your PATH is not the one `clew`
+runs under.
+
+Run every suite before opening a pull request. The engine's tests are in
+`tests/`; each provider's are in its own `tests/`, beside its fixtures:
+
+```bash
+make test
 ```
 
 ## Licensing of contributions

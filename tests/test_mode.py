@@ -1,6 +1,6 @@
 """
 Selector × mode: the same subject trigger must produce different verdicts
-under remove (withdrawal) and distrust (contamination), and remove must be
+under remove (withdrawal) and trace (contamination), and remove must be
 refused for non-subject selectors.
 """
 
@@ -29,7 +29,7 @@ class TestMode(unittest.TestCase):
         return json.loads(out[out.index("{"):])["plan"]
 
     # NOTE these assert the exclusive/terminal FACTS, not the final actions.
-    # Actions also depend on storage — live disk state — so pinning them
+    # Actions also depend on storage, live disk state, so pinning them
     # made the suite fail the day work/ was (correctly) cleaned up. The
     # facts→action table itself is pinned hermetically in test_policy.
     #
@@ -43,13 +43,13 @@ class TestMode(unittest.TestCase):
         return [item["action"]] if item["action"] else list(item["possible"])
 
     def test_withdrawal_marks_exclusive(self):
-        plan = self.plan("--donor", "ERR10000000")
-        exclusive = [i for i in plan if i["exclusive"]]
+        plan = self.plan("--trigger", "sample:ERR10000000")
+        exclusive = [i for i in plan if i["scope"] == "exclusive"]
         self.assertEqual(len(exclusive), 41)
         self.assertEqual(len(plan), 46)
         # Exclusive artifacts must never resolve to a rebuild: they either
         # get destroyed, are already gone, or are quarantined unwritable.
-        # True whether or not storage has been checked — an unverified item
+        # True whether or not storage has been checked, an unverified item
         # must not have a rebuild among its possibilities either.
         for i in exclusive:
             for outcome in self.outcomes(i):
@@ -57,18 +57,18 @@ class TestMode(unittest.TestCase):
                               ("DESTROY", "ALREADY_GONE", "QUARANTINE"), i["task"])
 
     def test_contamination_marks_nothing_exclusive(self):
-        # Same specimen, same radius — but the data is wrong, not withdrawn,
+        # Same specimen, same radius, but the data is wrong, not withdrawn,
         # so nothing is owned-and-destroyable.
-        plan = self.plan("--donor", "ERR10000000", "--mode", "distrust")
+        plan = self.plan("--trigger", "sample:ERR10000000", "--mode", "trace")
         self.assertEqual(len(plan), 46)
-        self.assertEqual([i for i in plan if i["exclusive"]], [])
+        self.assertEqual([i for i in plan if i["scope"] == "exclusive"], [])
         for i in plan:
             self.assertNotIn("DESTROY", self.outcomes(i), i["task"])
 
     def test_remove_refused_for_input_selector(self):
         result = run_blast("--input", "nCoV-2019.primer.bed", "--mode", "remove")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("requires a subject trigger", result.stderr)
+        self.assertIn("needs a kind that owns something", result.stderr)
 
 
 if __name__ == "__main__":

@@ -1,62 +1,19 @@
 """
-Clew core — the evidence bundle.
+The evidence bundle: opaque documents, hashed, checkable offline.
 
-THIS FILE KNOWS NOTHING ABOUT BIOLOGY. It packages opaque documents, hashes
-them, and re-checks them.
+Three checks, one per claim. The bundled log entries re-chain. The bundled
+policy is the one the plan cites, by hash. Every verdict is recomputed from
+the bundled facts, which makes the plan a conclusion rather than a folder
+somebody assembled.
 
-WHAT A BUNDLE IS FOR
---------------------
-Clew claims three things. A bundle is the artifact that lets someone else
-check all three without trusting us, without our database, and without our
-code being the thing that says so:
+No clock inside, so the same inputs give the same bundle hash. Time lives in
+the log the bundle anchors to, and sealing is itself a logged event. The
+bundle records the log head it saw and leaves the building, so a truncated
+log is caught by a witness its owner does not control.
 
-  1. the log is append-only and unmodified   -> the bundled entries re-chain
-  2. the computation is deterministic        -> the bundled policy is the one
-                                                the plan cites, by hash
-  3. the result follows from the inputs      -> every verdict is RECOMPUTED
-                                                from the bundled facts
-
-The third check is the one that matters and the one that is usually missing
-from things called evidence packages. A folder of documents proves only that
-somebody assembled a folder. Re-deriving each verdict from the facts and the
-table, offline, is what makes the plan a conclusion rather than an assertion.
-
-NO CLOCK IN THE BUNDLE
-----------------------
-Building the same bundle from the same inputs produces the same bundle hash.
-That is deliberate and it is testable. A timestamp inside would change the
-hash on every build and quietly destroy the reproducibility claim.
-
-Time is not lost, it is just kept where it belongs: the bundle anchors to a
-log head, and the log is the thing with clocks. Sealing a bundle is itself an
-event, so "when" is answered by the log, dated and hash-chained, rather than
-by a field the builder could have typed anything into.
-
-HOW THIS CLOSES THE LOG'S OPEN GAP
-----------------------------------
-A hash chain detects editing but not truncation: lopping entries off the end
-leaves a shorter, self-consistent chain, and a rewrite by whoever holds the
-owner's credentials leaves no trace at all. Nothing inside the database can
-fix that — the fix has to be a witness the database's owner does not control.
-
-A bundle is that witness. It records the log head it covered, and it goes out
-of the building: to an assessor, into a build artifact, to a partner. Bundles
-also chain to each other, so a sequence of them pins a sequence of heads. To
-make a truncation stick, someone would now have to collect every copy of
-every bundle ever issued.
-
-WHAT "SIGNED" HONESTLY MEANS HERE
----------------------------------
-This module SEALS: a SHA-256 manifest over every file, and a bundle hash over
-the manifest. That needs nothing but the standard library, so anyone can
-verify it, which is the whole point.
-
-It does NOT implement signing. A signature that can only be checked by
-someone holding the signing key is not a signature in the sense an assessor
-means, and inventing crypto here would be indefensible. Countersigning is
-detached and delegated to tooling the reader already trusts and already
-manages keys for — ssh-keygen -Y, which ships with OpenSSH. The seal is
-Clew's; the attestation of WHO sealed it belongs to your key infrastructure.
+This module seals with SHA-256 and the standard library. It does not sign.
+Countersigning is delegated to ssh-keygen -Y, which readers already trust
+and manage keys for.
 """
 
 import hashlib
@@ -118,12 +75,9 @@ def bundle_hash(manifest):
 
 def _crate(documents, description):
     """
-    A minimal RO-Crate 1.1 description of the bundle.
-
-    Adopted rather than invented: labs already publish crates for journals and
-    archives, and Clew already ingests them. A bundle that is also a crate is
-    one fewer format for a reader to learn, and it survives being handed to
-    tooling that knows nothing about Clew.
+    A minimal RO-Crate 1.1 description of the bundle. Labs already publish
+    crates and Clew already reads them, so a bundle that is also a crate is
+    one fewer format.
     """
     parts = sorted(set(documents) | {MANIFEST})
     return {
@@ -192,23 +146,12 @@ def build(destination, documents, log_head, previous_bundle=None,
           previous_log_head=None, since=0, coverage=None,
           description="Clew evidence bundle", force=False):
     """
-    Write a bundle and return its manifest and hash.
-
-    `documents` maps a filename to a JSON-serialisable object. Core does not
-    know or care what any of them mean; the caller decides what belongs.
-
-    `log_head` is {seq, hash} for the log this bundle witnesses. `since` is
-    the seq the bundled entries start after; the hash they must chain back
-    to is genesis when that is 0 and otherwise the head of the previous
-    bundle, so `previous_log_head` ({seq, hash}) and `previous_bundle` (its
-    hash) are required for a window. A sequence of bundles then pins a
-    sequence of log heads, and each window is verifiable against the one
-    before it rather than against itself.
-
-    A destination that already holds files is refused unless `force`,
-    which empties it first. Building into a directory with leftovers would
-    seal whatever happened to be there, or fail to verify for a reason the
-    builder never saw.
+    Write a bundle and return its manifest and hash. `documents` maps a
+    filename to a JSON-serialisable object; core does not interpret them.
+    `log_head` is {seq, hash}. `since` is the seq the entries start after,
+    chaining to genesis at 0 and otherwise to `previous_log_head` and
+    `previous_bundle`, so each window verifies against the one before. A
+    non-empty destination is refused unless `force`.
     """
     for name in documents:
         if not safe_name(name):
@@ -326,17 +269,11 @@ def chain_start(manifest):
 
 def verify_log(events, manifest, eventlog):
     """
-    The bundled entries must re-chain from the recorded start and end at the
-    recorded head.
-
-    The start is not taken from the entries themselves. A chain checked
-    against its own first prev_hash verifies whatever it was forged to
-    say; it is checked against genesis, or against the head of the bundle
-    it continues, which the manifest names.
-
-    `eventlog` is passed in rather than imported so this stays usable in an
-    environment with no database driver installed — which is exactly the
-    environment an auditor checking a bundle is in.
+    The bundled entries must re-chain from the recorded start to the
+    recorded head. The start comes from the manifest, genesis or the
+    previous bundle's head, never from the entries themselves, which would
+    verify whatever they were forged to say. `eventlog` is passed in so this
+    runs without a database driver.
     """
     anchors = manifest["anchors"]
     head = anchors["log_head"]
@@ -394,16 +331,10 @@ def verify_log(events, manifest, eventlog):
 
 def verify_against_log(manifest, hash_at_seq):
     """
-    Hold a live log up against what this bundle witnessed.
-
-    `hash_at_seq` is a callable taking a sequence number and returning that
-    entry's hash, or None if the log has no such entry. A callable rather
-    than a connection so this stays driver-free and testable.
-
-    This is the check that closes the log's open gap. A truncated chain is
-    internally consistent and verify() on the log alone passes — nothing
-    inside the database can notice something that is no longer in it. A
-    bundle can, because it left the building carrying the head it saw.
+    Hold a live log against what this bundle witnessed. `hash_at_seq`
+    returns an entry's hash by sequence number, or None. A truncated chain
+    passes verify() on its own; a bundle that left the building carrying the
+    head it saw catches it.
     """
     anchor = manifest["anchors"]["log_head"]
     if anchor["seq"] == 0:
@@ -489,12 +420,9 @@ def verify_replay(plan, policy_document):
     for item in items:
         try:
             decision = policy_module.decide(
-                item["contribution"],
-                storage=item.get("storage"),
-                exclusive=item.get("exclusive"),
-                terminal=item.get("terminal"),
-                policy=policy_document,
-            )
+                item["contribution"], storage=item.get("storage"),
+                scope=item.get("scope"), released=item.get("released"),
+                mode=item.get("mode"), policy=policy_document)
         except ValueError as exc:
             mismatches.append(f"{item['task']}: {exc}")
             continue

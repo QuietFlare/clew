@@ -6,7 +6,7 @@ three layers separately, because each stops something the next cannot:
 
   1. GRANTS stop the application. The writer role holds SELECT and INSERT and
      was never granted UPDATE, DELETE or TRUNCATE. The tests below check that
-     the writer is refused with a PRIVILEGE error, not a trigger error — if
+     the writer is refused with a PRIVILEGE error, not a trigger error, if
      the trigger fired first, the grants would be untested and a future
      "let's simplify the DDL" would remove the real protection unnoticed.
 
@@ -63,7 +63,7 @@ class LogTestCase(unittest.TestCase):
 
     # Roles are cluster-global, not per-database. Using the real role names
     # here would mean running the test suite RESETS the passwords of the
-    # production writer and auditor — on any cluster that happens to host
+    # production writer and auditor, on any cluster that happens to host
     # both. Test roles get test names.
     WRITER_ROLE = "clew_test_writer"
     AUDITOR_ROLE = "clew_test_auditor"
@@ -124,8 +124,7 @@ class TestRolePrivileges(LogTestCase):
                 cur.execute("TRUNCATE events")
 
     def test_writer_cannot_grant_itself_more(self):
-        # Postgres does not ERROR on a grant by a role without grant option —
-        # it warns and does nothing. So assert the outcome, not the exception:
+        # Postgres does not ERROR on a grant by a role without grant option, # it warns and does nothing. So assert the outcome, not the exception:
         # after trying, the writer still cannot update. Testing for a raised
         # error here would have passed for the wrong reason on some versions
         # and silently stopped testing anything on others.
@@ -259,7 +258,7 @@ class TestAppend(LogTestCase):
     def test_timestamps_survive_the_round_trip_byte_for_byte(self):
         # Why the columns are text. A timestamptz would come back in the
         # server's own formatting and every later hash would fail to
-        # recompute — verification broken by a display convention.
+        # recompute, verification broken by a display convention.
         odd = "2026-01-01T00:00:00+00:00"
         el.append(self.writer, "T", "s", actor="t", effective_from=odd)
         self.assertEqual(el.read(self.writer)[0]["effective_from"], odd)
@@ -305,7 +304,7 @@ class TestWindowVerification(LogTestCase):
 class TestConcurrentAppend(LogTestCase):
     """
     The reason for the advisory lock. Without it two appenders read the same
-    head and the chain forks — which the PRIMARY KEY would turn into a crash,
+    head and the chain forks, which the PRIMARY KEY would turn into a crash,
     and a weaker schema would turn into silent corruption.
     """
 

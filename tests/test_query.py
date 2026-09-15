@@ -2,7 +2,7 @@
 The query surface: what an auditor's question resolves to.
 
 One rule dominates these tests. An answer that asserts something must carry
-citations, and there must be no way to get one that does not — because the
+citations, and there must be no way to get one that does not, because the
 consumer on the other side is a language model whose fluent, confident prose
 an auditor cannot distinguish from an accurate one by reading it. Citations
 are what make a bad paraphrase checkable instead of persuasive.
@@ -37,7 +37,7 @@ def entry(seq, subject, event_type, effective_from, body=None,
 
 def plan_with(items, trigger="test:trigger"):
     return {
-        "clew_plan_version": 1, "trigger": trigger,
+        "clew_plan_version": 2, "trigger": trigger,
         **policy_module.identify(policy_module.DEFAULT),
         "tasks_total": 10, "tasks_affected": len(items),
         "entry_tasks": ["t0"], "plan": items, "caveats": ["a stated limit"],
@@ -47,9 +47,9 @@ def plan_with(items, trigger="test:trigger"):
 def item(task, action="REGENERATE", rule="R7", **overrides):
     base = {
         "task": task, "process": "P", "name": task, "action": action,
-        "rule": rule, "because": "because", "contribution": "REGENERABLE",
-        "storage": "WRITABLE", "exclusive": False, "terminal": False,
-        "reason": "test", "evidence_path": ["t0", task],
+        "rule": rule, "reason": "because", "contribution": "REGENERABLE",
+        "storage": "WRITABLE", "scope": "shared", "released": False,
+        "evidence": "test", "evidence_path": ["t0", task],
     }
     base.update(overrides)
     return base
@@ -86,7 +86,7 @@ class TestCitationsAreMandatory(unittest.TestCase):
                     if c["kind"] == "policy_rule")
         self.assertEqual(rule["rule"], "R7")
         self.assertEqual(rule["policy_version"], policy_module.DEFAULT["version"])
-        self.assertTrue(rule["because"])
+        self.assertTrue(rule["reason"])
 
 
 class TestEmptyIsNotClean(unittest.TestCase):

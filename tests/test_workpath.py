@@ -106,7 +106,7 @@ class Refusals(unittest.TestCase):
         facts = contribution.classify(graph, "trim/trimmed/s1.fq", exclusive=False,
                                       work_root=str(self.root))
         self.assertIsNone(facts["storage"])
-        self.assertIn("not placed under --work-root", facts["reason"])
+        self.assertIn("not placed under --work-root", facts["evidence"])
 
     def test_reclaim_keeps_every_task_of_a_shared_directory(self):
         # The Snakemake case: one directory for the whole workflow. A verdict

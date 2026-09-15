@@ -54,7 +54,7 @@ engine could not, and every later load merges it back. Nothing the engine
 already says is copied.
 
 `--run` takes a run name, a run-id prefix, or a session-id prefix, as
-`extract-store --run` does; a session prefix names a resume chain and its
+`clew extract nextflow --run` does; a session prefix names a resume chain and its
 newest run stands for it. Without `--run` the latest run is read, ordered
 by the timestamp in the engine's record. A graph directory whose files
 carry no timestamp is ordered by file modification time, and the command
@@ -86,11 +86,11 @@ to run first. Clew has no opinion on where either setting lives. It reads
 the store the engine writes.
 
 ```bash
-clew extract-store --store /path/to/.lineage --list-runs
+clew extract nextflow --store /path/to/.lineage --list-runs
 ```
 
 ```bash
-clew extract-store --store /path/to/.lineage --run <run-name> --json-out graph.json
+clew extract nextflow --store /path/to/.lineage --run <run-name> --json-out graph.json
 ```
 
 The engine is the best witness of what it ran. Inputs are typed, external
@@ -108,7 +108,7 @@ paths alone cannot join a run back together. Digests can, and that is what
 this extractor joins on.
 
 ```bash
-clew extract-horus --run-dir ~/.horus-lineage/<run-id>/ --json-out graph.json
+clew extract horus --run-dir <run directory>/.horus-lineage/<run>/ --json-out graph.json
 ```
 
 Skipped tasks are recorded with their digests, so a cached run gives the
@@ -125,7 +125,7 @@ on file ID, so two analyses stitch with no path matching, even across
 projects.
 
 ```bash
-clew extract-dnanexus --analysis analysis-xxxx --json-out graph.json
+clew extract dnanexus --analysis analysis-xxxx --json-out graph.json
 ```
 
 The token comes from `DX_SECURITY_CONTEXT`, which `dx login` sets, or from
@@ -158,7 +158,7 @@ shared path like two Nextflow runs do. The workflow's commit hash and
 image hash identify the code and the environment.
 
 ```bash
-clew extract-latch --execution <id> --json-out graph.json
+clew extract latch --execution <id> --json-out graph.json
 ```
 
 The token is the one `latch login` stores, or `--token`. The extractor
@@ -184,14 +184,14 @@ as paths, so an input that is another call's output is an edge, and a
 path no call produced came from outside.
 
 ```bash
-clew extract-cromwell --metadata metadata.json --json-out graph.json
+clew extract cromwell --metadata metadata.json --json-out graph.json
 ```
 
 The file is what `cromwell run -m metadata.json` writes. From a server,
 fetch it yourself with subworkflows expanded, or let Clew do it:
 
 ```bash
-clew extract-cromwell --server http://localhost:8000 --workflow <id> --json-out graph.json
+clew extract cromwell --server http://localhost:8000 --workflow <id> --json-out graph.json
 ```
 
 `--token` sends a bearer token for a server behind auth. The extractor
@@ -226,7 +226,7 @@ it decides what to rerun. That memory is lineage. Nothing changes in the
 workflow.
 
 ```bash
-clew extract-snakemake --workdir /path/to/workflow --json-out graph.json
+clew extract snakemake --workdir /path/to/workflow --json-out graph.json
 ```
 
 Both persistence backends are read: the JSON files under
@@ -275,7 +275,7 @@ Workflow Run RO-Crate. Labs that publish crates for journals or archives
 already have lineage on disk.
 
 ```bash
-clew extract-crate --crate ro-crate-metadata.json --json-out graph.json
+clew extract ro-crate --crate ro-crate-metadata.json --json-out graph.json
 ```
 
 A crate records what ran, not how to run it again. There is no script, no
@@ -296,7 +296,7 @@ symlinks, and those symlinks record the whole history of the run. No
 pipeline change, any Nextflow version:
 
 ```bash
-clew extract-work --jsonl /path/to/weblog/<run-id>.jsonl --work /path/to/work --json-out graph.json
+clew extract nextflow-work --jsonl /path/to/weblog/<run-id>.jsonl --work /path/to/work --json-out graph.json
 ```
 
 Do this during or right after the run. `nextflow clean` removes the

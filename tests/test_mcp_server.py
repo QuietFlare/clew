@@ -3,7 +3,7 @@ The MCP server: protocol, and the properties that make it safe to point a
 language model at a compliance record.
 
 Two things are tested here that are not really about MCP at all. That the
-server is read-only — nothing it exposes can write a fact, and an auditor's
+server is read-only, nothing it exposes can write a fact, and an auditor's
 chat session is the last place a new fact should be able to enter the record.
 And that bundles sealed from different logs are detected rather than
 silently interleaved into one plausible-looking history.
@@ -41,16 +41,16 @@ def log_entry(seq, prev_hash, subject="s1", event_type="Withdrawn",
 def a_plan():
     decision = policy_module.decide("REGENERABLE", storage="WRITABLE")
     return {
-        "clew_plan_version": 1, "trigger": "withdrawal of s1",
+        "clew_plan_version": 2, "trigger": "removal of s1",
         **policy_module.identify(policy_module.DEFAULT),
         "tasks_total": 10, "tasks_affected": 1, "entry_tasks": ["t0"],
         "actions": {decision["action"]: 1},
         "plan": [{
             "task": "t1", "process": "P", "name": "t1",
             "action": decision["action"], "rule": decision["rule"],
-            "because": decision["because"], "contribution": "REGENERABLE",
-            "storage": "WRITABLE", "exclusive": False, "terminal": False,
-            "reason": "test", "evidence_path": ["t0", "t1"],
+            "reason": decision["reason"], "contribution": "REGENERABLE",
+            "storage": "WRITABLE", "scope": "shared", "released": False,
+            "evidence": "test", "evidence_path": ["t0", "t1"],
         }],
         "caveats": [],
     }
@@ -153,8 +153,8 @@ class TestProtocol(ServerTestCase):
 
     def test_malformed_input_does_not_kill_the_session(self):
         # Both shapes of bad line: unparseable, and valid JSON that is not an
-        # object. The second one is the dangerous one — it parses, and then
-        # has no .get() — and it must not end a session an auditor is in the
+        # object. The second one is the dangerous one, it parses, and then
+        # has no .get(), and it must not end a session an auditor is in the
         # middle of.
         replies = self.converse_raw(
             ["{ not json at all\n",

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from clew.graph import blast_radius as core
 from clew.graph.graph import EXTERNAL
-from clew.domains.nfcore import BOOKKEEPING
+from clew.graph.results import BOOKKEEPING
 from clew.views import drift_report
 
 REPRODUCED = "REPRODUCED"
@@ -71,12 +71,10 @@ def live_tasks(graph):
 
 def pair_tasks(before, after):
     """
-    [(before hash | None, after hash | None, note)] in name order.
-
-    One task per name on each side pairs by name. When a name repeats,
-    as a per-interval step does, the two sides pair on input digests, and
-    what that cannot settle is left unpaired with a note rather than
-    matched by hash order, which pairs shards crosswise.
+    [(before hash | None, after hash | None, note)] in name order. Unique
+    names pair by name. Repeated names, as per-interval steps have, pair on
+    input digests, and what that cannot settle stays unpaired with a note
+    rather than crosswise by hash order.
     """
     names_before, names_after = live_tasks(before), live_tasks(after)
     pairs = []

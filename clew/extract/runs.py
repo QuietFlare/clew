@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from clew.extract import horus, nextflow_store
+from clew.contracts import Extractor, discover
 
 SIDECAR_DIR = ".clew"
 
@@ -29,54 +29,47 @@ def recorded_timestamp(path):
 
 
 class Runs:
+    """
+    An engine's record on disk. The extractor that recognises the path
+    lists its runs and loads one; a directory of graph JSON files needs
+    no extractor. Everything else here is engine-neutral: ordering,
+    resolving a name, the sidecar.
+    """
+
     def __init__(self, path):
         self.path = Path(path)
-        if (self.path / ".lineage").is_dir():
-            self.path = self.path / ".lineage"
-        self.kind = self._detect()
-
-    def _detect(self):
-        if (self.path / ".history").is_dir():
-            return "nextflow"
-        if (self.path / horus.PLAN).is_file():
-            return "horus-run"
-        if any((child / horus.PLAN).is_file() for child in self.path.iterdir() if child.is_dir()):
-            return "horus"
-        if any(child.suffix == ".json" for child in self.path.iterdir()):
-            return "graphs"
-        raise SystemExit(f"{self.path} is not a .lineage store, a horus-lineage root, "
-                         "or a directory of graph JSON files")
+        self.extractor = None
+        for extractor in discover(Extractor).values():
+            found = extractor.records(self.path)
+            if found is not None:
+                self.extractor, self.root = extractor, Path(found["root"])
+                self.kind = extractor.name
+                self._runs = found["runs"]
+                return
+        if self.path.is_dir() and any(c.suffix == ".json" for c in self.path.iterdir()):
+            self.kind, self.root = "graphs", self.path
+            self._runs = [{"name": c.stem, "id": c.stem,
+                           "timestamp": recorded_timestamp(c),
+                           "mtime": c.stat().st_mtime}
+                          for c in self.path.iterdir() if c.suffix == ".json"]
+            return
+        raise SystemExit(f"{self.path} is not an engine record any installed extractor "
+                         "recognises, or a directory of graph JSON files")
 
     def records(self):
-        """
-        [{name, id, timestamp, session, by_mtime}] oldest first. A run
-        whose record carries no timestamp is ordered by file mtime and
-        says so, since a copy or a touch reorders those.
-        """
-        if self.kind == "nextflow":
-            return [{"name": r["name"], "id": r["run_hash"], "timestamp": r["timestamp"],
-                     "session": r["session_id"], "by_mtime": False}
-                    for r in nextflow_store.load_history(self.path)]
-        if self.kind == "horus-run":
-            return [{"name": self.path.name, "id": self.path.name,
-                     "timestamp": recorded_timestamp(self.path / horus.PLAN),
-                     "session": None, "by_mtime": False}]
-        if self.kind == "horus":
-            entries = [(c, c / horus.PLAN) for c in self.path.iterdir()
-                       if (c / horus.PLAN).is_file()]
-        else:
-            entries = [(c, c) for c in self.path.iterdir() if c.suffix == ".json"]
+        """[{name, id, timestamp, session, by_mtime}] oldest first."""
         found = []
-        for entry, record in entries:
-            stamp = recorded_timestamp(record)
-            name = entry.stem if entry.is_file() else entry.name
-            found.append(({"name": name, "id": name, "timestamp": stamp,
-                           "session": None, "by_mtime": not stamp},
-                          entry.stat().st_mtime))
+        for r in self._runs:
+            stamp = r.get("timestamp") or ""
+            found.append({"name": r["name"], "id": r["id"], "timestamp": stamp,
+                          "session": r.get("session"), "by_mtime": not stamp,
+                          "_mtime": r.get("mtime", 0)})
         # Timestamps and mtimes do not compare, so recorded ones sort
         # among themselves and the rest fall in by mtime after them.
-        found.sort(key=lambda pair: (pair[0]["by_mtime"], pair[0]["timestamp"], pair[1]))
-        return [record for record, _ in found]
+        found.sort(key=lambda r: (r["by_mtime"], r["timestamp"], r["_mtime"]))
+        for r in found:
+            del r["_mtime"]
+        return found
 
     def names(self):
         """[(name, id, timestamp)] oldest first."""
@@ -109,66 +102,50 @@ class Runs:
                              + ", ".join(r["name"] for r in records))
         return matches[0]["name"], matches[0]["id"]
 
+    def session_of(self, run_id):
+        return next((r["session"] for r in self.records() if r["id"] == run_id), None)
+
     def load(self, wanted=None):
         """The graph of one run, with any sidecar digests merged in."""
         name, run_id = self.resolve(wanted)
-        session = None
-        if self.kind == "nextflow":
-            run = nextflow_store.pick_run(nextflow_store.load_history(self.path), run_id)
-            session = run["session_id"]
-            graph = nextflow_store.extract(self.path, session)
-        elif self.kind == "horus-run":
-            graph = horus.extract(self.path)
-        elif self.kind == "horus":
-            graph = horus.extract(self.path / run_id)
+        if self.extractor:
+            graph = self.extractor.load(self.root, run_id)
         else:
-            graph = json.loads((self.path / f"{run_id}.json").read_text())
+            graph = json.loads((self.root / f"{run_id}.json").read_text())
         graph["run"] = {"name": name, "id": run_id}
         for sidecar in self.sidecar_paths(run_id):
             if sidecar.is_file():
                 merge_sidecar(graph, json.loads(sidecar.read_text()))
+        session = self.session_of(run_id)
         if session:
             # The graph is the chain's, not the run's: two runs of one
             # session load the same graph, and a caller comparing them
             # needs to know that.
             graph["run"]["session"] = session
-        sidecar = self.sidecar_path(run_id)
-        if sidecar.is_file():
-            merge_sidecar(graph, json.loads(sidecar.read_text()))
         return graph
 
+    def sidecar_key(self, run_id):
+        """
+        A resumed chain's digests belong to the session, not to whichever
+        run name was typed; a digest written under one must be found under
+        the other. Engines without sessions key by run.
+        """
+        return self.session_of(run_id) or run_id
+
     def sidecar_paths(self, run_id):
-        """
-        Every sidecar that may hold this run's digests: the one filed under
-        the current key first, then any filed under a run hash of the same
-        chain by an earlier Clew, so digests already on disk keep counting.
-        """
+        """The sidecar under the current key, then any an earlier Clew filed under a run of the same chain."""
         paths = [self.sidecar_path(run_id)]
-        if self.kind == "nextflow":
-            history = nextflow_store.load_history(self.path)
-            session = nextflow_store.pick_run(history, run_id)["session_id"]
-            for run in history:
-                if run["session_id"] == session:
-                    legacy = self.path / SIDECAR_DIR / f"{run['run_hash']}.digests.json"
+        session = self.session_of(run_id)
+        if session:
+            for r in self.records():
+                if r["session"] == session:
+                    legacy = self.root / SIDECAR_DIR / f"{r['id']}.digests.json"
                     if legacy not in paths:
                         paths.append(legacy)
         return paths
 
-    def sidecar_key(self, run_id):
-        """
-        What a sidecar is filed under. A store graph is the whole resume
-        chain, so its digests belong to the session, not to whichever run
-        name was typed; a digest written under one name must be found
-        under the other.
-        """
-        if self.kind == "nextflow":
-            run = nextflow_store.pick_run(nextflow_store.load_history(self.path), run_id)
-            return run["session_id"]
-        return run_id
-
     def sidecar_path(self, run_id):
-        base = self.path.parent if self.kind == "horus-run" else self.path
-        return base / SIDECAR_DIR / f"{self.sidecar_key(run_id)}.digests.json"
+        return self.root / SIDECAR_DIR / f"{self.sidecar_key(run_id)}.digests.json"
 
     def save_sidecar(self, graph):
         """Keep the sha256 digests of a graph beside the engine's record."""

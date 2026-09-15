@@ -1,0 +1,114 @@
+{
+  "name": "AutoDock Vina Docking",
+  "tasks": [
+    {
+      "id": "prep",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Prepare receptor + ligands + box",
+      "executor": "conda_python_environment",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "receptor",
+          "kind": "file",
+          "path": "examples/receptor.pdb"
+        },
+        {
+          "id": "ligands",
+          "kind": "file",
+          "path": "examples/ligands.smi"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "vina_inputs",
+          "kind": "file",
+          "path": "results/vina_inputs.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "dock",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Run AutoDock Vina",
+      "executor": "conda_python_environment",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "vina_inputs",
+          "kind": "file",
+          "path": "results/vina_inputs.tar.gz"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "docking_out",
+          "kind": "file",
+          "path": "results/docking_out.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "summary",
+      "definition_id": null,
+      "kind": "horus_task",
+      "name": "Summarize docking energies",
+      "executor": "shell",
+      "runtime": "python_script",
+      "target": "local",
+      "inputs": [
+        {
+          "id": "docking_out",
+          "kind": "file",
+          "path": "results/docking_out.tar.gz"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "summary",
+          "kind": "file",
+          "path": "results/summary.csv"
+        },
+        {
+          "id": "poses",
+          "kind": "file",
+          "path": "results/poses.csv"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "prep",
+      "source_output": "vina_inputs",
+      "target": "dock",
+      "target_input": "vina_inputs",
+      "transfer": true
+    },
+    {
+      "source": "dock",
+      "source_output": "docking_out",
+      "target": "summary",
+      "target_input": "docking_out",
+      "transfer": true
+    },
+    {
+      "source": "artifact-ligands",
+      "source_output": "ligands",
+      "target": "prep",
+      "target_input": "ligands",
+      "transfer": true
+    },
+    {
+      "source": "artifact-receptor",
+      "source_output": "receptor",
+      "target": "prep",
+      "target_input": "receptor",
+      "transfer": true
+    }
+  ]
+}

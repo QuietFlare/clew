@@ -1,39 +1,17 @@
 """
-Clew — a self-contained HTML view over an evidence store.
+One self-contained HTML page over an evidence store.
 
     clew dashboard --bundles /path/to/bundles --out evidence.html
 
-One file, no server, no network, no scripts. An auditor opens it from a USB
-stick on a machine with no access to anything, and it still works. Printing
-it produces something usable, because auditors print things.
+No server, no network, no scripts, prints legibly. The page is a view and
+the bundles are the record: every panel carries the hash of the bundle it
+came from. It shares query.py with the MCP server so the two cannot
+disagree.
 
-THIS PAGE IS NOT THE RECORD
----------------------------
-The bundles are. This is a view generated from them, and it says so at the
-top, because a rendered summary is exactly the kind of artifact that gets
-detached from its source and quoted years later. Every panel carries the
-bundle hash it was drawn from so the page can always be traced back to
-something checkable, and the integrity panel reports the verifier's own
-output rather than a rendering of it.
-
-It shares core/query.py with the MCP server on purpose. Two surfaces
-answering the same questions two different ways would eventually disagree,
-and on the day they did nobody could say which was wrong.
-
-WHAT IS NOT KNOWN IS GIVEN THE SAME WEIGHT AS WHAT IS
------------------------------------------------------
-A compliance dashboard that renders gaps in small grey text below the fold is
-worse than no dashboard: it manufactures the impression of a clean bill of
-health out of an incomplete record. So coverage limits, undetermined verdicts
-and subjects the log has never heard of appear near the top, in the same
-visual weight as everything else, and the summary counts them explicitly.
-
-NO CLOCK
---------
-The page carries no generation timestamp, so regenerating it from unchanged
-bundles produces an identical file. Two auditors comparing pages should be
-comparing evidence, not diffing dates. The bundles' own hashes and the log
-heads they anchor to are the identity of what is shown.
+Coverage limits, undetermined verdicts and subjects the log has never heard
+of appear near the top at full weight. A dashboard that hides gaps below the
+fold manufactures a clean bill of health. No generation timestamp, so
+unchanged bundles render to identical bytes.
 """
 
 import argparse
@@ -124,7 +102,7 @@ def section_header(store, root):
     parts = [
         "<h1>Clew evidence</h1>",
         '<p class="lede">A view generated from the bundles below. '
-        '<strong>This page is not the record</strong> — the bundles are, and '
+        '<strong>This page is not the record</strong>, the bundles are, and '
         'each panel names the bundle hash it was drawn from so anything here '
         'can be traced back and checked independently with '
         '<code>clew evidence verify</code>.</p>',
@@ -155,7 +133,7 @@ def section_integrity(store):
                                              else "unknown")
             label = check["check"] if check["ok"] else (
                 f"{check['check']} FAILED" if check["ok"] is False
-                else f"{check['check']} —")
+                else f"{check['check']} , ")
             cells.append(f'{tag(label, kind)} <span class="hash">'
                          f'{esc(check["detail"])}</span>')
         rows.append(
@@ -192,7 +170,7 @@ def section_unknowns(store):
             if missing:
                 notes.append(
                     f"{bundle['name']}: {len(missing)} of "
-                    f"{len(plan.get('plan', []))} items have no verdict — "
+                    f"{len(plan.get('plan', []))} items have no verdict, "
                     "storage was not verified and the answer depends on it.")
         gate = bundle["documents"].get("gate.json")
         if gate:
@@ -248,7 +226,7 @@ def section_log(store):
     return ("<h2>The log</h2>"
             "<p>Two clocks. <strong>Effective</strong> is when a decision was "
             "made in the world; <strong>recorded</strong> is when it reached "
-            "the log. Where they differ, both matter — a fact effective in "
+            "the log. Where they differ, both matter, a fact effective in "
             "March and recorded in August means work done in between was done "
             "in good faith and still has to be accounted for.</p>"
             "<table><tr><th>Seq</th><th>Effective</th><th>Recorded</th>"
@@ -278,7 +256,7 @@ def section_policy(store):
         for a in adoptions)
     return ("<h2>Policy</h2>"
             "<p>Which remediation table was in force, and from when. The hash "
-            "is what makes the version label checkable — two parties can prove "
+            "is what makes the version label checkable, two parties can prove "
             "they were reading the same table.</p>"
             "<table><tr><th>Version</th><th>Effective from</th>"
             "<th>Adopted by</th><th>sha256</th></tr>" + rows + "</table>"
@@ -302,7 +280,7 @@ def section_plan(bundle, store):
         kind = "unknown" if not detail["action"] else (
             "bad" if action in ("DESTROY", "QUARANTINE") else "")
         chain = " → ".join(detail.get("evidence_path") or [])
-        because = detail["because"] if detail["action"] else (
+        because = detail["reason"] if detail["action"] else (
             "no verdict: storage was not verified and the answer depends on "
             "it. Possible: " + ", ".join(sorted(detail.get("possible") or {})))
         rows.append(
@@ -340,7 +318,7 @@ def section_gate(bundle):
         for subject, detail in sorted(result.get("subjects", {}).items()))
 
     verdict = ("PASS" if result.get("passed") else "STOP")
-    return (f"<h3>Gate — {esc(result.get('samplesheet'))} "
+    return (f"<h3>Gate, {esc(result.get('samplesheet'))} "
             f"{tag(verdict, 'ok' if result.get('passed') else 'bad')}</h3>"
             f'<p><span class="hash">bundle {esc(bundle["hash"])}</span><br>'
             f"as of {esc(result.get('as_of') or 'all facts in effect')}, "
@@ -382,7 +360,7 @@ computation is deterministic and reproducible, and the result follows from the
 inputs. Anyone can re-run it and get the same answer.</p>
 <p><strong>Clew claims nothing about whether the inputs were true or the
 policy was correct.</strong> Those belong to whoever has the domain authority
-to defend them. This is a system of record, not an attester — it does not
+to defend them. This is a system of record, not an attester, it does not
 decide whether a use was compliant, it makes it impossible to lose the record
 of what was decided, on what basis, and when.</p>
 <p>It does not prove physical destruction. No cryptography reaches a freezer.
@@ -406,7 +384,7 @@ def main(argv=None):
     print(f"wrote {args.out}  ({len(store[0])} bundles, "
           f"{len(store[1])} log entries)")
     if store[2]:
-        print(f"WARNING: {len(store[2])} sequence conflicts — these bundles "
+        print(f"WARNING: {len(store[2])} sequence conflicts, these bundles "
               f"were sealed from different logs; the page says so.")
 
 

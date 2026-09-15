@@ -13,7 +13,7 @@ from clew.extract.digest import sha256_file
 from clew.graph import blast_radius as core
 from clew.graph.graph import (EXTERNAL, STATUS_FAILED, STATUS_UNKNOWN,
                               published_digests, resolve_workdirs, task_status)
-from clew.domains.nfcore import BOOKKEEPING
+from clew.graph.results import BOOKKEEPING
 from clew.views import reclaim_report
 from clew.views.reclaim_report import human
 
@@ -149,14 +149,11 @@ class Reclaimer:
     def published_copy(self, path, detail):
         """
         How the published tree holds this output: ('digest' | 'hardlink',
-        [paths]) when it does, ('symlink', [paths]) when it only points into
-        work, ('changed', [paths]) when a copy is no longer the size that
-        was digested, ('none', []) when it does not, or ('unverified',
-        [paths]) when --results was not given to check.
-
-        Two outputs can share a digest (an empty file, a repeated header),
-        so a copy with the output's own basename is preferred; only when
-        none has it are all copies with that digest considered.
+        [paths]), ('symlink', [paths]) when it only points into work,
+        ('changed', [paths]) when a copy no longer has the digested size,
+        ('none', []), or ('unverified', [paths]) without --results. A copy
+        with the output's own basename is preferred, since two outputs can
+        share a digest.
         """
         rels = self.published.get(detail.get("digest") or "", [])
         named = [rel for rel in rels if Path(rel).name == Path(detail["file"]).name]

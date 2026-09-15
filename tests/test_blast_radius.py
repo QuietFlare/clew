@@ -3,7 +3,7 @@ Core traversal on synthetic graphs, including the two must-pass cases from
 CLAUDE.md: mixed verdicts from one node, and the load-bearing input.
 
 Synthetic graphs use readable ids ("pool", "paper") precisely because core
-must not care — if these tests pass, core never looked inside the strings.
+must not care, if these tests pass, core never looked inside the strings.
 """
 
 import sys
@@ -116,7 +116,7 @@ class TestMixedVerdictsFromOneNode(unittest.TestCase):
     """
     The withdrawn donor fed a pool. The pool fed BOTH a published paper and
     an unpublished analysis. One traversal must produce two different
-    answers — NOTIFY_ONLY on the published branch, REGENERATE on the other.
+    answers, NOTIFY_ONLY on the published branch, REGENERATE on the other.
     If the model cannot do this, it is wrong.
     """
 
@@ -138,8 +138,8 @@ class TestMixedVerdictsFromOneNode(unittest.TestCase):
         for node in affected:
             verdicts[node] = policy.remediate(
                 c.REGENERABLE,
-                exclusive=node in exclusive,
-                terminal=node in published,
+                scope=policy.EXCLUSIVE if node in exclusive else policy.SHARED,
+                released=node in published,
             )
 
         self.assertEqual(verdicts["paper"], c.NOTIFY_ONLY)
@@ -152,7 +152,7 @@ class TestMixedVerdictsFromOneNode(unittest.TestCase):
 class TestLoadBearingInput(unittest.TestCase):
     """
     Removing a reference/control invalidates everything calibrated against
-    it — artifacts that are NOT downstream of any donor. The trigger is the
+    it, artifacts that are NOT downstream of any donor. The trigger is the
     input itself, and the blast radius must reach past the donors entirely.
     """
 
@@ -174,8 +174,7 @@ class TestLoadBearingInput(unittest.TestCase):
         # But not things that never touched it.
         self.assertNotIn("unrelated", affected)
 
-        # A donor's own radius does NOT cover the other donor's artifacts —
-        # only the reference trigger reaches both. That asymmetry is the point.
+        # A donor's own radius does NOT cover the other donor's artifacts, # only the reference trigger reaches both. That asymmetry is the point.
         donor_radius = core.blast_radius(g, {"d1": ["d1"]})
         self.assertNotIn("align2", donor_radius["d1"]["affected"])
 

@@ -1,7 +1,7 @@
 """
 Every extractor emits the same graph, and everything downstream assumes
-its shape. This runs the contract over every shipped graph and every
-fixture-built one, so a new extractor joins by adding one line.
+its shape. The shipped graphs are checked here; each provider checks its
+own extractor's output in its own tests.
 """
 
 import json
@@ -12,32 +12,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import clew
-from clew.extract import cromwell as cw
-from clew.extract import dnanexus as dx
-from clew.extract import horus as hz
-from clew.extract import latch as lt
-from clew.extract import rocrate as rc
-from clew.extract import snakemake as sm
+from importlib.metadata import version
 from clew.graph.graph import STATUSES, contract_violations, task_status
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "clew" / "data"
-FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 SHIPPED = ["graph5.json", "graph_rna.json", "graph_vr.json",
            "graph_da.json", "graph_chain.json"]
-
-
-def fixture_graphs():
-    yield "horus", hz.extract(FIXTURES / "horus_run")
-    yield "rocrate", rc.extract(FIXTURES / "ro-crate-metadata.json")
-    yield "dnanexus", dx.extract(dx.load_records(FIXTURES / "dnanexus"))
-    yield "latch", lt.extract(lt.load_records(FIXTURES / "latch"))
-    yield "cromwell", cw.extract(cw.load_metadata(FIXTURES / "cromwell" / "diamond.json"))
-    yield "cromwell-sub", cw.extract(cw.load_metadata(FIXTURES / "cromwell" / "outer.json"))
-    yield "snakemake-files", sm.extract(sm.load_records(FIXTURES / "snakemake_wildcards"))
-    yield "snakemake-db", sm.extract(sm.load_records(FIXTURES / "snakemake_diamond"))
 
 
 class ShippedGraphsConform(unittest.TestCase):
@@ -46,14 +28,6 @@ class ShippedGraphsConform(unittest.TestCase):
         for name in SHIPPED:
             with self.subTest(graph=name):
                 graph = json.loads((DATA / name).read_text())
-                self.assertEqual(contract_violations(graph), [])
-
-
-class ExtractedGraphsConform(unittest.TestCase):
-
-    def test_every_extractor(self):
-        for name, graph in fixture_graphs():
-            with self.subTest(extractor=name):
                 self.assertEqual(contract_violations(graph), [])
 
 
@@ -108,19 +82,14 @@ class StatusVocabulary(unittest.TestCase):
             with self.subTest(word=word):
                 self.assertEqual(task_status(word), status)
 
-    def test_every_extractor_emits_the_vocabulary(self):
-        for name, graph in fixture_graphs():
-            with self.subTest(extractor=name):
-                for task in graph["tasks"].values():
-                    self.assertIn(task["status"], STATUSES)
-
 
 class VersionMatchesPackaging(unittest.TestCase):
 
-    def test_init_and_pyproject_agree(self):
+    def test_installed_metadata_and_pyproject_agree(self):
+        # A checkout is installed editable; a stale install fails here, not in the field.
         text = (ROOT / "pyproject.toml").read_text()
         declared = re.search(r'^version = "([^"]+)"', text, re.M).group(1)
-        self.assertEqual(clew.__version__, declared)
+        self.assertEqual(version("clew-lineage"), declared)
 
 
 if __name__ == "__main__":

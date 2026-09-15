@@ -14,7 +14,7 @@ evidence, not diffing timestamps.
 It must ESCAPE EVERYTHING. Subjects, actors, triggers and event types are
 strings the recording organisation chose, and they go straight into markup.
 An identifier containing a tag would otherwise break the page at best and
-inject script at worst — in a document whose entire purpose is being trusted.
+inject script at worst, in a document whose entire purpose is being trusted.
 """
 
 import json
@@ -48,7 +48,7 @@ def log_entry(seq, prev_hash, subject="s1", event_type="Withdrawn",
     return fields
 
 
-def a_plan(trigger="withdrawal of s1", undetermined=False):
+def a_plan(trigger="removal of s1", undetermined=False):
     if undetermined:
         decision = policy_module.decide("REGENERABLE", storage=None)
         storage = None
@@ -56,16 +56,16 @@ def a_plan(trigger="withdrawal of s1", undetermined=False):
         decision = policy_module.decide("REGENERABLE", storage="WRITABLE")
         storage = "WRITABLE"
     return {
-        "clew_plan_version": 1, "trigger": trigger,
+        "clew_plan_version": 2, "trigger": trigger,
         **policy_module.identify(policy_module.DEFAULT),
         "tasks_total": 10, "tasks_affected": 1, "entry_tasks": ["t0"],
         "actions": {decision["action"] or policy_module.UNDETERMINED: 1},
         "plan": [{
             "task": "t1", "process": "P", "name": "t1",
             "action": decision["action"], "rule": decision["rule"],
-            "because": decision["because"], "possible": decision.get("possible"),
+            "reason": decision["reason"], "possible": decision.get("possible"),
             "contribution": "REGENERABLE", "storage": storage,
-            "exclusive": False, "terminal": False, "reason": "test",
+            "scope": "shared", "released": False, "evidence": "test",
             "evidence_path": ["t0", "t1"],
         }],
         "caveats": ["a stated limit"],

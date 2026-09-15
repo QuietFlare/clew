@@ -30,6 +30,14 @@ dependencies = []
 [project.optional-dependencies]
 # Only the event log needs a driver. Everything else stays stdlib.
 log = ["psycopg[binary]>=3.1"]
+# The providers Clew ships, each its own distribution under providers/.
+nextflow = ["clew-nextflow"]
+snakemake = ["clew-snakemake"]
+cromwell = ["clew-cromwell"]
+horus = ["clew-horus"]
+dnanexus = ["clew-dnanexus"]
+latch = ["clew-latch"]
+all = ["clew-nextflow", "clew-snakemake", "clew-cromwell", "clew-horus", "clew-dnanexus", "clew-latch"]
 
 [project.urls]
 Homepage = "https://quietflare.net/clew"
@@ -39,8 +47,11 @@ Issues = "https://github.com/QuietFlare/clew/issues"
 [project.scripts]
 clew = "clew.__main__:main"
 
+
 [tool.setuptools.packages.find]
+# clew is a namespace: provider packages install into clew.provider.*
 include = ["clew*"]
+namespaces = true
 
 [tool.setuptools.package-data]
 clew = ["data/*.json", "data/*.csv", "data/samplesheets/*.csv"]
