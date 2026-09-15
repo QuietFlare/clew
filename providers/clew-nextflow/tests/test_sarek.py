@@ -152,10 +152,10 @@ class TestAssertions(unittest.TestCase):
         })
         facts = contribution.classify(graph, "aa/000001", exclusive=False,
                                published=published)
-        self.assertTrue(facts["terminal"])
+        self.assertTrue(facts["released"])
         # The reason must carry the assertion's provenance, because the claim
         # is the asserter's, not Clew's.
-        self.assertIn("someone", facts["reason"])
+        self.assertIn("someone", facts["evidence"])
 
     def test_unpublished_task_is_not_terminal(self):
         graph = graph_with_tasks({
@@ -163,7 +163,7 @@ class TestAssertions(unittest.TestCase):
                           "container": "img", "script": "run", "workdir": ""},
         })
         facts = contribution.classify(graph, "aa/000001", exclusive=False, published={})
-        self.assertFalse(facts["terminal"])
+        self.assertFalse(facts["released"])
 
 
 class TestClassification(unittest.TestCase):
@@ -196,7 +196,7 @@ class TestClassification(unittest.TestCase):
         })
         facts = contribution.classify(graph, "aa/000001", exclusive=False)
         self.assertIsNone(facts["storage"])
-        self.assertIn("not checked", facts["reason"])
+        self.assertIn("not checked", facts["evidence"])
 
     def test_destroyed_is_returned_only_after_actually_looking(self):
         graph = graph_with_tasks({

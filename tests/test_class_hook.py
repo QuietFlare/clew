@@ -45,7 +45,7 @@ class TestClassHook(unittest.TestCase):
         item = plan_items()[MULTIQC]
         self.assertEqual(item["contribution"], "SEPARABLE")
         self.assertEqual(item["class_asserted_by"], "sarek-test-classes")
-        self.assertIn("evidence alone said REGENERABLE", item["reason"])
+        self.assertIn("evidence alone said REGENERABLE", item["evidence"])
         self.assertEqual(Knows.asked_kind, "container")
 
     def test_none_keeps_the_evidence_answer(self):

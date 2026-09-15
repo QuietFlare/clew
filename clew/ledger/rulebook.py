@@ -46,7 +46,7 @@ def cmd_show(args):
     for item in active["rules"]:
         when = ", ".join(f"{k}={v}" for k, v in sorted(item["when"].items()))
         print(f"  {item['id']:<4} {when or '(any)':<52} -> {item['action']}")
-        print(f"       {item['because']}")
+        print(f"       {item['reason']}")
     print()
     trailing = 52 - (len(policy.FALLTHROUGH_RULE) - 4)
     print(f"  {policy.FALLTHROUGH_RULE} "
@@ -131,7 +131,7 @@ def cmd_diff(args):
             changes.append(f"action {old_rule['action']} -> {new_rule['action']}")
         if old_rule["when"] != new_rule["when"]:
             changes.append(f"when {old_rule['when']} -> {new_rule['when']}")
-        rationale = old_rule["because"] != new_rule["because"]
+        rationale = old_rule["reason"] != new_rule["reason"]
         if not changes and not rationale:
             continue
         heading = f"  {rule_id}"
@@ -141,8 +141,8 @@ def cmd_diff(args):
         if rationale:
             # The prose is hashed too: it is what an assessor reads, so a
             # changed rationale is a changed policy even when the logic holds.
-            print(f"      - {old_rule['because']}")
-            print(f"      + {new_rule['because']}")
+            print(f"      - {old_rule['reason']}")
+            print(f"      + {new_rule['reason']}")
     return 0
 
 

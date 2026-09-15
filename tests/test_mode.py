@@ -44,7 +44,7 @@ class TestMode(unittest.TestCase):
 
     def test_withdrawal_marks_exclusive(self):
         plan = self.plan("--trigger", "sample:ERR10000000")
-        exclusive = [i for i in plan if i["exclusive"]]
+        exclusive = [i for i in plan if i["scope"] == "exclusive"]
         self.assertEqual(len(exclusive), 41)
         self.assertEqual(len(plan), 46)
         # Exclusive artifacts must never resolve to a rebuild: they either
@@ -61,7 +61,7 @@ class TestMode(unittest.TestCase):
         # so nothing is owned-and-destroyable.
         plan = self.plan("--trigger", "sample:ERR10000000", "--mode", "trace")
         self.assertEqual(len(plan), 46)
-        self.assertEqual([i for i in plan if i["exclusive"]], [])
+        self.assertEqual([i for i in plan if i["scope"] == "exclusive"], [])
         for i in plan:
             self.assertNotIn("DESTROY", self.outcomes(i), i["task"])
 

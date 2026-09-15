@@ -63,17 +63,17 @@ def a_plan(policy_document=None):
     items = []
     for task, klass, storage, exclusive, terminal in facts:
         decision = policy_module.decide(klass, storage=storage,
-                                        exclusive=exclusive, terminal=terminal,
+                                        scope=(policy_module.EXCLUSIVE if exclusive else policy_module.SHARED), released=terminal,
                                         policy=policy_document)
         items.append({
             "task": task, "process": "P", "name": task,
             "action": decision["action"], "rule": decision["rule"],
-            "because": decision["because"], "contribution": klass,
-            "storage": storage, "exclusive": exclusive, "terminal": terminal,
-            "reason": "test",
+            "reason": decision["reason"], "contribution": klass,
+            "storage": storage, "scope": (policy_module.EXCLUSIVE if exclusive else policy_module.SHARED), "released": terminal,
+            "evidence": "test",
         })
     return {
-        "clew_plan_version": 1,
+        "clew_plan_version": 2,
         **policy_module.identify(policy_document),
         "trigger": "test:trigger",
         "tasks_total": 10,
@@ -573,14 +573,14 @@ class TestReplayCoversTheWholePlan(BundleTestCase):
         # An undetermined item's candidates are its whole content. "One of
         # three" quietly becoming "one of one" reads as settled.
         decision = policy_module.decide("REGENERABLE", storage=None,
-                                        exclusive=True)
+                                        scope=policy_module.EXCLUSIVE)
         plan = a_plan()
         plan["plan"].append({
             "task": "t6", "process": "P", "name": "t6", "action": None,
-            "rule": None, "because": decision["because"],
+            "rule": None, "reason": decision["reason"],
             "possible": {"ALREADY_GONE": "R1"},
             "contribution": "REGENERABLE", "storage": None,
-            "exclusive": True, "terminal": False, "reason": "test"})
+            "scope": "exclusive", "released": False, "evidence": "test"})
         plan["tasks_affected"] = 6
         plan["actions"] = action_counts(plan["plan"])
         check = bundle.verify_replay(plan, policy_module.DEFAULT)
@@ -590,7 +590,7 @@ class TestReplayCoversTheWholePlan(BundleTestCase):
 
     def test_a_null_terminal_cannot_replay_to_a_settled_verdict(self):
         plan = a_plan()
-        plan["plan"][0].update(terminal=None, storage=None,
+        plan["plan"][0].update(released=None, storage=None,
                                action="NOTIFY_ONLY", rule="R2")
         check = bundle.verify_replay(plan, policy_module.DEFAULT)
         self.assertFalse(check["ok"])
@@ -708,6 +708,30 @@ class TestEndToEndForgeries(BundleTestCase):
                              "--plan", str(self.write_plan()), "--since", "3")
         self.assertNotEqual(built.returncode, 0)
         self.assertIn("--previous", built.stderr)
+
+
+class TestFormatOneBundles(BundleTestCase):
+    """Bundles sealed before policy format 2 said exclusive, terminal and because."""
+
+    def old_style(self):
+        table = policy_module.downgrade(policy_module.DEFAULT)
+        plan = a_plan()
+        plan["policy_hash"] = policy_module.fingerprint(table)
+        for item in plan["plan"]:
+            item["exclusive"] = item.pop("scope") == policy_module.EXCLUSIVE
+            item["terminal"] = item.pop("released")
+            item["because"] = item.pop("reason")
+        return plan, table
+
+    def test_an_old_bundle_still_verifies(self):
+        plan, table = self.old_style()
+        self.assertTrue(bundle.verify_policy(plan, table)["ok"])
+        self.assertTrue(bundle.verify_replay(plan, table)["ok"])
+
+    def test_an_old_bundle_still_catches_a_changed_verdict(self):
+        plan, table = self.old_style()
+        plan["plan"][0]["action"] = "ALREADY_GONE"
+        self.assertFalse(bundle.verify_replay(plan, table)["ok"])
 
 
 if __name__ == "__main__":

@@ -41,16 +41,16 @@ def log_entry(seq, prev_hash, subject="s1", event_type="Withdrawn",
 def a_plan():
     decision = policy_module.decide("REGENERABLE", storage="WRITABLE")
     return {
-        "clew_plan_version": 1, "trigger": "removal of s1",
+        "clew_plan_version": 2, "trigger": "removal of s1",
         **policy_module.identify(policy_module.DEFAULT),
         "tasks_total": 10, "tasks_affected": 1, "entry_tasks": ["t0"],
         "actions": {decision["action"]: 1},
         "plan": [{
             "task": "t1", "process": "P", "name": "t1",
             "action": decision["action"], "rule": decision["rule"],
-            "because": decision["because"], "contribution": "REGENERABLE",
-            "storage": "WRITABLE", "exclusive": False, "terminal": False,
-            "reason": "test", "evidence_path": ["t0", "t1"],
+            "reason": decision["reason"], "contribution": "REGENERABLE",
+            "storage": "WRITABLE", "scope": "shared", "released": False,
+            "evidence": "test", "evidence_path": ["t0", "t1"],
         }],
         "caveats": [],
     }

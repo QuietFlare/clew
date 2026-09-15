@@ -46,7 +46,7 @@ class TestPlanJson(unittest.TestCase):
         # no rule to cite, and must instead carry the candidates, so that a
         # missing action is never mistakable for "nothing to do".
         for item in self.payload["plan"]:
-            self.assertTrue(item["because"], item["task"])
+            self.assertTrue(item["reason"], item["task"])
             if item["action"]:
                 self.assertTrue(item["rule"], item["task"])
                 self.assertNotIn("possible", item)
@@ -77,7 +77,7 @@ class TestPlanJson(unittest.TestCase):
 
     def test_shape_and_counts(self):
         p = self.payload
-        self.assertEqual(p["clew_plan_version"], 1)
+        self.assertEqual(p["clew_plan_version"], 2)
         self.assertEqual(p["trigger"], "container:ivar")
         self.assertEqual(p["tasks_total"], 219)
         self.assertEqual(p["tasks_affected"], 160)

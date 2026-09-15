@@ -72,7 +72,7 @@ class TestCleanedScratch(unittest.TestCase):
         self.assertIsNone(item["action"])
         self.assertIsNone(item["storage"])
         self.assertIn("ALREADY_GONE", item["possible"])
-        self.assertIn("published tree not checked", item["reason"])
+        self.assertIn("published tree not checked", item["evidence"])
 
     def test_gone_workdir_and_empty_results_is_already_gone(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -66,7 +66,7 @@ def plan_for(graph, affected, exclusive_set, published, work_root):
             # Leaving it open is the same rule clew impact applies.
             facts["storage"] = None
             why_open = CLEANED
-        dims = dict(exclusive=facts["exclusive"], terminal=facts["terminal"])
+        dims = dict(scope=facts["scope"], released=facts["released"])
         decision = policy.decide(facts["contribution"],
                                  storage=facts["storage"], **dims)
         if decision["action"]:
@@ -94,8 +94,8 @@ def show(plan, graph, sample_rows=3):
             print(f"    {label:<12} {len(rows):>3}  {contribution.explain(label)}")
         for task_hash, facts in rows[:sample_rows]:
             print(f"        {task_hash}  {core_graph.describe(graph, task_hash)}")
-            if facts["terminal"]:
-                print(f"            {facts['reason']}")
+            if facts["released"]:
+                print(f"            {facts['evidence']}")
         if len(rows) > sample_rows:
             print(f"        ... {len(rows) - sample_rows} more")
 

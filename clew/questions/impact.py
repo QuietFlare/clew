@@ -7,9 +7,9 @@ What must happen downstream when something upstream turns out invalid.
     clew impact --graph g.json --pipeline qbc    # whatever the adapter has pending
 
 A removal takes a source away: an artifact that exists only because of it
-can be destroyed, which is what `exclusive` means. A defect or reference
-update is traced: every artifact is still wanted, so `exclusive` is False
-and the worst verdict is QUARANTINE.
+can be destroyed, which is what scope `exclusive` means. A defect or
+reference update is traced: every artifact is still wanted, so every scope
+is `shared` and the worst verdict is QUARANTINE.
 
 Classes come from pipeline evidence alone. Publication is an assertion
 carried in through --assertions with an actor and a date. Anything unknown
@@ -137,9 +137,9 @@ def print_plan(adapter, graph, subject, entry_nodes, affected, exclusive_set,
                     f"adapter {adapter.name!r} returned {asserted!r} as the class of "
                     f"{task_hash}; classes are {', '.join(contribution.CLASSES)}")
             if asserted != facts["contribution"]:
-                facts["reason"] = (f"class {asserted} asserted by adapter {adapter.name} "
+                facts["evidence"] = (f"class {asserted} asserted by adapter {adapter.name} "
                                    f"(evidence alone said {facts['contribution']}); "
-                                   + facts["reason"])
+                                   + facts["evidence"])
             facts["contribution"] = asserted
             facts["class_asserted_by"] = adapter.name
         # The adapter's storage check only sees the workdir. If the scratch
@@ -154,7 +154,7 @@ def print_plan(adapter, graph, subject, entry_nodes, affected, exclusive_set,
                 and published_copies(graph, task_hash, results_index)):
             was = facts["storage"]
             facts["storage"] = contribution.WRITABLE
-            facts["reason"] += ("; workdir removed but published copies exist"
+            facts["evidence"] += ("; workdir removed but published copies exist"
                                 if was == contribution.DESTROYED
                                 else "; published copies found on disk")
         elif facts["storage"] == contribution.DESTROYED and not published_checked:
@@ -163,15 +163,15 @@ def print_plan(adapter, graph, subject, entry_nodes, affected, exclusive_set,
             # ALREADY_GONE for a sample whose BAM sits in results/. Leave
             # the dimension unverified and let the policy withhold.
             facts["storage"] = None
-            facts["reason"] += ("; workdir removed, published tree not "
+            facts["evidence"] += ("; workdir removed, published tree not "
                                 "checked (no --results, or no output sizes "
                                 "in the graph)")
         facts["mode"] = mode.value
         decision = policy.decide(
             facts["contribution"],
             storage=facts["storage"],
-            exclusive=facts["exclusive"],
-            terminal=facts["terminal"],
+            scope=facts["scope"],
+            released=facts["released"],
             mode=facts["mode"],
             policy=active_policy,
         )
@@ -185,29 +185,30 @@ def print_plan(adapter, graph, subject, entry_nodes, affected, exclusive_set,
         by_action[decision["action"] or UNDETERMINED].append(
             (task_hash, facts, decision))
 
+    width = max((len(h) for h, _, _ in plan), default=4)
     print("REMEDIATION PLAN")
+    print(f"    {'task':<{width}}  {'process':<26} {'contribution':<12} scope")
     for action in sorted(by_action):
         rows = by_action[action]
         if action == UNDETERMINED:
             print(f"\n  {action}  ({len(rows)}), no verdict; see below")
-            print(f"    {rows[0][2]['because']}")
+            print(f"    {rows[0][2]['reason']}")
         else:
             print(f"\n  {action}  ({len(rows)}), {contribution.explain(action)}")
             # One rule decided this whole group; print it once with its
             # rationale rather than repeating an id against every task.
-            print(f"    rule {rows[0][2]['rule']}: {rows[0][2]['because']}")
+            print(f"    rule {rows[0][2]['rule']}: {rows[0][2]['reason']}")
         for task_hash, facts, _ in rows:
-            scope = "exclusive" if facts["exclusive"] else "shared"
-            print(f"    {task_hash}  {describe(graph, task_hash):<26} "
-                  f"{facts['contribution']:<12} {scope}")
+            print(f"    {task_hash:<{width}}  {describe(graph, task_hash):<26} "
+                  f"{facts['contribution']:<12} {facts['scope']}")
             copies = published_copies(graph, task_hash, results_index)
             if copies:
                 for c in copies:
                     flag = "  AMBIGUOUS, verify before acting" if c["ambiguous"] else ""
                     for path in c["published"]:
                         print(f"        published: {path}{flag}")
-            if facts["terminal"]:
-                print(f"        {facts['reason']}")
+            if facts["released"]:
+                print(f"        {facts['evidence']}")
             elif task_hash not in entry_nodes:
                 # Evidence: show one concrete chain reaching this task, so the
                 # claim is checkable rather than merely asserted.
@@ -296,13 +297,13 @@ def plan_to_dict(adapter, graph, subject, entry_nodes, plan, results_index=None,
             # `possible` is present precisely when `action` is not.
             "action": action,
             "rule": decision["rule"],
-            "because": decision["because"],
+            "reason": decision["reason"],
             "contribution": facts["contribution"],
             "storage": facts["storage"],
-            "exclusive": facts["exclusive"],
-            "terminal": facts["terminal"],
+            "scope": facts["scope"],
+            "released": facts["released"],
             "mode": facts["mode"],
-            "reason": facts["reason"],
+            "evidence": facts["evidence"],
             **({"class_asserted_by": facts["class_asserted_by"]}
                if "class_asserted_by" in facts else {}),
         }
@@ -327,7 +328,7 @@ def plan_to_dict(adapter, graph, subject, entry_nodes, plan, results_index=None,
         counts[decision["action"] or UNDETERMINED] += 1
 
     return {
-        "clew_plan_version": 1,
+        "clew_plan_version": 2,
         **policy.identify(active_policy),
         "trigger": subject,
         "entry_tasks": sorted(entry_nodes),

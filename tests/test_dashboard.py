@@ -56,16 +56,16 @@ def a_plan(trigger="removal of s1", undetermined=False):
         decision = policy_module.decide("REGENERABLE", storage="WRITABLE")
         storage = "WRITABLE"
     return {
-        "clew_plan_version": 1, "trigger": trigger,
+        "clew_plan_version": 2, "trigger": trigger,
         **policy_module.identify(policy_module.DEFAULT),
         "tasks_total": 10, "tasks_affected": 1, "entry_tasks": ["t0"],
         "actions": {decision["action"] or policy_module.UNDETERMINED: 1},
         "plan": [{
             "task": "t1", "process": "P", "name": "t1",
             "action": decision["action"], "rule": decision["rule"],
-            "because": decision["because"], "possible": decision.get("possible"),
+            "reason": decision["reason"], "possible": decision.get("possible"),
             "contribution": "REGENERABLE", "storage": storage,
-            "exclusive": False, "terminal": False, "reason": "test",
+            "scope": "shared", "released": False, "evidence": "test",
             "evidence_path": ["t0", "t1"],
         }],
         "caveats": ["a stated limit"],

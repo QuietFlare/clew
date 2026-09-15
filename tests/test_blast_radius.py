@@ -138,8 +138,8 @@ class TestMixedVerdictsFromOneNode(unittest.TestCase):
         for node in affected:
             verdicts[node] = policy.remediate(
                 c.REGENERABLE,
-                exclusive=node in exclusive,
-                terminal=node in published,
+                scope=policy.EXCLUSIVE if node in exclusive else policy.SHARED,
+                released=node in published,
             )
 
         self.assertEqual(verdicts["paper"], c.NOTIFY_ONLY)

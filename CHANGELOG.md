@@ -14,6 +14,25 @@ follow [Semantic Versioning](https://semver.org/).
 - ADR 0008: a bundle verifies against something it does not control.
 - ADR 0009: an effective date is an instant, and the gate has a now.
 
+### Changed
+
+- Policy tables are format 2: `scope` (`exclusive` or `shared`), `released`
+  and `reason` replace `exclusive`, `terminal` and `because`. Tables and
+  bundles written in format 1 still load, replay and verify; the shipped
+  versions keep their format 1 hashes reachable, so a plan citing one
+  still resolves.
+- Policy v3, now the default: a fifth dimension, `mode` (`remove` or
+  `trace`), and one rule, R9. A corrected subject's separable part is
+  regenerated; v2 purged it, which removed the old part and put nothing
+  back. v1 and v2 are unchanged.
+- Plan items are `clew_plan_version` 2: `scope`, `released`, `mode`,
+  `reason` for the rule's rationale and `evidence` for how the class was
+  found. The printed plan carries a column header.
+- `clew evidence build`: `--out` is optional and defaults to
+  `<trigger>-<date>`.
+- The plan header says "removal of", not "withdrawal of".
+- `clew providers` names each provider's package on Python 3.9 too.
+
 ### Fixed
 
 - `clew impact`: evidence chains come from one breadth-first pass over the
@@ -24,7 +43,6 @@ follow [Semantic Versioning](https://semver.org/).
   withheld. Directory outputs are now found under `--results` by name.
 - `clew impact`: a subject that matches no task tag exits non-zero instead
   of reporting zero affected tasks.
-<<<<<<< HEAD
 - `clew reclaim`: a task is `FAILED` only when the engine recorded a
   failure. Every extractor now maps its engine's status word (`Done`,
   `SUCCEEDED`, `skipped`, `CACHED`) to one of `COMPLETED`, `FAILED`,
@@ -92,7 +110,6 @@ follow [Semantic Versioning](https://semver.org/).
   are skipped by the bundle store.
 - `eventlog.append`: `recorded_at` is the database server's clock, read in
   the appending transaction. Callers can no longer supply it.
-=======
 - `clew extract-work`: refuses when any task's work directory is missing,
   naming them; `--allow-partial` writes the graph with the gap as a
   `coverage` note. A cleaned tree used to give an empty graph and exit 0.
@@ -127,7 +144,6 @@ follow [Semantic Versioning](https://semver.org/).
   donor table without `--subject` now reads the samplesheet.
 - `clew extract-work` refuses a six-character hash prefix that matches two
   work directories instead of merging them.
->>>>>>> f360682 (Attribute subjects longest first, surface graph limits in impact)
 
 ## [0.4.0] - 2026-09-07
 

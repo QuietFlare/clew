@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from clew.views import report
 
 PLAN = {
-    "clew_plan_version": 1,
+    "clew_plan_version": 2,
     "trigger": "input:reference.dat",
     "tasks_affected": 3,
     "tasks_total": 8,
@@ -28,16 +28,16 @@ PLAN = {
     "plan": [
         {"task": "run/a", "process": "PREP", "target": "ssh://gpu-box",
          "contribution": "REGENERABLE", "storage": None, "action": None,
-         "possible": "REGENERATE", "reason": "storage not checked",
-         "exclusive": False, "terminal": False, "rule": "r1"},
+         "possible": "REGENERATE", "evidence": "storage not checked",
+         "scope": "shared", "released": False, "rule": "r1"},
         {"task": "run/b", "process": "RUN", "target": "ssh://gpu-box",
          "contribution": "REGENERABLE", "storage": "WRITABLE",
-         "action": "REGENERATE", "reason": "can be re-executed",
-         "exclusive": False, "terminal": False, "rule": "r1"},
+         "action": "REGENERATE", "evidence": "can be re-executed",
+         "scope": "shared", "released": False, "rule": "r1"},
         {"task": "run/c", "process": "JOIN", "target": "",
          "contribution": "IRREDUCIBLE", "storage": "WRITABLE",
-         "action": "REGENERATE", "reason": "no script recorded",
-         "exclusive": True, "terminal": False, "rule": "r2"},
+         "action": "REGENERATE", "evidence": "no script recorded",
+         "scope": "exclusive", "released": False, "rule": "r2"},
     ],
 }
 

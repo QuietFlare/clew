@@ -5,8 +5,8 @@ A rule is a match dict, first match wins, an omitted dimension is a
 wildcard, and there is no other syntax, so an auditor can read the whole
 policy:
 
-    {"id": "R3", "when": {"exclusive": True, "storage": "WRITABLE"},
-     "action": "DESTROY", "because": "..."}
+    {"id": "R3", "when": {"scope": "exclusive", "storage": "WRITABLE"},
+     "action": "DESTROY", "reason": "..."}
 
 The table carries a version and a content hash, every decision names its
 rule, and every plan carries the policy it ran under, so a plan from March
@@ -30,20 +30,23 @@ from clew.graph import contribution
 
 # The dimensions a rule may test. A rule naming anything else is rejected at
 # load time rather than silently never matching.
-DIMENSIONS = ("contribution", "storage", "exclusive", "terminal", "mode")
-REMOVE, TRACE = "remove", "trace"
+FORMAT = 2  # field names. Format 1 said exclusive, terminal and because.
+
+DIMENSIONS = ("contribution", "storage", "scope", "released", "mode")
+EXCLUSIVE, SHARED = "exclusive", "shared"  # scope: made for this subject alone, or not
+REMOVE, TRACE = "remove", "trace"          # mode: the subject is gone, or changed
 MODES = (REMOVE, TRACE)
 
 VALID = {
     "contribution": set(contribution.CLASSES),
     "storage": set(contribution.STORAGE),
-    "exclusive": {True, False},
-    "terminal": {True, False},
+    "scope": {EXCLUSIVE, SHARED},
+    "released": {True, False},
     "mode": set(MODES),
 }
 
-TYPES = {"storage": str, "exclusive": bool, "terminal": bool, "mode": str}
-VERIFIABLE = ("storage", "exclusive", "terminal", "mode")
+TYPES = {"storage": str, "scope": str, "released": bool, "mode": str}
+VERIFIABLE = ("storage", "scope", "released", "mode")
 
 ACTIONS = {
     contribution.PURGE, contribution.REGENERATE, contribution.QUARANTINE,
@@ -62,14 +65,74 @@ FALLTHROUGH_ACTION = contribution.QUARANTINE
 FALLTHROUGH_RULE = "fallthrough"
 
 
-def rule(rule_id, action, because, **when):
-    return {"id": rule_id, "when": when, "action": action, "because": because}
+def rule(rule_id, action, reason, **when):
+    return {"id": rule_id, "when": when, "action": action, "reason": reason}
+
+
+_RENAMED = {"exclusive": "scope", "terminal": "released"}
+
+
+def upgrade(policy):
+    """A format 1 table in today's names. Anything else comes back untouched."""
+    if not isinstance(policy, dict) or policy.get("format", 1) >= FORMAT:
+        return policy
+    rules = []
+    for item in policy.get("rules") or []:
+        if not isinstance(item, dict):
+            rules.append(item)
+            continue
+        item = dict(item)
+        if isinstance(item.get("when"), dict):
+            when = {}
+            for key, value in item["when"].items():
+                if key == "exclusive" and isinstance(value, bool):
+                    when["scope"] = EXCLUSIVE if value else SHARED
+                else:
+                    when[_RENAMED.get(key, key)] = value
+            item["when"] = when
+        if "because" in item:
+            item["reason"] = item.pop("because")
+        rules.append(item)
+    return dict(policy, format=FORMAT, rules=rules)
+
+
+def downgrade(policy):
+    """The format 1 rendering. Plans sealed before format 2 cite its hash."""
+    back = {v: k for k, v in _RENAMED.items()}
+    rules = []
+    for item in policy["rules"]:
+        when = {}
+        for key, value in item["when"].items():
+            if key == "scope":
+                when["exclusive"] = value == EXCLUSIVE
+            else:
+                when[back.get(key, key)] = value
+        rules.append({"id": item["id"], "when": when, "action": item["action"],
+                      "because": item["reason"]})
+    old = {k: v for k, v in policy.items() if k != "format"}
+    return dict(old, rules=rules)
+
+
+def cites(policy, stated):
+    """Whether a plan's stated hash names this table, in either format."""
+    return stated in (fingerprint(policy), fingerprint(downgrade(upgrade(policy))))
+
+
+def plan_item_facts(item):
+    """A plan item's verifiable facts in today's names; version 1 items said exclusive and terminal."""
+    scope = item.get("scope")
+    if scope is None and item.get("exclusive") is not None:
+        scope = EXCLUSIVE if item["exclusive"] else SHARED
+    return {"storage": item.get("storage"), "scope": scope,
+            "released": item.get("released", item.get("terminal")),
+            "mode": item.get("mode")}
 
 
 # --------------------------------------------------------------- the policy
 
 V1 = {
     "version": "v1",
+    "format": FORMAT,
     "description": "Clew's built-in remediation table.",
     "rules": [
         rule("R1", contribution.ALREADY_GONE,
@@ -81,17 +144,17 @@ V1 = {
              "Immutable history — published, or already past a trust "
              "boundary. Terminates remediation, not notification: you cannot "
              "unpublish, so the answer is disclosure.",
-             terminal=True),
+             released=True),
 
         rule("R3", contribution.DESTROY,
              "Exists only because of this subject and the bytes can be "
              "changed. Nothing else needs it, so it goes entirely.",
-             exclusive=True, storage=contribution.WRITABLE),
+             scope=EXCLUSIVE, storage=contribution.WRITABLE),
 
         rule("R4", contribution.QUARANTINE,
              "Exists only because of this subject, but the storage cannot be "
              "written. Removal is correct and unavailable, so block use.",
-             exclusive=True),
+             scope=EXCLUSIVE),
 
         rule("R5", contribution.PURGE,
              "The contribution can be isolated and the bytes can be changed. "
@@ -144,6 +207,7 @@ V1 = {
 
 V2 = {
     "version": "v2",
+    "format": FORMAT,
     "description": ("Clew's remediation table. Publication is asked before "
                     "existence: a deleted working copy does not discharge a "
                     "disclosure obligation."),
@@ -153,7 +217,7 @@ V2 = {
              "boundary. Asked first, before existence: destroying our copy "
              "does not reach the published or transferred one, so the "
              "obligation to disclose survives the bytes.",
-             terminal=True),
+             released=True),
 
         rule("R1", contribution.ALREADY_GONE,
              "Nothing survives to remediate, and nothing left our hands. "
@@ -164,12 +228,12 @@ V2 = {
         rule("R3", contribution.DESTROY,
              "Exists only because of this subject and the bytes can be "
              "changed. Nothing else needs it, so it goes entirely.",
-             exclusive=True, storage=contribution.WRITABLE),
+             scope=EXCLUSIVE, storage=contribution.WRITABLE),
 
         rule("R4", contribution.QUARANTINE,
              "Exists only because of this subject, but the storage cannot be "
              "written. Removal is correct and unavailable, so block use.",
-             exclusive=True),
+             scope=EXCLUSIVE),
 
         rule("R5", contribution.PURGE,
              "The contribution can be isolated and the bytes can be changed. "
@@ -203,6 +267,7 @@ V2 = {
 
 V3 = {
     "version": "v3",
+    "format": FORMAT,
     "description": ("Clew's remediation table. A corrected subject's separable "
                     "part is recomputed, not merely removed."),
     "rules": [r for r in V2["rules"] if r["id"] not in ("R5", "R6", "R7", "R8")] + [
@@ -260,6 +325,7 @@ def validate(policy):
     """
     if not isinstance(policy, dict):
         raise InvalidPolicy("policy must be an object")
+    policy = upgrade(policy)
 
     version = policy.get("version")
     if not isinstance(version, str) or not version.strip():
@@ -294,7 +360,7 @@ def validate(policy):
                 f"rule {rule_id!r} has unknown action {action!r}; "
                 f"known actions are {', '.join(sorted(ACTIONS))}")
 
-        if not isinstance(item.get("because"), str) or not item["because"].strip():
+        if not isinstance(item.get("reason"), str) or not item["reason"].strip():
             raise InvalidPolicy(
                 f"rule {rule_id!r} needs a rationale; a rule nobody can "
                 "explain cannot be defended when it is questioned")
@@ -395,34 +461,34 @@ def _decide_known(facts, policy):
     for item in policy["rules"]:
         if matches(item["when"], facts):
             return {"action": item["action"], "rule": item["id"],
-                    "because": item["because"]}
+                    "reason": item["reason"]}
 
     # Guard 2, outside the rules: falling off the end is not an error and not
     # a pass. An incomplete policy is cautious, never permissive.
     return {"action": FALLTHROUGH_ACTION, "rule": FALLTHROUGH_RULE,
-            "because": "no rule matched; failing closed rather than deciding "
-                       "by omission"}
+            "reason": "no rule matched; failing closed rather than deciding "
+                      "by omission"}
 
 
-def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
-           terminal=False, policy=None, mode=None):
+def decide(contribution_class, storage=contribution.WRITABLE, scope=SHARED,
+           released=False, policy=None, mode=None):
     """
     One action for one artifact, with the rule that chose it: {action, rule,
-    because}. None on storage, exclusive, terminal or mode means unverified:
-    the policy runs once per possible value, and if they disagree action is
-    None with a `possible` map of the candidates. A value outside a
-    dimension's set is an error, not a wildcard; only the contribution class
-    normalises, to IRREDUCIBLE.
+    reason}. None on storage, scope, released or mode means unverified: the
+    policy runs once per possible value, and if they disagree action is None
+    with a `possible` map of the candidates. A value outside a dimension's
+    set is an error, not a wildcard; only the contribution class normalises,
+    to IRREDUCIBLE.
     """
-    policy = policy or DEFAULT
+    policy = upgrade(policy or DEFAULT)
 
     # Guard 1, outside the rules: unknown class becomes IRREDUCIBLE before
     # anything gets to look at it.
     facts = {
         "contribution": contribution.normalise(contribution_class),
         "storage": storage,
-        "exclusive": exclusive,
-        "terminal": terminal,
+        "scope": scope,
+        "released": released,
         "mode": mode,
     }
     for field in VERIFIABLE:
@@ -456,7 +522,7 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
         # real answer, not a guess: it holds whatever the facts are.
         action, rule = next(iter(candidates.items()))
         return {"action": action, "rule": rule,
-                "because": first["because"]
+                "reason": first["reason"]
                 + f" ({label} unverified, but every possible state gives "
                   "this same answer)"}
 
@@ -464,7 +530,7 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
         "action": None,
         "rule": None,
         "possible": dict(sorted(candidates.items())),
-        "because": f"{label} not verified, and the verdict depends on it. "
+        "reason": f"{label} not verified, and the verdict depends on it. "
                    "Verifying would decide between "
                    + _english(sorted(candidates))
                    + ". Refusing to guess: assuming the artifact survives "
@@ -473,13 +539,13 @@ def decide(contribution_class, storage=contribution.WRITABLE, exclusive=False,
     }
 
 
-def remediate(contribution_class, storage=contribution.WRITABLE,
-              exclusive=False, terminal=False, policy=None, mode=None):
+def remediate(contribution_class, storage=contribution.WRITABLE, scope=SHARED,
+              released=False, policy=None, mode=None):
     """The action alone, for callers that do not need the citation.
 
     None when the verdict is undetermined. Callers that treat a falsy action
     as "nothing to do" are the exact failure this guards against, so anything
     acting on this must handle None explicitly.
     """
-    return decide(contribution_class, storage=storage, exclusive=exclusive,
-                  terminal=terminal, policy=policy, mode=mode)["action"]
+    return decide(contribution_class, storage=storage, scope=scope,
+                  released=released, policy=policy, mode=mode)["action"]

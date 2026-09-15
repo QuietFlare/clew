@@ -93,7 +93,7 @@ def classify(graph, task_hash, exclusive, published=None, work_root=None,
     """
     Contribution class and storage for one affected task, from pipeline
     evidence: a recorded script and container mean REGENERABLE, otherwise
-    IRREDUCIBLE. Publication arrives as an assertion and sets terminal.
+    IRREDUCIBLE. Publication arrives as an assertion and sets released.
     storage is None unless work_root says where to look; pass `resolved`
     from graph.resolve_workdirs to keep its refusals.
     """
@@ -130,7 +130,7 @@ def classify(graph, task_hash, exclusive, published=None, work_root=None,
     return {
         "contribution": klass,
         "storage": storage,
-        "exclusive": exclusive,
-        "terminal": assertion is not None,
-        "reason": reason,
+        "scope": "exclusive" if exclusive else "shared",
+        "released": assertion is not None,
+        "evidence": reason,
     }

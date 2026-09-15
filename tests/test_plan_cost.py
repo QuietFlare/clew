@@ -25,7 +25,7 @@ def graph():
 
 
 def decided(*pairs):
-    return [(h, {}, {"action": a, "rule": "R", "because": ""}) for h, a in pairs]
+    return [(h, {}, {"action": a, "rule": "R", "reason": ""}) for h, a in pairs]
 
 
 class TestPlanCost(unittest.TestCase):

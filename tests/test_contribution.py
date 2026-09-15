@@ -65,18 +65,18 @@ class TestClassifyNamesWhatIsMissing(unittest.TestCase):
     def test_missing_container_is_named(self):
         facts = self.classify(script="run", container="")
         self.assertEqual(facts["contribution"], c.IRREDUCIBLE)
-        self.assertIn("no container recorded", facts["reason"])
+        self.assertIn("no container recorded", facts["evidence"])
 
     def test_missing_script_is_named(self):
         facts = self.classify(script="", container="img")
         self.assertEqual(facts["contribution"], c.IRREDUCIBLE)
-        self.assertIn("no script recorded", facts["reason"])
+        self.assertIn("no script recorded", facts["evidence"])
 
     def test_both_missing_names_both(self):
         facts = self.classify(script="", container="")
-        self.assertIn("no script or container recorded", facts["reason"])
+        self.assertIn("no script or container recorded", facts["evidence"])
 
     def test_both_recorded_is_regenerable(self):
         facts = self.classify(script="run", container="img")
         self.assertEqual(facts["contribution"], c.REGENERABLE)
-        self.assertIn("script and container recorded", facts["reason"])
+        self.assertIn("script and container recorded", facts["evidence"])

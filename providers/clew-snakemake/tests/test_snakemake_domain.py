@@ -109,8 +109,8 @@ class Cli(unittest.TestCase):
         plan = json.loads(result.stdout[result.stdout.index("{"):])
         self.assertEqual(plan["tasks_affected"], 4)
         by_task = {i["task"]: i for i in plan["plan"]}
-        self.assertFalse(by_task["multiqc/report/multiqc.txt"]["exclusive"])
-        self.assertTrue(by_task["trim/trimmed/sample_1.fq"]["exclusive"])
+        self.assertEqual(by_task["multiqc/report/multiqc.txt"]["scope"], "shared")
+        self.assertEqual(by_task["trim/trimmed/sample_1.fq"]["scope"], "exclusive")
 
 
 if __name__ == "__main__":

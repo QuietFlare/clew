@@ -43,7 +43,7 @@ item's `possible` map is recomputed, so "one of three" cannot quietly
 become "one of one". The header's `actions` counts and `tasks_affected`
 are recomputed from the items. A fact recorded as `null` on any dimension
 is unverified and evaluated over every value it could take, so a plan with
-`terminal: null` cannot replay to `NOTIFY_ONLY`. A fact outside its
+`released: null` cannot replay to `NOTIFY_ONLY`. A fact outside its
 dimension's possible values, `"writable"` for `"WRITABLE"` say, is a
 discrepancy rather than a silent fall-through.
 

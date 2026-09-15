@@ -74,12 +74,12 @@ def cite_entry(entry):
 
 
 def cite_rule(policy_document, rule_id):
-    for rule in policy_document["rules"]:
+    for rule in policy_module.upgrade(policy_document)["rules"]:
         if rule["id"] == rule_id:
             return {"kind": "policy_rule", "rule": rule_id,
                     "policy_version": policy_document["version"],
                     "policy_hash": policy_module.fingerprint(policy_document),
-                    "action": rule["action"], "because": rule["because"]}
+                    "action": rule["action"], "reason": rule["reason"]}
     return {"kind": "policy_rule", "rule": rule_id,
             "policy_version": policy_document["version"],
             "policy_hash": policy_module.fingerprint(policy_document),
@@ -247,13 +247,9 @@ def verdict(plan, policy_document, task):
             "action": item.get("action"),
             "possible": item.get("possible"),
             "rule": item.get("rule"),
-            "because": item.get("because"),
-            "facts": {
-                "contribution": item.get("contribution"),
-                "storage": item.get("storage"),
-                "exclusive": item.get("exclusive"),
-                "terminal": item.get("terminal"),
-            },
+            "reason": item.get("reason", item.get("because")),
+            "facts": {"contribution": item.get("contribution"),
+                      **policy_module.plan_item_facts(item)},
             "evidence_path": item.get("evidence_path"),
             "published_copies": item.get("published_copies"),
             "explanation": contribution_module.explain(item["action"])

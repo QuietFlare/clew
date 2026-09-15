@@ -215,7 +215,7 @@ def tasks(plan):
         if shown:
             cells.append(f'<td class="mono">{esc(i.get("target", ""))}</td>')
         cells += [f"<td>{esc(i.get('storage') or 'not checked')}</td>",
-                  f'<td class="why">{esc(i.get("reason", ""))}</td>']
+                  f'<td class="why">{esc(i.get("evidence", i.get("reason", "")))}</td>']
         rows += f"<tr>{''.join(cells)}</tr>"
 
     heads = ["<th>Task</th>", "<th>Process</th>"]
