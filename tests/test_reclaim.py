@@ -328,5 +328,49 @@ class Run(unittest.TestCase):
         self.assertEqual(reclaim.plan_to_dict(*args)["verdicts"], {"KEEP": 2, "REDUNDANT": 1})
 
 
+class Printed(Run):
+    """The plan groups by reason and counts by process; --verbose lists directories."""
+
+    def printed(self, **kw):
+        import contextlib
+        import io
+        v = self.verdicts()
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            reclaim.print_plan(list(v.values()), self.graph, self.disk.work,
+                               self.disk.results, False, **kw)
+        return out.getvalue()
+
+    def test_the_plan_is_grouped_not_listed(self):
+        text = self.printed()
+        self.assertIn("clew reclaim: 3 task directories under", text)
+        self.assertIn("REDUNDANT  1  ", text)
+        self.assertIn("KEEP  2  ", text)
+        self.assertIn("  2  not published; --intermediates not given\n", text)
+        self.assertIn("1 ALIGN (", text)
+        self.assertIn("1 STATS (", text)
+        self.assertNotIn("aa/000001", text)
+        self.assertIn("--intermediates also assesses", text)
+        self.assertNotIn("nothing can be REDUNDANT", text)
+
+    def test_verbose_lists_each_directory_with_its_files(self):
+        text = self.printed(verbose=True)
+        self.assertRegex(text, r"aa/000001  ALIGN\s+\d+ B  s.bam\n")
+        self.assertRegex(text, r"cc/000003  REPORT\s+\d+ B\n")
+
+    def test_items_carry_cause_and_files_apart(self):
+        v = self.verdicts()
+        self.assertEqual(v["aa/000001"]["cause"], "not published; --intermediates not given")
+        self.assertEqual(v["aa/000001"]["files"], ["s.bam"])
+        self.assertEqual(v["aa/000001"]["reason"], "not published: s.bam; --intermediates not given")
+        self.assertNotIn("files", v["cc/000003"])
+
+    def test_wrapping_breaks_between_entries(self):
+        entries = [f"{n} PROCESS_{n} (1 KB)" for n in range(12)]
+        lines = reclaim.wrapped(entries, "  ", width=60).splitlines()
+        self.assertTrue(all(len(line) <= 60 for line in lines))
+        self.assertTrue(all(line.endswith(",") for line in lines[:-1]))
+        self.assertEqual(", ".join(l.strip().rstrip(",") for l in lines), ", ".join(entries))
+
+
 if __name__ == "__main__":
     unittest.main()

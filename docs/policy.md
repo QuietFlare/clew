@@ -84,4 +84,4 @@ This is the core table, not a customer's policy. It defines what the classes
 mean, so changing it changes the semantics of every historical plan, which is
 why it is versioned. Which of a customer's events map to which class, what
 counts as released, and what a given trigger may reach are the
-adapter's, under `providers/`.
+adapter's, under `clew/provider/`.

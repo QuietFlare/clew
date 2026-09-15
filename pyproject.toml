@@ -30,14 +30,6 @@ dependencies = []
 [project.optional-dependencies]
 # Only the event log needs a driver. Everything else stays stdlib.
 log = ["psycopg[binary]>=3.1"]
-# The providers Clew ships, each its own distribution under providers/.
-nextflow = ["clew-nextflow"]
-snakemake = ["clew-snakemake"]
-cromwell = ["clew-cromwell"]
-horus = ["clew-horus"]
-dnanexus = ["clew-dnanexus"]
-latch = ["clew-latch"]
-all = ["clew-nextflow", "clew-snakemake", "clew-cromwell", "clew-horus", "clew-dnanexus", "clew-latch"]
 
 [project.urls]
 Homepage = "https://quietflare.net/clew"
@@ -46,6 +38,25 @@ Issues = "https://github.com/QuietFlare/clew/issues"
 
 [project.scripts]
 clew = "clew.__main__:main"
+
+# Built-in providers register the way a third party's would: importing the
+# named module is what registers it. Another package declares the same groups.
+[project.entry-points."clew.extractors"]
+nextflow = "clew.provider.nextflow.extractor_lineage"
+nextflow-work = "clew.provider.nextflow.extractor_work"
+ro-crate = "clew.provider.nextflow.extractor_rocrate"
+snakemake = "clew.provider.snakemake.extractor_metadata"
+cromwell = "clew.provider.cromwell.extractor_metadata"
+horus = "clew.provider.horus.extractor_lineage"
+dnanexus = "clew.provider.dnanexus.extractor_describe"
+latch = "clew.provider.latch.extractor_execution"
+
+[project.entry-points."clew.adapters"]
+sarek = "clew.provider.nextflow.adapter_sarek"
+rnaseq = "clew.provider.nextflow.adapter_rnaseq"
+viralrecon = "clew.provider.nextflow.adapter_viralrecon"
+snakemake = "clew.provider.snakemake.adapter_paths"
+vina-docking = "clew.provider.horus.adapter_vina_docking"
 
 
 [tool.setuptools.packages.find]

@@ -16,9 +16,13 @@ Or read the run straight from the engine's record, with no graph file:
 clew reclaim --runs .lineage --run wise_hoover --work-root work/ --results results/
 ```
 
-Nothing is touched. The plan lists every task directory under one verdict.
-`--json` writes it as data and `--html` as one self-contained page, with
-the kept directories and their reasons shown in the same weight as the
+Nothing is touched. The plan prints what was checked, then each verdict
+with its directories grouped by reason and counted by process, since a
+run has three or four reasons and eighty directories. `--verbose` lists
+every directory under its reason. `--json` writes the plan as data, one
+item per directory with its `reason`, the `cause` without file names and
+the `files` it names, and `--html` as one self-contained page, with the
+kept directories and their reasons shown in the same weight as the
 reclaimable ones.
 
 ## Verdicts
@@ -85,19 +89,37 @@ directory. The nf-core adapter declares it as bookkeeping, and `--ignore`
 takes globs for other pipelines. The ignored names are printed in the plan
 header so the reader can see what was set aside.
 
+## Work in a bucket
+
+`--work-root` and `--results` each take an `s3://bucket/prefix` as well as
+a path, in any combination:
+
+```bash
+clew reclaim --graph graph.json --work-root s3://lab/work --results s3://lab/results
+```
+
+A task directory is every object under its key prefix, its size is their
+sizes summed, and `--apply` deletes those objects, a thousand per request,
+after the receipt line is written. The published-copy checks are the same
+as on disk: the object exists, it is the recorded size, and `--apply`
+streams it to re-hash it. What a bucket cannot answer is whether a
+published copy is a link into work, since there are no links; that check
+withholds nothing there.
+
+The client is Clew's own, on the standard library, and reads credentials
+where the AWS CLI does: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+in the environment, or a profile in `~/.aws/credentials` named by
+`AWS_PROFILE`. The region comes from `AWS_REGION` or `~/.aws/config`.
+`AWS_ENDPOINT_URL` points it at MinIO or another S3-compatible store,
+with path-style addressing.
+
 ## Tasks that ran elsewhere
 
-Horus runs tasks on targets. Cloud engines keep work in object storage. The
-graph side of reclaim does not care, but the disk side needs a filesystem
-it can see. Two things help today:
-
-- `--target ID` restricts the plan to the tasks that ran on one target, so
-  reclaim can be run on that machine with that machine's work root.
-- The JSON plan carries `target` and `dir` per item, so another tool can
-  act on it remotely.
-
-A backend that checks and removes through the engine's own channel, rather
-than through the local filesystem, is not built.
+Horus runs tasks on targets. `--target ID` restricts the plan to the tasks
+that ran on one target, so reclaim can be run on that machine with that
+machine's work root. The JSON plan carries `target` and `dir` per item, so
+another tool can act on it remotely. Google Cloud Storage and Azure Blob
+are not built; the S3 tree shows the shape.
 
 ## Applying
 
@@ -113,12 +135,12 @@ published copies and the time. A directory outside `--work-root` is refused.
 The receipt is the record of what left the disk and why, and it is what an
 auditor gets.
 
-Re-run the plan before applying. Verdicts hold for the graph and the disk
-as they are at the moment of asking.
+Re-run the plan before applying. Verdicts rest on the lineage as extracted
+from the engine's record and on the disk as it was at the moment of asking.
 
 ## Not built
 
 Duplicates across runs, where two tasks produced the same bytes. The
 digests are there now; the verdict is not. Outputs that are directories,
 which neither the engine nor `clew digest` hashes, so they withhold their
-directory. Remote backends, as above.
+directory. Object stores other than S3, as above.

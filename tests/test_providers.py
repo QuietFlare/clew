@@ -19,9 +19,8 @@ class TestProviders(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("clew.adapters", text)
         self.assertIn("clew.extractors", text)
-        for name, package in (("sarek", "clew-nextflow"), ("snakemake", "clew-snakemake"),
-                              ("nextflow", "clew-nextflow"), ("cromwell", "clew-cromwell")):
-            self.assertRegex(text, rf"\n  {name}\s+{package}")
+        for name in ("sarek", "snakemake", "nextflow", "cromwell", "horus", "latch", "dnanexus"):
+            self.assertRegex(text, rf"\n  {name}\s+clew-lineage")
 
 
 if __name__ == "__main__":

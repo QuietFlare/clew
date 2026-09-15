@@ -31,7 +31,7 @@ still answers the engine's kinds: `container`, `script`, `process`,
 
 nf-core pipelines launch from a CSV samplesheet, and Nextflow names each
 task `PROCESS (tag)` with an id from that sheet. `SheetKind`, from the
-`clew-nextflow` provider, joins the two. You name the column and the word
+Nextflow provider, joins the two. You name the column and the word
 your pipeline uses for it.
 
 ```python
@@ -184,7 +184,7 @@ the package is what delivers them.
 [project]
 name = "clew-qbc"
 version = "0.1.0"
-dependencies = ["clew-lineage>=0.5", "clew-nextflow>=0.5"]
+dependencies = ["clew-lineage>=0.5"]
 
 [project.entry-points."clew.adapters"]
 qbc-wgs = "clew.provider.qbc.domain"
@@ -197,8 +197,10 @@ include = ["clew*"]
 namespaces = true
 ```
 
-The six providers Clew ships live under `providers/` in its repository
-and are built exactly this way. Copy one to start.
+The six providers Clew ships live under `clew/provider/` in its own
+package and register the same way, from entry points in the engine's
+`pyproject.toml`. Copy one to start. The only difference is who publishes
+it: theirs come with `clew-lineage`, yours comes with your package.
 
 The entry point names a module. Importing it defines the class, and
 defining a class with a `name` is what registers it. A class that is

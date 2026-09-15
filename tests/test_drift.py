@@ -134,6 +134,41 @@ def shards(prefix, digests, inputs=("sha256:in1", "sha256:in2"), superseded=None
     return {"tasks": tasks, "edges": edges, "outputs": outputs, "output_details": details}
 
 
+class Printed(unittest.TestCase):
+    """Roots print as rows with what differed; the rest is counted by process."""
+
+    def printed(self, before, after, **kw):
+        import contextlib
+        import io
+        items = drift.drift(before, after)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            drift.print_plan(items, "b.json", "a.json", drift.BOOKKEEPING, **kw)
+        return out.getvalue()
+
+    def test_roots_are_rows_and_the_rest_are_counts(self):
+        text = self.printed(run("b", SAME), run("a", ["sha256:bam", "sha256:x", "sha256:y"]))
+        self.assertIn("clew drift: b.json -> a.json, 3 tasks", text)
+        self.assertIn("1 roots, 0 unsettled, 1 downstream, 1 reproduced", text)
+        self.assertIn("STATS (s1)  same inputs and recipe, different outputs: s.stats", text)
+        self.assertIn("DOWNSTREAM  1", text)
+        self.assertIn("\n  1 REPORT\n", text)
+        self.assertNotIn("a3", text)
+
+    def test_verbose_names_what_a_task_follows(self):
+        text = self.printed(run("b", SAME), run("a", ["sha256:bam", "sha256:x", "sha256:y"]),
+                            verbose=True)
+        self.assertIn("a3  REPORT (s1)", text)
+        self.assertIn("after STATS (s1)", text)
+
+    def test_items_carry_cause_files_and_follows(self):
+        v = verdicts(run("b", SAME), run("a", ["sha256:bam", "sha256:x", "sha256:y"]))
+        self.assertEqual(v["STATS (s1)"]["cause"], "same inputs and recipe, different outputs")
+        self.assertEqual(v["STATS (s1)"]["files"], ["s.stats"])
+        self.assertEqual(v["REPORT (s1)"]["cause"], "follows a task that drifted")
+        self.assertEqual(v["REPORT (s1)"]["follows"], ["a2"])
+        self.assertEqual(v["ALIGN (s1)"]["cause"], "same digests")
+
+
 class Pairing(unittest.TestCase):
     """
     Same-named tasks were paired by sorted hash, so two shards paired

@@ -14,6 +14,8 @@ import json
 import re
 from pathlib import Path
 
+from clew.graph.storage import LocalTree
+
 # A tag that is a content hash rather than a version: Wave multi-tool
 # images and mulled containers tag with hex. Read before any `-` build
 # suffix, so "27211b8c...-0" is a hash and "1.21--h50ea8bc_0" a version.
@@ -185,60 +187,72 @@ def relative_to(path, root):
     return path[len(root):]
 
 
-def local_workdir(task, work_root):
+def relative_workdir(task):
     """
-    The task directory under work_root, or None when the graph cannot place
-    it. `workpath` is the extractor's answer relative to the engine root.
-    Without it the recorded absolute path is trusted only when it follows
-    the hashed layout; any other shape would resolve wrongly and read as
-    DESTROYED or deletable.
+    The task directory relative to the engine root, or None when the graph
+    cannot place it. `workpath` is the extractor's answer. Without it the
+    recorded absolute path is trusted only when it follows the hashed
+    layout; any other shape would resolve wrongly and read as DESTROYED or
+    deletable.
     """
-    if not work_root:
-        return None
     workpath = task.get("workpath")
     if workpath:
-        return Path(work_root, workpath)
+        return workpath
     if hashed_layout(task):
-        return Path(work_root, *Path(task["workdir"]).parts[-2:])
+        return "/".join(Path(task["workdir"]).parts[-2:])
     return None
 
 
-def resolve_workdirs(graph, work_root):
-    """
-    {task hash: local directory or None} for every task, plus warnings.
-    Tasks resolving to one shared directory are all unresolved, and when
-    nothing resolves at all the root is taken as wrong rather than the run
-    as gone.
-    """
-    resolved = {h: local_workdir(t, work_root) for h, t in graph["tasks"].items()}
-    warnings = []
+def local_workdir(task, work_root):
+    """The task directory under work_root, or None when the graph cannot place it."""
     if not work_root:
-        return resolved, warnings
+        return None
+    rel = relative_workdir(task)
+    return Path(work_root, rel) if rel else None
 
+
+def resolve_workpaths(graph, tree):
+    """
+    {task hash: relative directory or None} for every task under one tree,
+    plus warnings. Tasks resolving to one shared directory are all
+    unresolved, and when nothing resolves at all the root is taken as wrong
+    rather than the run as gone.
+    """
+    resolved = {h: relative_workdir(t) for h, t in graph["tasks"].items()}
+    warnings = []
     owners = {}
-    for task_hash, path in resolved.items():
-        if path is not None:
-            owners.setdefault(path, []).append(task_hash)
-    shared = {path: hashes for path, hashes in owners.items() if len(hashes) > 1}
-    for path, hashes in sorted(shared.items()):
+    for task_hash, rel in resolved.items():
+        if rel is not None:
+            owners.setdefault(rel, []).append(task_hash)
+    shared = {rel: hashes for rel, hashes in owners.items() if len(hashes) > 1}
+    for rel, hashes in sorted(shared.items()):
         for task_hash in hashes:
             resolved[task_hash] = None
     if shared:
         count = sum(len(h) for h in shared.values())
         warnings.append(
             f"{count} tasks resolve to {len(shared)} shared director"
-            f"{'y' if len(shared) == 1 else 'ies'} under {work_root}; "
+            f"{'y' if len(shared) == 1 else 'ies'} under {tree.describe()}; "
             "storage left unchecked for them, one directory cannot answer "
             "for several tasks")
 
-    candidates = [p for p in resolved.values() if p is not None]
-    if candidates and not any(p.is_dir() for p in candidates):
+    candidates = [rel for rel in resolved.values() if rel is not None]
+    if candidates and not any(tree.is_dir(rel) for rel in candidates):
         for task_hash in resolved:
             resolved[task_hash] = None
         warnings.append(
             f"none of {len(candidates)} recorded task directories exists under "
-            f"{work_root}; the root looks wrong, storage left unchecked")
+            f"{tree.describe()}; the root looks wrong, storage left unchecked")
     return resolved, warnings
+
+
+def resolve_workdirs(graph, work_root):
+    """{task hash: local directory or None} for every task, plus warnings. See resolve_workpaths."""
+    if not work_root:
+        return {h: None for h in graph["tasks"]}, []
+    tree = LocalTree(work_root)
+    rels, warnings = resolve_workpaths(graph, tree)
+    return {h: (tree.path(rel) if rel else None) for h, rel in rels.items()}, warnings
 
 
 def output_digests(graph):

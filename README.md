@@ -20,14 +20,7 @@ A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 ## Install
 
 ```bash
-pip install "clew-lineage[all]"
-```
-
-That is the engine plus every provider it ships. `[nextflow]`,
-`[snakemake]`, `[cromwell]`, `[horus]`, `[dnanexus]` or `[latch]` installs
-one, and the bare `clew-lineage` is the engine alone.
-
-```bash
+pip install clew-lineage
 clew demo
 ```
 
@@ -55,7 +48,8 @@ clew reclaim --graph graph.json --work-root work/ --results results/
 ```
 
 Proposes only the directories the graph proves redundant, and deletes
-nothing without `--apply` and a receipt.
+nothing without `--apply` and a receipt. `s3://bucket/prefix` works as
+either root.
 
 **Did the new version produce what the old one did?**
 

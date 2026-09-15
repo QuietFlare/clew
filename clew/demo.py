@@ -32,7 +32,8 @@ def adapter(name):
     try:
         return discover(Adapter)[name]
     except (KeyError, SystemExit):
-        raise SystemExit(f"clew demo needs the {name!r} adapter: pip install clew-nextflow")
+        raise SystemExit(f"clew demo needs the {name!r} adapter, which ships with clew-lineage; "
+                         "a checkout must be installed: python3 -m pip install -e .")
 
 OPEN = "OPEN"
 

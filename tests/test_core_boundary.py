@@ -75,7 +75,8 @@ class TestBoundary(unittest.TestCase):
         self.assertEqual(offences, [], "\n".join(offences))
 
 
-PROVIDERS = Path(__file__).resolve().parent.parent / "providers"
+PROVIDERS = PACKAGE / "provider"
+PYPROJECT = PACKAGE.parent / "pyproject.toml"
 # What a provider may import from clew: the graph, the contracts, and the
 # engine-side extract tools. Not another provider, not the questions.
 PROVIDER_ALLOWED = {"graph", "contracts", "extract"}
@@ -97,7 +98,7 @@ class TestProviders(unittest.TestCase):
 
     def test_providers_reach_only_the_public_surface(self):
         offences = []
-        for package in sorted(PROVIDERS.glob("*/clew/provider/*")):
+        for package in sorted(p for p in PROVIDERS.iterdir() if p.is_dir()):
             for path in sorted(package.glob("*.py")):
                 text = path.read_text()
                 for target in IMPORT.findall(text):
@@ -110,39 +111,35 @@ class TestProviders(unittest.TestCase):
 
     def test_namespace_levels_carry_no_init(self):
         # clew and clew.provider are namespace packages. An __init__.py at
-        # either level, in any distribution, claims the whole package for that
-        # one directory and every other provider silently stops registering.
+        # either level claims the whole package for this distribution, and a
+        # third party's provider installed beside it silently stops registering.
         offences = [str(p.relative_to(PACKAGE.parent))
                     for p in (PACKAGE / "__init__.py", PACKAGE / "provider" / "__init__.py")
                     if p.exists()]
-        for dist in sorted(PROVIDERS.glob("*")):
-            for level in (dist / "clew" / "__init__.py",
-                          dist / "clew" / "provider" / "__init__.py"):
-                if level.exists():
-                    offences.append(str(level.relative_to(PACKAGE.parent)))
         self.assertEqual(offences, [], "namespace level has an __init__.py:\n  "
                          + "\n  ".join(offences))
 
     def test_every_provider_is_discoverable(self):
-        # Each provider directory must be reachable through the namespace, and
-        # every entry point its pyproject declares must import and register.
+        # Every declared entry point must register, and every provider
+        # directory must be declared, or it ships undiscoverable.
         import importlib
         from clew.contracts import Adapter, Extractor
         groups = {"clew.adapters": Adapter, "clew.extractors": Extractor}
-        offences = []
-        for dist in sorted(PROVIDERS.glob("*")):
-            name = next((dist / "clew" / "provider").glob("*")).name
+        offences, named = [], set()
+        for group, contract in groups.items():
+            for key, module in declared_entry_points(PYPROJECT, group):
+                named.add(module.split(".")[2])
+                importlib.import_module(module)
+                if key not in contract.registered:
+                    offences.append(f"{group} entry {key!r} imported {module} "
+                                    "but nothing registered under that name")
+        for package in sorted(p for p in PROVIDERS.iterdir() if p.is_dir()):
             try:
-                importlib.import_module(f"clew.provider.{name}")
+                importlib.import_module(f"clew.provider.{package.name}")
             except ImportError as exc:
-                offences.append(f"{dist.name}: clew.provider.{name} not importable: {exc}")
-                continue
-            for group, contract in groups.items():
-                for key, module in declared_entry_points(dist / "pyproject.toml", group):
-                    importlib.import_module(module)
-                    if key not in contract.registered:
-                        offences.append(f"{dist.name}: {group} entry {key!r} imported "
-                                        f"{module} but nothing registered under that name")
+                offences.append(f"clew.provider.{package.name} not importable: {exc}")
+            if package.name not in named:
+                offences.append(f"clew.provider.{package.name} has no entry point in pyproject.toml")
         self.assertEqual(offences, [], "\n".join(offences))
 
     def test_no_provider_code_remains_in_the_engine(self):

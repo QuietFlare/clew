@@ -13,6 +13,13 @@ KIND = {"DRIFTED": "bad", "UNSETTLED": "bad", "DOWNSTREAM": "unknown",
         "UNVERIFIED": "unknown", "REPRODUCED": "ok", "ADDED": "", "REMOVED": ""}
 
 
+def label(item):
+    """'GATK4_MARKDUPLICATES (donor_001)': the process without its workflow path, and the tag."""
+    name = item["name"] or item["task"]
+    head, sep, tag_ = name.partition(" (")
+    return head.split(":")[-1] + sep + tag_
+
+
 def headline(plan):
     v = plan.get("verdicts", {})
     tiles = counts([
@@ -22,8 +29,10 @@ def headline(plan):
         ("reproduced", v.get("REPRODUCED", 0), ""),
         ("unverified", v.get("UNVERIFIED", 0), "unknown" if v.get("UNVERIFIED") else ""),
     ])
-    return (f"<h1>Drift <span class=\"mono\">{esc(Path(plan['before']).name)}</span> "
-            f"&rarr; <span class=\"mono\">{esc(Path(plan['after']).name)}</span></h1>{tiles}")
+    return (f"<h1>Run drift</h1>"
+            f'<p class="lede"><span class="mono">{esc(Path(plan["before"]).name)}</span> '
+            f'&rarr; <span class="mono">{esc(Path(plan["after"]).name)}</span>, '
+            f"{plan.get('tasks_total', 0)} tasks.</p>{tiles}")
 
 
 def roots(plan):
@@ -31,13 +40,13 @@ def roots(plan):
     if not rows:
         return ""
     body = "".join(
-        f"<tr><td class=\"mono\">{esc(i['task'])}</td>"
-        f"<td><b>{esc(i['process'].split(':')[-1])}</b></td>"
-        f"<td class=\"why\">{esc(i['reason'])}</td></tr>"
+        f"<tr><td><b>{esc(label(i))}</b></td>"
+        f"<td class=\"why\">{esc(i.get('cause') or i['reason'])}</td>"
+        f"<td class=\"why\">{esc(', '.join(i.get('files', [])))}</td></tr>"
         for i in rows)
     return ("<h2>Where the runs part ways</h2>"
             '<div class="panel tablewrap"><table><thead><tr>'
-            "<th>Task</th><th>Process</th><th>Cause</th></tr></thead>"
+            "<th>Task</th><th>Cause</th><th>Differs</th></tr></thead>"
             f"<tbody>{body}</tbody></table></div>")
 
 
@@ -64,7 +73,7 @@ def by_verdict(plan):
 
 def limits(plan):
     items = "".join(f"<li>{esc(n)}</li>" for n in plan.get("caveats", []))
-    return ("<details><summary>What this does not settle</summary>"
+    return ("<details><summary>Limits of this answer</summary>"
             f'<div class="panel"><ul class="coverage">{items}</ul></div></details>')
 
 
@@ -86,7 +95,7 @@ def render(plan):
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        "<title>Clew drift</title>"
+        "<title>Clew run drift</title>"
         f"<style>{STYLE}</style></head><body>"
         f'{masthead("Clew")}<main>{body}</main></body></html>'
     )

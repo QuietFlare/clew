@@ -1,0 +1,231 @@
+"""
+The sarek domain adapter: donor attribution, trigger selection, assertions.
+
+This layer is allowed to be brittle, it parses display names, so its tests
+pin down the exact failure modes we have already paid for once.
+"""
+
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from clew.provider.nextflow import adapter_sarek as sarek
+from clew.graph import graph as core_graph
+from clew.graph import contribution
+from clew.provider.nextflow import adapter as nfcore
+from clew.provider.nextflow import adapter as base
+
+
+def graph_with_tasks(tasks):
+    # The schema keys a task by its hash and repeats it in the record.
+    return {"tasks": {h: {"hash": h, **t} for h, t in tasks.items()},
+            "edges": [], "outputs": {}}
+
+
+class TestOwnerResolution(unittest.TestCase):
+    def setUp(self):
+        self.labels = {"donor_1": "donor_1", "donor_10": "donor_10"}
+
+    def test_exact_match(self):
+        self.assertEqual(base.owner_of("donor_1", self.labels), "donor_1")
+
+    def test_lane_suffix_matches(self):
+        # FASTQC reads the FASTQ directly; missing these made five tasks
+        # invisible on the real run. The lane suffix must resolve.
+        self.assertEqual(base.owner_of("donor_1-L1", self.labels), "donor_1")
+
+    def test_prefix_does_not_swallow_longer_donor(self):
+        # "donor_1" must not claim "donor_10"'s tasks.
+        self.assertEqual(base.owner_of("donor_10", self.labels), "donor_10")
+        self.assertEqual(base.owner_of("donor_10-L1", self.labels), "donor_10")
+
+    def test_non_donor_tags_resolve_to_nothing(self):
+        # "(genome)" and friends use the same display-name shape.
+        self.assertIsNone(base.owner_of("genome", self.labels))
+        self.assertIsNone(base.owner_of("genome.interval_list", self.labels))
+
+    def test_the_longest_label_wins_whatever_the_sheet_order(self):
+        # "KO" listed before "KO_2" used to claim "KO_2_T1". On the real
+        # sarek run a sheet with "donor" above "donor_003" moved one FASTQC
+        # task to the wrong donor.
+        labels = {"KO": "KO", "KO_2": "KO_2"}
+        self.assertEqual(base.owner_of("KO_2_T1", labels), "KO_2")
+        self.assertEqual(base.owner_of("KO_T1", labels), "KO")
+        labels = {"donor": "donor", "donor_003": "donor_003"}
+        self.assertEqual(base.owner_of("donor_003-L1", labels), "donor_003")
+
+
+class TestSamplesheetIntegrity(unittest.TestCase):
+    """
+    sarek accepts one sample id under two patients. Attribution cannot:
+    the member map was last-writer-wins, so one patient silently took the
+    other's tasks.
+    """
+
+    def write(self, rows):
+        path = Path(self.tmp.name) / "sheet.csv"
+        path.write_text("patient,sample\n" + "".join(f"{p},{s}\n" for p, s in rows))
+        return path
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_a_member_under_two_subjects_is_refused_by_name(self):
+        path = self.write([("P1", "S1"), ("P2", "S1"), ("P2", "S2")])
+        with self.assertRaises(SystemExit) as refused:
+            sarek.Sarek().triggers['patient'].ids(path)
+        self.assertIn("'S1' under P1, P2", str(refused.exception))
+
+    def test_a_member_that_is_another_subject_is_refused(self):
+        path = self.write([("P1", "P2"), ("P2", "S2")])
+        with self.assertRaises(SystemExit):
+            sarek.Sarek().triggers['patient'].ids(path)
+
+    def test_a_subject_named_after_its_own_member_is_fine(self):
+        path = self.write([("donor_001", "donor_001"), ("donor_002", "donor_002")])
+        self.assertEqual(sarek.Sarek().triggers['patient'].ids(path),
+                         {"donor_001": ["donor_001"], "donor_002": ["donor_002"]})
+
+
+class TestTriggerSelectors(unittest.TestCase):
+    def setUp(self):
+        self.graph = {
+            "tasks": {
+                "aa/000001": {"name": "A", "process": "A", "container": "quay.io/gatk4:4.2.1"},
+                "bb/000002": {"name": "B", "process": "B", "container": "quay.io/samtools:1.21"},
+            },
+            "edges": [
+                {"consumer": "aa/000001", "producer": "EXTERNAL",
+                 "filename": "genome.fasta", "target": "/refs/genome.fasta"},
+                {"consumer": "bb/000002", "producer": "EXTERNAL",
+                 "filename": "1/genome.fasta", "target": "/refs/genome.fasta"},
+                {"consumer": "bb/000002", "producer": "aa/000001",
+                 "filename": "out.bam", "target": ""},
+            ],
+            "outputs": {},
+        }
+
+    def test_container_selector(self):
+        subjects = core_graph.container_entry_nodes(self.graph, "gatk4")
+        self.assertEqual(subjects, {"container:gatk4": ["aa/000001"]})
+
+    def test_container_selector_empty_when_no_match(self):
+        subjects = core_graph.container_entry_nodes(self.graph, "nonexistent")
+        self.assertEqual(subjects["container:nonexistent"], [])
+
+    def test_external_input_selector_matches_basename(self):
+        # The same reference staged at top level for one task and inside a
+        # numbered subdirectory for another must select both.
+        subjects = core_graph.external_input_entry_nodes(self.graph, "genome.fasta")
+        self.assertEqual(
+            subjects["input:genome.fasta"], ["aa/000001", "bb/000002"]
+        )
+
+    def test_external_input_selector_ignores_internal_edges(self):
+        subjects = core_graph.external_input_entry_nodes(self.graph, "out.bam")
+        self.assertEqual(subjects["input:out.bam"], [])
+
+
+class TestAssertions(unittest.TestCase):
+    def test_missing_file_means_no_assertions(self):
+        self.assertEqual(core_graph.load_assertions(None), {})
+
+    def test_published_assertion_sets_terminal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "assertions.json"
+            path.write_text(json.dumps({
+                "released": [{"task": "aa/000001", "what": "Fig 3",
+                               "asserted_by": "someone", "date": "2026-08-21"}]
+            }))
+            published = core_graph.load_assertions(path)
+
+        graph = graph_with_tasks({
+            "aa/000001": {"name": "A", "process": "A",
+                          "container": "img", "script": "run", "workdir": ""},
+        })
+        facts = contribution.classify(graph, "aa/000001", exclusive=False,
+                               published=published)
+        self.assertTrue(facts["released"])
+        # The reason must carry the assertion's provenance, because the claim
+        # is the asserter's, not Clew's.
+        self.assertIn("someone", facts["evidence"])
+
+    def test_unpublished_task_is_not_terminal(self):
+        graph = graph_with_tasks({
+            "aa/000001": {"name": "A", "process": "A",
+                          "container": "img", "script": "run", "workdir": ""},
+        })
+        facts = contribution.classify(graph, "aa/000001", exclusive=False, published={})
+        self.assertFalse(facts["released"])
+
+
+class TestClassification(unittest.TestCase):
+    def test_missing_script_fails_closed_to_irreducible(self):
+        graph = graph_with_tasks({
+            "aa/000001": {"name": "A", "process": "A",
+                          "container": "img", "script": "", "workdir": ""},
+        })
+        facts = contribution.classify(graph, "aa/000001", exclusive=False)
+        self.assertEqual(facts["contribution"], "IRREDUCIBLE")
+
+    def test_recorded_script_and_container_is_regenerable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            graph = graph_with_tasks({
+                "aa/000001": {"name": "A", "process": "A",
+                              "container": "img", "script": "run", "workdir": tmp},
+            })
+            facts = contribution.classify(graph, "aa/000001", exclusive=False)
+        self.assertEqual(facts["contribution"], "REGENERABLE")
+
+    def test_storage_is_unverified_until_told_where_to_look(self):
+        # This used to assert DESTROYED, which was the bug. A path that does
+        # not resolve here means the artifacts were not checked, the caller
+        # may be on another host entirely, and reporting that as destroyed
+        # produced ALREADY_GONE, i.e. "nothing to do", for work that may well
+        # still exist and still carry an obligation.
+        graph = graph_with_tasks({
+            "aa/000001": {"name": "A", "process": "A", "container": "img",
+                          "script": "run", "workdir": "/nonexistent/path"},
+        })
+        facts = contribution.classify(graph, "aa/000001", exclusive=False)
+        self.assertIsNone(facts["storage"])
+        self.assertIn("not checked", facts["evidence"])
+
+    def test_destroyed_is_returned_only_after_actually_looking(self):
+        graph = graph_with_tasks({
+            "aa/000001": {"name": "A", "process": "A", "container": "img",
+                          "script": "run",
+                          "workdir": "/somewhere/work/aa/000001deadbeef"},
+        })
+        with tempfile.TemporaryDirectory() as work_root:
+            facts = contribution.classify(graph, "aa/000001", exclusive=False,
+                                   work_root=work_root)
+        self.assertEqual(facts["storage"], "DESTROYED")
+
+    def test_a_graph_from_another_host_still_probes(self):
+        # The recorded path belongs to whichever machine ran the pipeline.
+        # Only the two-character prefix and task hash are portable, so those
+        # are what get joined onto the root the caller supplies.
+        with tempfile.TemporaryDirectory() as work_root:
+            live = Path(work_root, "aa", "000001deadbeef")
+            live.mkdir(parents=True)
+            graph = graph_with_tasks({
+                "aa/000001": {
+                    "name": "A", "process": "A", "container": "img",
+                    "script": "run",
+                    "workdir": "/on/some/other/host/work/aa/000001deadbeef"},
+            })
+            facts = contribution.classify(graph, "aa/000001", exclusive=False,
+                                   work_root=work_root)
+        self.assertEqual(facts["storage"], "WRITABLE")
+
+
+if __name__ == "__main__":
+    unittest.main()

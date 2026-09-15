@@ -24,7 +24,9 @@ jobs:
           python-version: "3.12"
 
       - name: Run the suite on the tagged commit
-        run: python3 -m unittest discover -s tests
+        # Installed first: the built-in providers register through entry
+        # points, and an uninstalled checkout discovers none of them.
+        run: make dev test
 
       - name: Build sdist and wheel
         run: |

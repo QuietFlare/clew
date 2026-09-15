@@ -47,14 +47,13 @@ clew/contracts/  the two provider contracts, Adapter and Extractor, and
 clew/extract/    the clew extract command, and the engine-neutral tools:
                  runs, which reads an engine's record through whichever
                  installed extractor recognises it, stitch, and digest.
-providers/       six distributions, one per engine, each installing into
-                 clew.provider.<name> and built as a third party would
-                 build one. clew-nextflow also carries the nf-core
-                 adapters. See ADR 0010.
+clew/provider/   one package per engine, registered through entry points
+                 exactly as a third party's would be. nextflow also
+                 carries the nf-core adapters. See ADR 0012.
 clew/questions/  one module per question asked of the graph: impact,
                  reclaim, drift, gate.
 clew/views/      dashboard, one page per question, MCP server.
-tests/           the engine's tests. Each provider's are in its own tests/.
+tests/           the whole suite, provider fixtures under fixtures/.
                  All stdlib unittest.
 ```
 

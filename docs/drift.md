@@ -22,6 +22,12 @@ Two runs of one resume chain share a session, and a `.lineage` store
 holds one graph per session, so `--runs` refuses to compare them: there
 is one graph, not two.
 
+The plan prints each root as a row, with its cause and the outputs that
+differ, since roots are the finding. Every other verdict is grouped by
+cause and counted by process; `--verbose` lists the tasks. `--json`
+carries one item per task with `cause`, `files` and `follows` as fields
+beside the `reason` sentence.
+
 ## Pairing
 
 One task per name on each side pairs by name. When a name repeats, as a

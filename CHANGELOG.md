@@ -8,6 +8,15 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `clew reclaim`: `--work-root` and `--results` take `s3://bucket/prefix`.
+  A task directory is every object under its prefix, and `--apply` deletes
+  those objects after the receipt line. The S3 client is Clew's own, on
+  the standard library, reading credentials where the AWS CLI does.
+- `clew drift --verbose`: every task under its verdict. Roots print as
+  rows with what differed; the other verdicts are grouped by cause and
+  counted by process. Plan items carry `cause`, `files` and `follows`.
+- `clew reclaim --verbose`: every directory under its reason. The plan
+  otherwise groups directories by reason and counts them by process.
 - `clew impact --pipeline snakemake`: a subject adapter that attributes a
   job to a sample named in its output path.
 - ADR 0007: extractors translate, core never interprets an engine string.
@@ -16,6 +25,16 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- `clew reclaim` prints what was checked, then each verdict with its
+  directories grouped by reason and counted by process, in place of one
+  line per directory. Plan items carry `cause`, the reason without file
+  names, and `files`, the names it listed. Caveats print only when they
+  apply.
+- The built-in providers ship inside `clew-lineage` at `clew/provider/`,
+  registered through entry points in the engine's own `pyproject.toml`.
+  One distribution, one `pip install`, one suite under `tests/`. A
+  third-party provider still installs into `clew.provider.<name>` from its
+  own package and declares the same groups (ADR 0012).
 - One shipped policy table, `v1`, with five dimensions: `contribution`,
   `storage`, `scope` (`exclusive` or `shared`), `released` and `mode`
   (`remove` or `trace`). Release is asked before existence, and a corrected

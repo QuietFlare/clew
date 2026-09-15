@@ -200,7 +200,7 @@ def limits(plan):
     """The caveats, one click away rather than six paragraphs up top."""
     notes = list(plan.get("caveats") or []) + [COST_CAVEAT]
     items = "".join(f"<li>{esc(n)}</li>" for n in notes)
-    return ("<details><summary>What this does not settle</summary>"
+    return ("<details><summary>Limits of this answer</summary>"
             f'<div class="panel"><ul class="coverage">{items}</ul></div>'
             "</details>")
 

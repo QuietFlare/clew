@@ -22,20 +22,21 @@ def human(n):
 
 
 def headline(plan):
-    """The figures, nothing else."""
+    """Four figures and what they rest on. The target is named when there is one."""
     size, verdicts = plan.get("bytes", {}), plan.get("verdicts", {})
     proposed = sum(size.get(v, 0) for v in PROPOSED)
     dirs = sum(verdicts.get(v, 0) for v in PROPOSED)
-    where = (f' <span class="mono">{esc(plan["target"])}</span>'
-             if plan.get("target") else "")
+    total = plan.get("tasks_total", 0)
     tiles = counts([
-        ("reclaimable", human(proposed), ""),
-        ("directories", f"{dirs} of {plan.get('tasks_total', 0)}", ""),
-        ("kept", human(size.get("KEEP", 0)), ""),
-        ("not on disk", verdicts.get("GONE", 0), ""),
+        ("reclaimable size", human(proposed), ""),
+        ("removable directories", f"{dirs} of {total}", ""),
+        ("retained size", human(size.get("KEEP", 0)), ""),
+        ("already gone", str(verdicts.get("GONE", 0)), ""),
     ])
-    return (f"<h1>Reclaim <span class=\"mono\">{esc(plan['work_root'])}</span>"
-            f"{where}</h1>{tiles}")
+    rest = [c for c in plan.get("caveats", []) if c.startswith("Verdicts rest on")]
+    note = f'<p class="note">{tag("Note", "")} {esc(rest[0])}</p>' if rest else ""
+    where = (f' <span class="mono">{esc(plan["target"])}</span>' if plan.get("target") else "")
+    return f'<h1>Storage reclaim{where}</h1>{tiles}{note}'
 
 
 def by_verdict(plan):
@@ -62,25 +63,34 @@ def by_verdict(plan):
 
 
 def why_kept(plan):
-    """The reasons that withheld directories, most common first."""
-    reasons = Counter(i["reason"] for i in plan["plan"] if i["verdict"] == "KEEP")
-    if not reasons:
+    """
+    The causes that withheld directories, most common first, each with the
+    processes it held. A run has three or four causes; the file names that
+    make each directory's reason its own are in the table below, not here.
+    """
+    kept = [i for i in plan["plan"] if i["verdict"] == "KEEP"]
+    if not kept:
         return ""
-    top = max(reasons.values())
-    rows = "".join(
-        '<div class="spread-row">'
-        f'<span class="why">{esc(reason)}</span>'
-        f'<span class="track"><i style="width:{100 * n / top:.4g}%"></i></span>'
-        f'<span class="num">{n}</span>'
-        "</div>"
-        for reason, n in reasons.most_common())
-    return ("<h2>What withheld the rest</h2>"
-            f'<div class="panel"><div class="spread">{rows}</div></div>')
+    causes = Counter(i.get("cause") or i["reason"] for i in kept)
+    rows = ""
+    for cause, n in causes.most_common():
+        processes = Counter(i.get("process", "?").split(":")[-1] for i in kept
+                            if (i.get("cause") or i["reason"]) == cause)
+        held = ", ".join(f"{count} {esc(name)}" for name, count in
+                         sorted(processes.items(), key=lambda kv: (-kv[1], kv[0])))
+        rows += ('<div class="spread-row">'
+                 f'<span class="why">{esc(cause)}<br><span class="hash">{held}</span></span>'
+                 f'<span class="track"><i style="width:{100 * n / len(kept):.4g}%"></i></span>'
+                 f'<span class="num">{n}</span>'
+                 "</div>")
+    return ("<details><summary>What withheld the rest</summary>"
+            f'<div class="panel"><div class="spread">{rows}</div></div></details>')
 
 
 def limits(plan):
-    items = "".join(f"<li>{esc(n)}</li>" for n in plan.get("caveats", []))
-    return ("<details><summary>What this does not settle</summary>"
+    items = "".join(f"<li>{esc(n)}</li>" for n in plan.get("caveats", [])
+                    if not n.startswith("Verdicts rest on"))
+    return ("<details><summary>Limits of this answer</summary>"
             f'<div class="panel"><ul class="coverage">{items}</ul></div>'
             "</details>")
 
@@ -115,7 +125,7 @@ def render(plan):
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        "<title>Clew reclaim</title>"
+        "<title>Clew storage reclaim</title>"
         f"<style>{STYLE}</style></head><body>"
         f'{masthead("Clew")}<main>{body}</main></body></html>'
     )

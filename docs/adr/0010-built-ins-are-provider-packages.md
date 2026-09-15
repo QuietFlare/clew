@@ -1,6 +1,6 @@
 # ADR 0010: The built-in adapters and extractors are provider packages
 
-Status: accepted
+Status: superseded by ADR 0012 for packaging; the contract boundary stands
 
 ## Context
 

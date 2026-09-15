@@ -3,13 +3,14 @@
 import argparse
 import fnmatch
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from clew.graph import blast_radius as core
 from clew.graph.graph import EXTERNAL
 from clew.graph.results import BOOKKEEPING
 from clew.views import drift_report
+from clew.views.drift_report import label
 
 REPRODUCED = "REPRODUCED"
 DRIFTED = "DRIFTED"
@@ -32,6 +33,14 @@ EXPLAIN = {
 }
 
 ORDER = (DRIFTED, UNSETTLED, DOWNSTREAM, UNVERIFIED, REPRODUCED, ADDED, REMOVED)
+# The one-line cause for verdicts whose reason names other tasks or files.
+CAUSE = {
+    DOWNSTREAM: "follows a task that drifted",
+    UNSETTLED: "an upstream task could not be verified",
+    REPRODUCED: "same digests",
+    ADDED: "no task with this name in the before run",
+    REMOVED: "no task with this name in the after run",
+}
 
 UNPAIRED = "several tasks share this name and their input digests do not tell them apart"
 
@@ -147,7 +156,7 @@ def drift(before, after, ignore=BOOKKEEPING):
         if e["producer"] not in (EXTERNAL, None, e["consumer"]):
             producers[e["consumer"]].add(e["producer"])
 
-    verdict = {}
+    verdict, parts = {}, {}
     items = []
     pairs = pair_tasks(before, after)
     paired_after = {a: b for b, a, _ in pairs if a and b}
@@ -165,24 +174,29 @@ def drift(before, after, ignore=BOOKKEEPING):
         if sb is None or sa is None:
             verdict[a] = (UNVERIFIED, "an output has no digest; run clew digest on both runs")
         elif sb == sa:
-            upstream = [p for p in producers.get(a, ())
-                        if settle(p)[0] in (DRIFTED, DOWNSTREAM, UNSETTLED)]
-            verdict[a] = (REPRODUCED, "reproduced although " + ", ".join(sorted(upstream))
+            upstream = sorted(p for p in producers.get(a, ())
+                              if settle(p)[0] in (DRIFTED, DOWNSTREAM, UNSETTLED))
+            parts[a] = {"follows": upstream}
+            verdict[a] = (REPRODUCED, "reproduced although " + ", ".join(upstream)
                           + " drifted" if upstream else "same digests")
         else:
-            drifted = [p for p in producers.get(a, ())
-                       if settle(p)[0] in (DRIFTED, DOWNSTREAM, UNSETTLED)]
-            unverified = [p for p in producers.get(a, ()) if settle(p)[0] == UNVERIFIED]
+            drifted = sorted(p for p in producers.get(a, ())
+                             if settle(p)[0] in (DRIFTED, DOWNSTREAM, UNSETTLED))
+            unverified = sorted(p for p in producers.get(a, ()) if settle(p)[0] == UNVERIFIED)
             changed = sorted(f for f in sa if sb.get(f) != sa[f])
             if drifted:
-                verdict[a] = (DOWNSTREAM, "follows " + ", ".join(sorted(drifted)))
+                parts[a] = {"follows": drifted, "files": changed}
+                verdict[a] = (DOWNSTREAM, "follows " + ", ".join(drifted))
             elif unverified:
                 # The upstream difference cannot be seen, so this may be the
                 # root or may follow one. Its own label keeps it in view.
-                verdict[a] = (UNSETTLED, "upstream " + ", ".join(sorted(unverified))
+                parts[a] = {"follows": unverified, "files": changed}
+                verdict[a] = (UNSETTLED, "upstream " + ", ".join(unverified)
                               + " not verified; differs: " + ", ".join(changed))
             else:
-                verdict[a] = (DRIFTED, cause(before, b, after, a) + "; differs: " + ", ".join(changed))
+                why = cause(before, b, after, a)
+                parts[a] = {"cause": why, "files": changed}
+                verdict[a] = (DRIFTED, why + "; differs: " + ", ".join(changed))
         return verdict[a]
 
     for b, a, note in pairs:
@@ -193,9 +207,13 @@ def drift(before, after, ignore=BOOKKEEPING):
             v, reason = ((UNVERIFIED, note) if note
                          else (REMOVED, "no task with this name in the after run"))
             task = before["tasks"][b]
-        items.append({"task": a or b, "before": b, "after": a,
-                      "process": task.get("process", ""), "name": task.get("name", ""),
-                      "target": task.get("target", ""), "verdict": v, "reason": reason})
+        item = {"task": a or b, "before": b, "after": a,
+                "process": task.get("process", ""), "name": task.get("name", ""),
+                "target": task.get("target", ""), "verdict": v, "reason": reason}
+        # The cause without file or task names, so a printer can group on it.
+        item["cause"] = parts.get(a, {}).get("cause") or CAUSE.get(v) or reason
+        item.update({k: w for k, w in parts.get(a, {}).items() if k != "cause" and w})
+        items.append(item)
     return items
 
 
@@ -219,34 +237,80 @@ def caveats(ignore):
     ]
 
 
-def print_plan(items, before_path, after_path, ignore):
+def short_name(process):
+    return process.split(":")[-1]
+
+
+def by_process(rows):
+    """['5 FASTQC', '5 GATK4_MARKDUPLICATES'], most first."""
+    tally = Counter(short_name(i["process"]) for i in rows)
+    return [f"{n} {name}" for name, n in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+
+def wrapped(entries, indent, width=100):
+    """Comma-separated entries, wrapped between entries only."""
+    lines, line = [], indent
+    for entry in entries:
+        piece = entry if line == indent else ", " + entry
+        if len(line) + len(piece) + 1 > width and line != indent:
+            lines.append(line + ",")
+            line, piece = indent, entry
+        line += piece
+    return "\n".join(lines + [line])
+
+
+def print_plan(items, before_path, after_path, ignore, verbose=False, source=None):
+    """
+    Roots are the finding, so they print as rows with what differed.
+    Everything else is a consequence or a count: grouped by cause and
+    tallied by process, with the rows behind --verbose.
+    """
     counts = summarise(items)
-    roots = [i for i in items if i["verdict"] == DRIFTED]
-    print(f"BEFORE: {before_path}")
-    print(f"AFTER: {after_path}")
-    print(f"TASKS: {len(items)}")
-    print(f"DRIFT: {len(roots)} root{'s' if len(roots) != 1 else ''}, "
-          f"{counts.get(UNSETTLED, 0)} unsettled, "
-          f"{counts.get(DOWNSTREAM, 0)} downstream, {counts.get(REPRODUCED, 0)} reproduced\n")
-    print("DRIFT PLAN")
+    names = {i["task"]: label(i) for i in items}
+    print(f"clew drift: {before_path} -> {after_path}, {len(items)} tasks"
+          + (f"; lineage extracted from {source}" if source else ""))
+    print(f"{counts.get(DRIFTED, 0)} roots, {counts.get(UNSETTLED, 0)} unsettled, "
+          f"{counts.get(DOWNSTREAM, 0)} downstream, {counts.get(REPRODUCED, 0)} reproduced, "
+          f"{counts.get(UNVERIFIED, 0)} unverified"
+          + (f", {counts[ADDED]} added" if counts.get(ADDED) else "")
+          + (f", {counts[REMOVED]} removed" if counts.get(REMOVED) else ""))
     for v in ORDER:
         rows = [i for i in items if i["verdict"] == v]
         if not rows:
             continue
-        print(f"\n  {v}  ({len(rows)})  {EXPLAIN[v]}")
-        if v == REPRODUCED and len(rows) > 10:
-            print(f"    {len(rows)} tasks, listed in --json")
+        print(f"\n{v}  {len(rows)}   {EXPLAIN[v]}")
+        if v in (DRIFTED, UNSETTLED):
+            width = max(len(label(i)) for i in rows)
+            for i in rows:
+                files = i.get("files", [])
+                shown = files if verbose or len(files) <= 3 else files[:3] + [f"and {len(files) - 3} more"]
+                follows = ("; after " + ", ".join(names.get(p, p) for p in i.get("follows", []))
+                           if i.get("follows") else "")
+                print(f"  {label(i):<{width}}  {i['cause']}{follows}: "
+                      + ", ".join(shown))
             continue
-        for i in rows:
-            print(f"    {i['task']}  {i['process'].split(':')[-1]:<28} {i['reason']}")
-    print("\n" + "-" * 60)
+        causes = Counter(i["cause"] for i in rows)
+        for c, n in sorted(causes.items(), key=lambda kv: (-kv[1], kv[0])):
+            group = [i for i in rows if i["cause"] == c]
+            indent = "  "
+            if len(causes) > 1:
+                print(f"  {n:>3}  {c}")
+                indent = "       "
+            print(wrapped(by_process(group), indent))
+            if verbose:
+                for i in group:
+                    follows = (" after " + ", ".join(names.get(p, p) for p in i["follows"])
+                               if i.get("follows") else "")
+                    print(f"{indent}{i['task']}  {label(i):<32}{follows}")
+    print()
     for line in caveats(ignore):
         print(line)
 
 
-def plan_to_dict(items, before_path, after_path, ignore):
+def plan_to_dict(items, before_path, after_path, ignore, source=None):
     return {
         "clew_drift_version": 1,
+        "lineage": str(source) if source else None,
         "before": str(before_path),
         "after": str(after_path),
         "ignored_outputs": list(ignore),
@@ -271,15 +335,19 @@ def main(argv=None):
     parser.add_argument("--ignore", action="append", metavar="GLOB",
                         help="output names never compared; repeatable. "
                              f"Default: {', '.join(BOOKKEEPING)}.")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="list every task under its verdict, not only the counts")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
                         help="write the plan as JSON ('-' for stdout)")
     parser.add_argument("--html", dest="html_out", metavar="PATH",
                         help="write one self-contained HTML page ('-' for stdout)")
     args = parser.parse_args(argv)
 
+    source = None
     if args.runs:
         from clew.extract.runs import Runs
         store = Runs(args.runs)
+        source = f"the {store.kind} record in {args.runs}"
         before, after = store.load(args.before), store.load(args.after)
         same_chain = before["run"].get("session") and (
             before["run"]["session"] == after["run"].get("session"))
@@ -295,9 +363,9 @@ def main(argv=None):
         before, after = core.load_graph(args.before), core.load_graph(args.after)
     ignore = tuple(args.ignore) if args.ignore else BOOKKEEPING
     items = drift(before, after, ignore)
-    print_plan(items, args.before, args.after, ignore)
+    print_plan(items, args.before, args.after, ignore, args.verbose, source)
     if args.json_out or args.html_out:
-        built = plan_to_dict(items, args.before, args.after, ignore)
+        built = plan_to_dict(items, args.before, args.after, ignore, source)
         if args.html_out:
             drift_report.write(built, args.html_out)
         if args.json_out == "-":

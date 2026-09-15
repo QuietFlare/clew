@@ -29,7 +29,7 @@ After that, in rough order:
 - Stdlib first. Clew has no runtime dependencies and intends to keep it
   that way.
 - `clew/graph/` and `clew/ledger/` hold no domain vocabulary. No samples,
-  donors, consent, or workflow engines. Those live in `clew/domains/`.
+  donors, consent, or workflow engines. Those live in `clew/provider/`.
 - Packages import downward only. `clew/graph/` imports nothing from clew.
   `tests/test_core_boundary.py` enforces both rules.
 - New behaviour comes with a test. Regression fixtures from real runs are
@@ -38,18 +38,16 @@ After that, in rough order:
   decides. An auditor asking why something was flagged must get a policy
   version, hashes, and a re-run that agrees.
 
-The engine and the six providers under `providers/` are separate
-distributions. Install all seven editable first, or nothing registers:
+The built-in providers under `clew/provider/` register through entry
+points in `pyproject.toml`, so a checkout must be installed first, or
+nothing registers:
 
 ```bash
 make dev
 ```
 
 Pass `PYTHON=` if the first `python3` on your PATH is not the one `clew`
-runs under.
-
-Run every suite before opening a pull request. The engine's tests are in
-`tests/`; each provider's are in its own `tests/`, beside its fixtures:
+runs under. Run the suite before opening a pull request:
 
 ```bash
 make test
