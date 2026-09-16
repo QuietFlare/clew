@@ -19,3 +19,6 @@ dist/
 # Local MCP config
 .mcp.json
 uv.lock
+
+# coverage.py data from a local coverage run
+.coverage
