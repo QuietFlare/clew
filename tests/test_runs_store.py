@@ -15,7 +15,10 @@ class LineageStoreRuns(unittest.TestCase):
     """A session-id prefix names a resume chain; its newest run stands for it."""
 
     def setUp(self):
-        from test_lineage_store import RUN_A, RUN_B, RUN_C, CHAIN, OTHER
+        try:
+            from tests.test_lineage_store import RUN_A, RUN_B, RUN_C, CHAIN, OTHER
+        except ImportError:  # unittest discover -s tests imports the modules bare
+            from test_lineage_store import RUN_A, RUN_B, RUN_C, CHAIN, OTHER
         self.root = Path(tempfile.mkdtemp())
         history = self.root / ".history"
         history.mkdir()

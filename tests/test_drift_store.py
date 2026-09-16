@@ -22,7 +22,10 @@ class SameChain(unittest.TestCase):
         import contextlib
         import io
         import tempfile
-        from test_lineage_store import RUN_A, RUN_B, CHAIN, PRODUCER, task_run, write_record
+        try:
+            from tests.test_lineage_store import RUN_A, RUN_B, CHAIN, PRODUCER, task_run, write_record
+        except ImportError:  # unittest discover -s tests imports the modules bare
+            from test_lineage_store import RUN_A, RUN_B, CHAIN, PRODUCER, task_run, write_record
         with tempfile.TemporaryDirectory() as tmp:
             store = Path(tmp)
             (store / ".history").mkdir()
