@@ -110,6 +110,9 @@ def print_plan(adapter, graph, subject, entry_nodes, affected, exclusive_set,
     print(f"TRIGGER: {subject}")
     print(f"entry points: {len(entry_nodes)} tasks")
     print(f"AFFECTED: {len(affected)} of {len(graph['tasks'])} tasks")
+    spared = [describe(graph, h) for h in sorted(graph["tasks"]) if h not in affected]
+    if spared:
+        print(f"UNTOUCHED: {', '.join(spared)}")
     # Named up front, not in a footer: every verdict below is a verdict UNDER
     # this table. A reader who cannot see which table was used cannot check
     # any of them.
@@ -334,6 +337,11 @@ def plan_to_dict(adapter, graph, subject, entry_nodes, plan, results_index=None,
         "entry_tasks": sorted(entry_nodes),
         "tasks_total": len(graph["tasks"]),
         "tasks_affected": len(plan),
+        # Named, not just counted: a reader checks the answer against the
+        # tasks it did not reach as much as against the ones it did.
+        "untouched": [{"task": h, "process": describe(graph, h)}
+                      for h in sorted(graph["tasks"])
+                      if h not in {i["task"] for i in items}],
         "actions": dict(sorted(counts.items())),
         "cost": plan_cost(graph, plan),
         "plan": items,

@@ -101,7 +101,9 @@ def headline(plan):
         ("of the run", f"{round(100 * affected / total)}%", ""),
         ("tasks reached", affected, ""),
         ("still open", open_count, "unknown" if open_count else ""),
-    ] + ([("machines", len(targets), "")] if targets else []))
+    ] + ([("machines", len(targets), "")] if targets else [])
+      + ([("to recompute", seconds(rerun_seconds(plan) or 0), "")]
+         if any(duration_of(i) is not None for i in rows) else []))
 
     return (
         "<h1>Impact of "
@@ -137,12 +139,44 @@ def by_target(plan):
             f'<div class="panel"><div class="spread">{rows}</div></div>')
 
 
+def duration_of(item):
+    """Seconds the engine recorded for the original task, or None."""
+    return (item.get("metrics") or {}).get("duration_s")
+
+
+def recorded_seconds(items):
+    """Sum of what was recorded; tasks without a figure add nothing."""
+    return sum(duration_of(i) or 0 for i in items)
+
+
+def rerun_seconds(plan):
+    """
+    Recorded time of the tasks the plan re-runs, or None when there are
+    none or the engine recorded nothing. A purge edits a file and a
+    quarantine locks one; only REGENERATE spends compute again.
+    """
+    regen = ((plan.get("cost") or {}).get("by_action") or {}).get("REGENERATE")
+    if not regen:
+        return None
+    return (regen.get("metrics") or {}).get("duration_s")
+
+
+def seconds(n):
+    """39.8 s, 4.2 min, 1.3 h: the unit a reader would reach for."""
+    if n >= 3600:
+        return f"{n / 3600:.1f} h"
+    if n >= 120:
+        return f"{n / 60:.1f} min"
+    return f"{n:.1f} s"
+
+
 def by_process(plan):
     """
     Rolled up by process, since nobody acts on 183 rows one at a time. The
-    target column appears only when an engine recorded one.
+    target and time columns appear only when an engine recorded them.
     """
     shown = any(i.get("target") for i in plan["plan"])
+    timed = any(duration_of(i) is not None for i in plan["plan"])
 
     groups = {}
     for item in plan["plan"]:
@@ -150,7 +184,7 @@ def by_process(plan):
                item.get("contribution", ""),
                settled_or_possible(item),
                item.get("target", ""))
-        groups.setdefault(key, []).append(item["task"])
+        groups.setdefault(key, []).append(item)
 
     rows = ""
     for (process, contribution, action, target), members in sorted(
@@ -164,11 +198,19 @@ def by_process(plan):
         ]
         if shown:
             cells.append(f'<td class="mono">{esc(target)}</td>')
+        if timed:
+            missing = sum(1 for m in members if duration_of(m) is None)
+            cell = seconds(recorded_seconds(members))
+            if missing:
+                cell += f' <span class="hash">+{missing} unrecorded</span>'
+            cells.append(f'<td class="num">{cell}</td>')
         rows += f"<tr>{''.join(cells)}</tr>"
 
     heads = ["<th>Process</th>", "<th>Action</th>", "<th>Contribution</th>"]
     if shown:
         heads.append("<th>Target</th>")
+    if timed:
+        heads.append("<th>Recorded time</th>")
 
     return ("<h2>What follows</h2>"
             '<div class="panel tablewrap"><table><thead><tr>'
@@ -194,6 +236,20 @@ def unsettled(plan):
         '<div class="panel warn"><p>Unanswered, not clean. Re-run with '
         "<code>--work-root</code> where the artifacts live to settle "
         f"them.</p><ul class=\"coverage\">{rows}</ul></div></details>")
+
+
+def untouched(plan):
+    """
+    The tasks the trigger never reached, by name. A count alone leaves the
+    reader guessing which branch was spared.
+    """
+    spared = plan.get("untouched") or []
+    if not spared:
+        return ""
+    names = ", ".join(esc(t.get("process") or t["task"]) for t in spared)
+    return ('<h2>Untouched</h2><div class="panel"><p>'
+            f"{len(spared)} task{'s' if len(spared) != 1 else ''} not reached "
+            f"by this trigger: <b>{names}</b>.</p></div>")
 
 
 def limits(plan):
@@ -236,6 +292,7 @@ def render(plan):
         headline(plan),
         by_target(plan),
         by_process(plan),
+        untouched(plan),
         unsettled(plan),
         limits(plan),
         tasks(plan),
