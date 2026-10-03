@@ -39,6 +39,7 @@ class PathKind(Trigger):
 
     def __init__(self, column):
         self.column = column
+        self.about = f"{column} named in the launch sheet"
 
     def add_arguments(self, parser):
         parser.add_argument("--samplesheet", metavar="CSV",

@@ -93,7 +93,7 @@ class TestGuards(AgentDirectory):
 
     def test_a_held_notice_gets_no_plan(self):
         self.assertEqual(tools.triage(self.base, "vague")["outcome"], "held")
-        self.assertIn("was held", self.refused(tools.impact, "vague"))
+        self.assertIn("no person has decided", self.refused(tools.impact, "vague"))
 
     def test_seal_before_impact_is_refused(self):
         tools.triage(self.base, "named")
@@ -143,6 +143,50 @@ class TestRecommendation(AgentDirectory):
         self.assertIn("needs its reason", self.refused("vague", "person", "", "  ", "clew"))
 
 
+class TestDecision(AgentDirectory):
+    """A held notice moves only on a person's decision, and only to a trigger triage offered."""
+
+    def setUp(self):
+        super().setUp()
+        tools.triage(self.base, "vague")
+
+    def test_asking_a_trigger_leads_to_a_plan_and_a_bundle_that_holds_the_decision(self):
+        decision = tools.decide(self.base, "vague", "qa.lead@example.org",
+                                ask="container:toolkit", reason="PREP is the toolkit step")
+        self.assertEqual((decision["decision"], decision["actor"]), ("ask", "qa.lead@example.org"))
+        plan = tools.impact(self.base, "vague")
+        self.assertEqual(plan["trigger"], "container:toolkit")
+        sealed = tools.seal(self.base, "vague")
+        self.assertTrue(sealed["verified"])
+        inputs = (Path(sealed["bundle"]) / "inputs.json").read_text()
+        self.assertIn("decision.json", inputs)
+        self.assertIn("a person decided: ask", tools.inbox(self.base)[1]["state"])
+
+    def test_a_dismissed_notice_gets_no_plan(self):
+        tools.decide(self.base, "vague", "qa.lead@example.org")
+        with self.assertRaises(tools.ToolError) as stopped:
+            tools.impact(self.base, "vague")
+        self.assertIn("no person has decided to ask", str(stopped.exception))
+
+    def refused(self, *args, **kwargs):
+        with self.assertRaises(tools.ToolError) as stopped:
+            tools.decide(self.base, *args, **kwargs)
+        return str(stopped.exception)
+
+    def test_a_trigger_that_was_not_offered_is_refused(self):
+        self.assertIn("not a trigger triage offered",
+                      self.refused("vague", "qa", ask="container:invented"))
+
+    def test_a_decision_needs_a_name_and_is_not_rewritten(self):
+        self.assertIn("needs the name", self.refused("vague", " ", ask="container:toolkit"))
+        tools.decide(self.base, "vague", "qa", ask="container:toolkit")
+        self.assertIn("is not rewritten", self.refused("vague", "qa"))
+
+    def test_only_a_held_notice_takes_a_decision(self):
+        tools.triage(self.base, "named")
+        self.assertIn("not held", self.refused("named", "qa"))
+
+
 class TestPreflight(AgentDirectory):
     def test_it_passes_with_a_graph_a_notice_and_a_working_clew(self):
         tools.preflight("clew")
@@ -163,3 +207,33 @@ class TestPreflight(AgentDirectory):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPipelineKinds(unittest.TestCase):
+    """A notice about a domain's own kind: the adapter and its file reach both commands."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        (self.base / "inbox").mkdir()
+        fixture = ROOT / "tests" / "fixtures" / "pantheon_vina"
+        from clew.extract.runs import Runs
+        (self.base / "graph.json").write_text(json.dumps(Runs(str(fixture)).load()))
+        (self.base / "inbox" / "withdrawn.txt").write_text("caffeine was withdrawn from the library\n")
+        env = {k: v for k, v in os.environ.items() if k not in ("TYPESAFE_API_KEY", "CLEW_DSN")}
+        env.update(CLEW_AGENT_DIR=str(self.base), CLEW_TRIAGE_BACKEND="name", PYTHONPATH=str(ROOT),
+                   CLEW_PIPELINE="vina-docking",
+                   CLEW_ADAPTER_ARGS=f"--ligands {fixture / 'ligands.smi'}")
+        patched = mock.patch.dict(os.environ, env, clear=True)
+        patched.start()
+        self.addCleanup(patched.stop)
+
+    def test_a_domain_notice_is_triaged_and_planned_under_the_same_adapter(self):
+        sorted_as = tools.triage(self.base, "withdrawn")
+        self.assertEqual((sorted_as["outcome"], sorted_as["trigger"]), ("ask", "ligand:caffeine"))
+        plan = tools.impact(self.base, "withdrawn")
+        # Impact words a removal in its own way; the subject is what must carry over.
+        self.assertIn("caffeine", plan["trigger"])
+        self.assertGreater(plan["tasks_affected"], 0)
+        self.assertIn("caffeine", tools.options(self.base))

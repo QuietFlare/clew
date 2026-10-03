@@ -1,7 +1,7 @@
 # A Mainsheet agent whose only tools are Clew commands.
 #
 #   export CLEW_AGENT_DIR=/path/to/dir     # graph.json and inbox/<id>.txt
-#   mainsheet /path/to/clew/examples/clew-agent.yaml
+#   mainsheet /path/to/clew/clew/agent/agent.yaml
 #
 # The agent picks which command to run. Triage settings and the policy
 # table decide what each notice and each output gets.

@@ -43,9 +43,10 @@ ALLOWED = {
     "questions": {"graph", "ledger", "extract", "views", "contracts"},
     # Nothing above lists intake, so no layer that decides can import the
     # one that calls a classifier.
-    "intake": {"graph", "ledger"},
+    "intake": {"graph", "ledger", "contracts"},
     # An agent's tools reach Clew through its command line and import none of it.
     "agent": set(),
+    "ui": {"agent", "contracts", "extract", "views"},
 }
 
 IMPORT = re.compile(r"^\s*(?:from|import)\s+clew\.(\w+)", re.MULTILINE)

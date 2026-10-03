@@ -1,0 +1,1880 @@
+{
+  "policy": {
+    "policy_version": "v1",
+    "policy_hash": "f1f49f91c8a49f7e80eee15961796fb777a0e6f94783b19c8d79d54616275100"
+  },
+  "rows": [
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.98,
+        "probabilities": {
+          "REGENERATE": 0.0,
+          "ALREADY_GONE": 0.98,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.02,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.98,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.02,
+          "ALREADY_GONE": 0.98
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.93,
+        "probabilities": {
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.03,
+          "NOTIFY_ONLY": 0.94,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.03,
+          "REGENERATE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.97,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.02,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.01
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.98,
+        "probabilities": {
+          "ALREADY_GONE": 0.98,
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.02,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.97,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.97,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 0.03
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.97,
+          "PURGE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.01,
+          "QUARANTINE": 0.02
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 0.02,
+          "ALREADY_GONE": 0.01,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.97
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R4",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 0.99,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 0.99,
+          "PURGE": 0.0,
+          "DESTROY": 0.01,
+          "NOTIFY_ONLY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R4",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 1.0,
+        "probabilities": {
+          "REGENERATE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 1.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.95,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 0.04,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.96
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.96,
+          "QUARANTINE": 0.04,
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R9",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 1.0,
+        "probabilities": {
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 1.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R9",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 1.0,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "QUARANTINE": 1.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.93,
+        "probabilities": {
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.95,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.05,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.97,
+          "QUARANTINE": 0.03,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "DESTROY",
+      "rule": "R3",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "DESTROY",
+        "confidence": 0.82,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.0,
+          "DESTROY": 0.85,
+          "QUARANTINE": 0.15,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "DESTROY",
+      "rule": "R3",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "DESTROY",
+        "confidence": 0.87,
+        "probabilities": {
+          "DESTROY": 0.89,
+          "ALREADY_GONE": 0.0,
+          "PURGE": 0.0,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 0.11,
+          "NOTIFY_ONLY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.87,
+        "probabilities": {
+          "QUARANTINE": 0.06,
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.89,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.05,
+          "REGENERATE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.93,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.94,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.03,
+          "QUARANTINE": 0.03
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R9",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 1.0,
+        "probabilities": {
+          "QUARANTINE": 1.0,
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R9",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 1.0,
+        "probabilities": {
+          "DESTROY": 0.0,
+          "REGENERATE": 0.0,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "QUARANTINE": 1.0,
+          "NOTIFY_ONLY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.92,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.93,
+          "QUARANTINE": 0.07,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "IRREDUCIBLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.95,
+        "probabilities": {
+          "QUARANTINE": 0.04,
+          "NOTIFY_ONLY": 0.96,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.97,
+        "probabilities": {
+          "ALREADY_GONE": 0.98,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.02,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.97,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.02,
+          "NOTIFY_ONLY": 0.0,
+          "ALREADY_GONE": 0.97,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.01
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.95,
+        "probabilities": {
+          "QUARANTINE": 0.0,
+          "REGENERATE": 0.02,
+          "PURGE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.02,
+          "NOTIFY_ONLY": 0.96
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "REGENERATE": 0.02,
+          "NOTIFY_ONLY": 0.97,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.01
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.97,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "QUARANTINE": 0.0,
+          "ALREADY_GONE": 0.98,
+          "PURGE": 0.0,
+          "REGENERATE": 0.02,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.98,
+        "probabilities": {
+          "REGENERATE": 0.02,
+          "QUARANTINE": 0.0,
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.98
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.94,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.95,
+          "REGENERATE": 0.02,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.03
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "PURGE": 0.0,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.98,
+          "ALREADY_GONE": 0.01,
+          "REGENERATE": 0.01,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R4",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 0.55,
+        "probabilities": {
+          "REGENERATE": 0.63,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.0,
+          "QUARANTINE": 0.37
+        }
+      },
+      "agrees": false
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R4",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 0.45,
+        "probabilities": {
+          "QUARANTINE": 0.55,
+          "REGENERATE": 0.45,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.89,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.92,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.06,
+          "QUARANTINE": 0.02,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.93,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.94,
+          "QUARANTINE": 0.02,
+          "PURGE": 0.0,
+          "REGENERATE": 0.04,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "REGENERATE",
+      "rule": "R8",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 0.98,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.01,
+          "REGENERATE": 0.99
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "REGENERATE",
+      "rule": "R8",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 0.99,
+        "probabilities": {
+          "REGENERATE": 1.0,
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.93,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.95,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "REGENERATE": 0.05
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "REGENERATE": 0.03,
+          "QUARANTINE": 0.0,
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.97,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "DESTROY",
+      "rule": "R3",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "DESTROY",
+        "confidence": 0.84,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "QUARANTINE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "PURGE": 0.0,
+          "REGENERATE": 0.13,
+          "DESTROY": 0.87
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "DESTROY",
+      "rule": "R3",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "DESTROY",
+        "confidence": 0.88,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.1,
+          "NOTIFY_ONLY": 0.0,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.9,
+          "ALREADY_GONE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.87,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.89,
+          "QUARANTINE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "PURGE": 0.0,
+          "REGENERATE": 0.05,
+          "DESTROY": 0.06
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.94,
+        "probabilities": {
+          "REGENERATE": 0.03,
+          "QUARANTINE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.95,
+          "DESTROY": 0.02,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "REGENERATE",
+      "rule": "R8",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 0.99,
+        "probabilities": {
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "REGENERATE": 1.0,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "REGENERATE",
+      "rule": "R8",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 1.0,
+        "probabilities": {
+          "REGENERATE": 1.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.91,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.07,
+          "DESTROY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.93
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "REGENERABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.04,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.96,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.99,
+        "probabilities": {
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 1.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.98,
+        "probabilities": {
+          "ALREADY_GONE": 0.98,
+          "QUARANTINE": 0.0,
+          "REGENERATE": 0.02,
+          "NOTIFY_ONLY": 0.0,
+          "DESTROY": 0.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.98,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.01,
+          "ALREADY_GONE": 0.01
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.98,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.98,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.01,
+          "DESTROY": 0.0,
+          "REGENERATE": 0.01,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.99,
+        "probabilities": {
+          "REGENERATE": 0.01,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "ALREADY_GONE": 0.99,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "ALREADY_GONE",
+      "rule": "R2",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "ALREADY_GONE",
+        "confidence": 0.97,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "ALREADY_GONE": 0.97,
+          "QUARANTINE": 0.0,
+          "PURGE": 0.0,
+          "REGENERATE": 0.03,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.98,
+          "ALREADY_GONE": 0.02,
+          "REGENERATE": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "DESTROYED",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.98,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.01,
+          "REGENERATE": 0.01
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R4",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 0.64,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "REGENERATE": 0.29,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.71
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "QUARANTINE",
+      "rule": "R4",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "QUARANTINE",
+        "confidence": 0.55,
+        "probabilities": {
+          "REGENERATE": 0.37,
+          "QUARANTINE": 0.63,
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.0,
+          "DESTROY": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.96,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.96,
+          "REGENERATE": 0.02,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.02,
+          "PURGE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.94,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.96,
+          "PURGE": 0.0,
+          "QUARANTINE": 0.01,
+          "REGENERATE": 0.03
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "REGENERATE",
+      "rule": "R7",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 0.96,
+        "probabilities": {
+          "REGENERATE": 0.97,
+          "ALREADY_GONE": 0.0,
+          "PURGE": 0.03,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "REGENERATE",
+      "rule": "R5",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "REGENERATE",
+        "confidence": 1.0,
+        "probabilities": {
+          "QUARANTINE": 0.0,
+          "PURGE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "REGENERATE": 1.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.97,
+        "probabilities": {
+          "REGENERATE": 0.02,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.98,
+          "PURGE": 0.0,
+          "ALREADY_GONE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WORM",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.95,
+        "probabilities": {
+          "PURGE": 0.0,
+          "REGENERATE": 0.04,
+          "NOTIFY_ONLY": 0.96,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "DESTROY",
+      "rule": "R3",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "PURGE",
+        "confidence": 0.57,
+        "probabilities": {
+          "DESTROY": 0.35,
+          "NOTIFY_ONLY": 0.0,
+          "QUARANTINE": 0.0,
+          "ALREADY_GONE": 0.0,
+          "PURGE": 0.64,
+          "REGENERATE": 0.01
+        }
+      },
+      "agrees": false
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "DESTROY",
+      "rule": "R3",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "DESTROY",
+        "confidence": 0.76,
+        "probabilities": {
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.0,
+          "PURGE": 0.13,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.8,
+          "REGENERATE": 0.07
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.74,
+        "probabilities": {
+          "PURGE": 0.18,
+          "NOTIFY_ONLY": 0.79,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.03,
+          "REGENERATE": 0.0,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "exclusive",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.93,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "NOTIFY_ONLY": 0.95,
+          "REGENERATE": 0.01,
+          "DESTROY": 0.01,
+          "QUARANTINE": 0.0,
+          "PURGE": 0.03
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": false,
+        "mode": "remove"
+      },
+      "expected": "PURGE",
+      "rule": "R6",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "PURGE",
+        "confidence": 0.99,
+        "probabilities": {
+          "NOTIFY_ONLY": 0.0,
+          "REGENERATE": 0.01,
+          "QUARANTINE": 0.0,
+          "DESTROY": 0.0,
+          "ALREADY_GONE": 0.0,
+          "PURGE": 0.99
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": false,
+        "mode": "trace"
+      },
+      "expected": "REGENERATE",
+      "rule": "R5",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "PURGE",
+        "confidence": 0.56,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.36,
+          "QUARANTINE": 0.0,
+          "PURGE": 0.64,
+          "DESTROY": 0.0,
+          "NOTIFY_ONLY": 0.0
+        }
+      },
+      "agrees": false
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": true,
+        "mode": "remove"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.84,
+        "probabilities": {
+          "PURGE": 0.13,
+          "REGENERATE": 0.0,
+          "NOTIFY_ONLY": 0.87,
+          "ALREADY_GONE": 0.0,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0
+        }
+      },
+      "agrees": true
+    },
+    {
+      "facts": {
+        "contribution": "SEPARABLE",
+        "storage": "WRITABLE",
+        "scope": "shared",
+        "released": true,
+        "mode": "trace"
+      },
+      "expected": "NOTIFY_ONLY",
+      "rule": "R1",
+      "model": "jev-1.13.0",
+      "answer": {
+        "type": "choice",
+        "choice": "NOTIFY_ONLY",
+        "confidence": 0.92,
+        "probabilities": {
+          "ALREADY_GONE": 0.0,
+          "REGENERATE": 0.01,
+          "DESTROY": 0.0,
+          "QUARANTINE": 0.0,
+          "NOTIFY_ONLY": 0.93,
+          "PURGE": 0.06
+        }
+      },
+      "agrees": true
+    }
+  ]
+}

@@ -25,3 +25,6 @@ uv.lock
 
 # pitch notes, kept local
 hackathon/
+
+# local editor and preview settings
+.claude/

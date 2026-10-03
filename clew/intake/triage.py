@@ -28,6 +28,7 @@ import re
 import sys
 from pathlib import Path
 
+from clew.contracts import REMOVE, Adapter, discover
 from clew.graph import blast_radius as core
 from clew.graph import triggers
 from clew.graph.graph import container_match, parse_image
@@ -41,10 +42,16 @@ TRIAGED = "NoticeTriaged"
 ASK, HELD, DISMISSED = "ask", "held", "dismissed"
 EXIT = {ASK: 0, HELD: 1, DISMISSED: 3}
 
-KINDS = ("container", "input", "label")
+# What a notice can be about: three things the graph records, and the kinds
+# the pipeline's adapter declares.
+KINDS = ("container", "input", "label", "pipeline")
 
 # One choice question takes 255 options, and none is one of them.
 MOST_OPTIONS = 254
+
+# A kind with more values than this is offered only where the notice names
+# the value. An id is a literal, and matching a literal needs no classifier.
+NAMED_ONLY_ABOVE = 50
 
 # First-guess bars from one trial: the only wrong answer scored 0.54 and the
 # lowest right one 0.77. A site adopts its own in a settings file.
@@ -127,47 +134,108 @@ def _tools(image):
     return found
 
 
-def options(graph, kinds=KINDS):
-    """
-    [(option, trigger, meaning)] for everything in the graph a notice could
-    be about. Every trigger here resolves to at least one task, so a choice
-    can always be asked. The option is the bare value where that names one
-    thing, and `kind value` where two kinds share a word.
-    """
-    found = {}                                   # (kind, value) -> meaning
+ID_LIKE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*[A-Za-z0-9]")
 
-    if "container" in kinds:
+
+def named_in_run(notice, graph):
+    """
+    The ids the notice writes out that this run's record also contains: in a
+    task name, a file name or a label. An id is a word with a letter and a
+    digit, so plain words and bare version numbers do not count.
+    """
+    ids = sorted({word for word in ID_LIKE.findall(notice)
+                  if len(word) >= 3 and re.search(r"[A-Za-z]", word) and re.search(r"\d", word)})
+    if not ids:
+        return []
+    recorded = []
+    for task in graph["tasks"].values():
+        recorded += [task.get("name") or "", task.get("process") or ""]
+        recorded += [str(value) for value in (task.get("labels") or {}).values()]
+    for edge in graph["edges"]:
+        recorded.append(Path(edge.get("filename") or "").name)
+        recorded += [str(value) for value in (edge.get("labels") or {}).values()]
+    text = "\n".join(recorded)
+    return [word for word in ids if classifier.names(text, word)]
+
+
+def options(graph, kinds=KINDS, adapter=None, args=None, notice="", notes=None, unoffered=None):
+    """
+    [(option, trigger, meaning)] for everything a notice about this run
+    could concern: what the graph records and what the pipeline's adapter
+    declares. An adapter's kind shadows the engine's of the same name, as it
+    does in impact, so whatever is offered here can be asked there. Every
+    trigger resolves to at least one task. `notes` collects what was left
+    out and why. The option is the bare value where that names one thing,
+    and `kind value` where two kinds share a word.
+    """
+    notes = [] if notes is None else notes
+    unoffered = [] if unoffered is None else unoffered
+    declared = adapter.triggers if adapter is not None else {}
+    depended_on = set(getattr(adapter, "load_bearing_inputs", None) or ())
+    groups = {}                                  # kind -> {value: meaning}
+
+    if "container" in kinds and "container" not in declared:
         ran = {}
         for task in graph["tasks"].values():
             for tool in _tools(task.get("container") or ""):
                 ran.setdefault(tool, set()).add(_step(task))
-        for tool, steps in ran.items():
-            found[("container", tool)] = f"tool in the image run by {_listed(steps)}"
+        groups["container"] = {tool: f"tool in the image run by {_listed(steps)}"
+                               for tool, steps in ran.items()}
 
-    if "input" in kinds:
+    if "input" in kinds and "input" not in declared:
         read = {}
         for edge in graph["edges"]:
             if edge["producer"] == "EXTERNAL":
                 name = Path(edge["filename"]).name
                 consumer = graph["tasks"].get(edge["consumer"], {})
                 read.setdefault(name, set()).add(_step(consumer))
+        groups["input"] = {}
         for name, steps in read.items():
             # An index or dictionary named `<file>.<ext>` is reached by the
             # trigger for the file it belongs to, so it is not offered twice.
             if not any(name.startswith(other + ".") for other in read):
-                found[("input", name)] = f"input file read by {_listed(steps)}"
+                what = "input file this pipeline depends on" if name in depended_on else "input file"
+                groups["input"][name] = f"{what}, read by {_listed(steps)}"
 
     if "label" in kinds:
-        carried = set()
         for holder in list(graph["tasks"].values()) + list(graph["edges"]):
-            carried.update((holder.get("labels") or {}).items())
-        for key, value in carried:
-            if key not in triggers.KINDS and isinstance(value, str) and value:
-                found[(key, value)] = f"{key} recorded on work in this run"
+            for key, value in (holder.get("labels") or {}).items():
+                if key not in triggers.KINDS and key not in declared \
+                        and isinstance(value, str) and value:
+                    groups.setdefault(key, {})[value] = f"{key} recorded on work in this run"
+
+    if "pipeline" in kinds:
+        for kind, declared_kind in declared.items():
+            try:
+                entries = declared_kind.resolve(graph, None, args)
+            except (SystemExit, NotImplementedError, OSError) as bad:
+                notes.append(f"{kind}: not offered. {bad}")
+                unoffered.append(kind)
+                continue
+            about = declared_kind.about or f"{kind} of the {adapter.name} pipeline"
+            reached = {value: nodes for value, nodes in entries.items() if nodes}
+            if len(reached) < len(entries):
+                notes.append(f"{kind}: {len(entries) - len(reached)} of {len(entries)} "
+                             "reach no task in this run and are not offered")
+            groups[kind] = {
+                value: f"{about}, entering at "
+                       f"{_listed(_step(graph['tasks'].get(node, {})) for node in nodes)}"
+                for value, nodes in reached.items()}
+
+    found = {}                                   # (kind, value) -> meaning
+    for kind, values in groups.items():
+        if len(values) > NAMED_ONLY_ABOVE:
+            named = {value: meaning for value, meaning in values.items()
+                     if classifier.names(notice, value)
+                     or (kind == "input" and value in depended_on)}
+            notes.append(f"{kind}: {len(values)} values, so only the {len(named)} "
+                         "the notice names or the pipeline depends on are offered")
+            values = named
+        found.update({(kind, value): meaning for value, meaning in values.items()})
 
     if len(found) > MOST_OPTIONS:
         raise SystemExit(
-            f"this graph offers {len(found)} options and one question takes "
+            f"this run offers {len(found)} options and one question takes "
             f"{MOST_OPTIONS}. Narrow it with --kind.")
 
     shared = {}
@@ -225,10 +293,39 @@ def notice_id(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def triage(notice, offered, settings, answer, backend):
-    """The record of one notice: what was asked, what came back, what follows."""
+def triage(notice, offered, settings, answer, backend, pipeline=None, notes=(), removes=(),
+           named=(), unoffered=()):
+    """
+    The record of one notice: what was asked, what came back, what follows.
+    `removes` names the kinds whose trigger takes a source away. Such an id
+    must stand in the notice as written: a confident guess at who or what
+    is removed is still a guess, so it is held whatever the confidence.
+
+    A dismissal says the notice concerns nothing in this run, and it can
+    only say that about what was offered. So it is refused when the notice
+    writes out an id the run's record contains (`named`), or when a kind
+    could not be offered at all (`unoffered`).
+    """
     outcome, reason = decide(answer, settings)
     by_option = {option: trigger for option, trigger, _ in offered}
+    if outcome == DISMISSED and named:
+        outcome = HELD
+        reason = (f"the notice names {', '.join(named)}, which this run's record contains, "
+                  "and no option offered covers it. "
+                  + ("Its kind may need a file the adapter was not given"
+                     if pipeline else "Choose the pipeline's adapter so its own kinds are offered")
+                  + ", so a person decides")
+    elif outcome == DISMISSED and unoffered:
+        outcome = HELD
+        reason = (f"{', '.join(unoffered)} could not be offered, so none of the options "
+                  "cannot rule it out and a person decides")
+    if outcome == ASK:
+        kind, _, value = by_option[answer["choice"]].partition(":")
+        if kind in removes and not classifier.names(notice, value):
+            outcome = HELD
+            reason = (f"{value} is a {kind}, and the notice does not name it. Removing a "
+                      f"{kind} needs its id as written, so a person decides")
+    meanings = {option: meaning for option, _, meaning in offered}
     asked = request(notice, offered, settings)
     return {
         "notice": {"sha256": notice_id(notice), "text": notice},
@@ -237,8 +334,14 @@ def triage(notice, offered, settings, answer, backend):
             eventlog.canonical(asked).encode("utf-8")).hexdigest(),
         "backend": backend,
         "model": answer["model"],
+        "pipeline": pipeline,
         "options": by_option,
+        "notes": list(notes),
+        "named_only": sorted(removes),
+        "named_in_run": list(named),
         "choice": answer["choice"],
+        # What the chosen option stood for, so the record says what was matched.
+        "meaning": meanings.get(answer["choice"]),
         "confidence": answer["confidence"],
         "probabilities": answer["probabilities"],
         "outcome": outcome,
@@ -265,7 +368,7 @@ def triaged(record, received_seq=None):
 
 # ---------------------------------------------------------------- the command
 
-def show(record, graph_path):
+def show(record, graph_path, flags=""):
     text = " ".join(record["notice"]["text"].split())
     print(f"notice   {record['notice']['sha256'][:12]}  "
           f"{text[:60]}{'...' if len(text) > 60 else ''}")
@@ -275,6 +378,8 @@ def show(record, graph_path):
         counts[kind] = counts.get(kind, 0) + 1
     print("options  " + ", ".join(f"{n} {kind}" for kind, n in sorted(counts.items()))
           + ", and none")
+    for note in record["notes"]:
+        print(f"note     {note}")
     print(f"asked    {record['backend']}"
           + (f" {record['model']}" if record["model"] else "")
           + f", settings {record['settings']['version']} "
@@ -283,7 +388,7 @@ def show(record, graph_path):
     print(f"choice   {record['choice']}{sure}")
     print(f"outcome  {record['outcome']}: {record['reason']}")
     if record["trigger"]:
-        print(f"\nnext: clew impact --graph {graph_path} --trigger {record['trigger']}")
+        print(f"\nnext: clew impact --graph {graph_path}{flags} --trigger {record['trigger']}")
     elif record["outcome"] == HELD:
         print("\nA person decides this one. Nothing was asked and nothing was dismissed.")
 
@@ -300,9 +405,22 @@ def read_notice(args):
     return text
 
 
+def installed_adapters():
+    try:
+        return discover(Adapter)
+    except SystemExit:
+        return {}
+
+
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    adapters = installed_adapters()
+    first = argparse.ArgumentParser(add_help=False)
+    first.add_argument("--pipeline")
+    adapter = adapters.get(first.parse_known_args(argv)[0].pipeline)
+
     parser = argparse.ArgumentParser(
-        prog="clew triage",
+        prog="clew triage", conflict_handler="resolve",
         description="Turn a written notice into a trigger, or hold it for a person.")
     parser.add_argument("notice", nargs="?", help="the notice text")
     parser.add_argument("--notice-file", metavar="PATH", help="read the notice from a file, - for stdin")
@@ -323,7 +441,17 @@ def main(argv=None):
     parser.add_argument("--actor", default="clew-triage",
                         help="who the log says recorded it (default: clew-triage)")
     parser.add_argument("--source", help="where the notice came from, for the log")
+    parser.add_argument("--pipeline", choices=sorted(adapters),
+                        help="the adapter whose own trigger kinds are offered too")
+    shared_flags = {action.dest for action in parser._actions}
+    for kind in (adapter.triggers.values() if adapter else ()):
+        kind.add_arguments(parser)
     args = parser.parse_args(argv)
+    # What impact needs to answer the same trigger: the adapter and its own flags.
+    flags = f" --pipeline {adapter.name}" if adapter else ""
+    for action in parser._actions:
+        if action.dest not in shared_flags and getattr(args, action.dest, None):
+            flags += f" {action.option_strings[0]} {getattr(args, action.dest)}"
 
     notice = read_notice(args)
     try:
@@ -331,9 +459,11 @@ def main(argv=None):
     except (InvalidSettings, OSError, ValueError) as bad:
         raise SystemExit(f"settings rejected: {bad}")
     graph = core.load_graph(args.graph)
-    offered = options(graph, tuple(args.kind) if args.kind else KINDS)
+    notes, unoffered = [], []
+    offered = options(graph, tuple(args.kind) if args.kind else KINDS,
+                      adapter=adapter, args=args, notice=notice, notes=notes, unoffered=unoffered)
     if not offered:
-        raise SystemExit("this graph offers nothing a notice could be about")
+        raise SystemExit("this run offers nothing a notice could be about")
     asked = request(notice, offered, settings)
 
     if args.print_request:
@@ -373,11 +503,15 @@ def main(argv=None):
     except (Refused, OSError, ValueError) as bad:
         raise SystemExit(f"triage refused: {bad}")
 
-    record = triage(notice, offered, settings, answer, backend)
+    removes = {kind for kind, declared in (adapter.triggers.items() if adapter else ())
+               if declared.mode is REMOVE}
+    record = triage(notice, offered, settings, answer, backend,
+                    pipeline=adapter.name if adapter else None, notes=notes, removes=removes,
+                    named=named_in_run(notice, graph), unoffered=unoffered)
     if conn is not None:
         eventlog.append(conn, actor=args.actor, **triaged(record, received_seq))
 
-    show(record, args.graph)
+    show(record, args.graph, flags)
     if args.json_out:
         Path(args.json_out).write_text(json.dumps(record, indent=2) + "\n")
         print(f"wrote {args.json_out}")

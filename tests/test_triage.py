@@ -16,6 +16,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from types import SimpleNamespace
+
+from clew.contracts import REMOVE, Trigger
+from clew.contracts import trigger as triggers_contract
 from clew.graph import blast_radius as core
 from clew.graph import triggers
 from clew.intake import classifier, triage
@@ -89,11 +93,24 @@ class TestOptions(unittest.TestCase):
         options = {option for option, _, _ in triage.options(graph)}
         self.assertLessEqual({"container toolkit", "site toolkit"}, options)
 
+    def test_a_kind_with_many_values_is_offered_only_where_the_notice_names_one(self):
+        graph = json.loads(json.dumps(GRAPH))
+        for n in range(triage.NAMED_ONLY_ABOVE + 10):
+            graph["tasks"][f"t{n}"] = {"hash": f"t{n}", "labels": {"lot": f"L{n}"}}
+        notes = []
+        offered = triage.options(graph, notice="lot L7 was recalled", notes=notes)
+        lots = [trigger for _, trigger, _ in offered if trigger.startswith("lot:")]
+        self.assertEqual(lots, ["lot:L7"])
+        self.assertTrue(any("lot: 60 values" in note for note in notes), notes)
+        # The small kinds are untouched.
+        self.assertIn("container:toolkit", {t for _, t, _ in offered})
+
     def test_too_many_options_is_said_not_truncated(self):
         graph = json.loads(json.dumps(GRAPH))
-        graph["tasks"]["c"]["labels"] = {}
-        for n in range(triage.MOST_OPTIONS + 1):
-            graph["tasks"][f"t{n}"] = {"hash": f"t{n}", "labels": {"lot": f"L{n}"}}
+        for key in range(8):
+            for n in range(40):
+                graph["tasks"][f"t{key}-{n}"] = {"hash": f"t{key}-{n}",
+                                                 "labels": {f"key{key}": f"v{key}-{n}"}}
         with self.assertRaises(SystemExit) as stopped:
             triage.options(graph)
         self.assertIn("--kind", str(stopped.exception))
@@ -101,6 +118,134 @@ class TestOptions(unittest.TestCase):
     def test_the_shipped_run_offers_its_twelve_tools(self):
         offered = triage.options(core.load_graph(str(SHIPPED)), kinds=("container",))
         self.assertEqual(len(offered), 12)
+
+
+class ListedKind(Trigger):
+    """A pipeline's own kind: ids a site knows, each entering at named tasks."""
+    mode = REMOVE
+    about = "unit named by the site"
+
+    def __init__(self, entries):
+        self.entries = entries
+
+    def resolve(self, graph, value, args):
+        return self.entries
+
+
+class NeedsAFile(Trigger):
+    def resolve(self, graph, value, args):
+        raise SystemExit("--sheet is required")
+
+
+def pipeline(**kinds):
+    return SimpleNamespace(name="site", triggers=kinds, load_bearing_inputs=("reference.dat",))
+
+
+class TestPipelineKinds(unittest.TestCase):
+    def test_a_declared_kind_is_offered_with_what_it_names_and_where_it_enters(self):
+        site = pipeline(unit=ListedKind({"U1": ["a"], "U2": ["b"]}))
+        offered = {trigger: meaning for _, trigger, meaning in triage.options(GRAPH, adapter=site)}
+        self.assertEqual(offered["unit:U1"], "unit named by the site, entering at PREP")
+        self.assertIn("unit:U2", offered)
+
+    def test_what_is_offered_resolves_through_the_lookup_impact_uses(self):
+        site = pipeline(unit=ListedKind({"U1": ["a"]}))
+        for _, trigger, _ in triage.options(GRAPH, adapter=site):
+            kind, value = triggers_contract.parse(trigger)
+            found = triggers_contract.lookup(site, kind, GRAPH).resolve(GRAPH, value, None)
+            self.assertTrue(any(found.values()), trigger)
+
+    def test_an_id_that_reaches_no_task_is_left_out_and_said(self):
+        notes = []
+        site = pipeline(unit=ListedKind({"U1": ["a"], "U9": []}))
+        offered = {t for _, t, _ in triage.options(GRAPH, adapter=site, notes=notes)}
+        self.assertNotIn("unit:U9", offered)
+        self.assertTrue(any("1 of 2 reach no task" in note for note in notes), notes)
+
+    def test_a_kind_that_cannot_list_its_values_is_said_not_dropped_silently(self):
+        notes = []
+        offered = triage.options(GRAPH, adapter=pipeline(unit=NeedsAFile()), notes=notes)
+        self.assertFalse([t for _, t, _ in offered if t.startswith("unit:")])
+        self.assertEqual(notes, ["unit: not offered. --sheet is required"])
+
+    def test_a_declared_kind_shadows_the_engine_kind_of_the_same_name(self):
+        site = pipeline(container=ListedKind({"U1": ["a"]}))
+        offered = {t for _, t, _ in triage.options(GRAPH, adapter=site)}
+        self.assertIn("container:U1", offered)
+        self.assertNotIn("container:toolkit", offered)
+
+    def test_an_input_the_pipeline_depends_on_is_marked(self):
+        offered = {t: m for _, t, m in triage.options(GRAPH, adapter=pipeline())}
+        self.assertIn("depends on", offered["input:reference.dat"])
+
+    def test_the_record_names_the_pipeline_and_carries_the_notes(self):
+        site = pipeline(unit=ListedKind({"U1": ["a"]}))
+        offered = triage.options(GRAPH, adapter=site)
+        answer = {"choice": "U1", "confidence": 0.9, "probabilities": {}, "model": MODEL}
+        record = triage.triage("n", offered, triage.V1, answer, "supplied",
+                               pipeline="site", notes=["a note"])
+        self.assertEqual((record["pipeline"], record["notes"], record["trigger"]),
+                         ("site", ["a note"], "unit:U1"))
+
+
+class TestRemovalsMustBeNamed(unittest.TestCase):
+    """An id that takes a source away is asked only when the notice writes it out."""
+
+    def sorted_as(self, notice, choice, confidence=0.99):
+        site = pipeline(unit=ListedKind({"U3": ["a"]}))
+        offered = triage.options(GRAPH, adapter=site)
+        answer = {"choice": choice, "confidence": confidence, "probabilities": {}, "model": MODEL}
+        return triage.triage(notice, offered, triage.V1, answer, "jev", removes={"unit"})
+
+    def test_a_removal_the_notice_names_is_asked(self):
+        record = self.sorted_as("U3 withdrew", "U3")
+        self.assertEqual((record["outcome"], record["trigger"]), ("ask", "unit:U3"))
+
+    def test_a_confident_guess_at_a_removal_is_held(self):
+        record = self.sorted_as("the third unit withdrew", "U3")
+        self.assertEqual((record["outcome"], record["trigger"]), ("held", None))
+        self.assertIn("does not name it", record["reason"])
+
+    def test_a_described_tool_is_still_asked(self):
+        record = self.sorted_as("the preparation toolkit is broken", "toolkit", 0.85)
+        self.assertEqual(record["trigger"], "container:toolkit")
+
+    def test_the_record_says_which_kinds_must_be_named(self):
+        self.assertEqual(self.sorted_as("U3 withdrew", "U3")["named_only"], ["unit"])
+
+
+class TestDismissalIsRefused(unittest.TestCase):
+    """None of the options is only worth what the options covered."""
+
+    NAMED = dict(GRAPH, tasks=dict(GRAPH["tasks"], a=dict(GRAPH["tasks"]["a"], name="PREP (unit_003)")))
+
+    def sorted_as(self, notice, graph, **given):
+        answer = {"choice": "none", "confidence": 0.99, "probabilities": {}, "model": MODEL}
+        return triage.triage(notice, triage.options(graph), triage.V1, answer, "jev",
+                             named=triage.named_in_run(notice, graph), **given)
+
+    def test_an_id_the_run_contains_and_no_option_covers_is_held(self):
+        record = self.sorted_as("unit_003 withdrew on 2 October", self.NAMED)
+        self.assertEqual(record["outcome"], "held")
+        self.assertEqual(record["named_in_run"], ["unit_003"])
+        self.assertIn("Choose the pipeline's adapter", record["reason"])
+
+    def test_a_notice_about_nothing_in_the_run_is_still_dismissed(self):
+        record = self.sorted_as("gadget 2.7.11 corrupts its output, see ticket AB12", self.NAMED)
+        self.assertEqual(record["outcome"], "dismissed")
+
+    def test_plain_words_and_bare_versions_are_not_ids(self):
+        self.assertEqual(triage.named_in_run("PREP version 2.1 of the step", self.NAMED), [])
+
+    def test_an_id_inside_a_file_name_counts(self):
+        graph = json.loads(json.dumps(GRAPH))
+        graph["edges"][0]["filename"] = "/in/unit_003-L1_1.dat"
+        self.assertEqual(triage.named_in_run("recall of unit_003", graph), ["unit_003"])
+
+    def test_a_kind_that_could_not_be_offered_blocks_dismissal(self):
+        record = self.sorted_as("something unrelated", GRAPH, unoffered=["unit"])
+        self.assertEqual(record["outcome"], "held")
+        self.assertIn("unit could not be offered", record["reason"])
 
 
 class TestRequest(unittest.TestCase):
@@ -116,6 +261,7 @@ class TestDeciding(unittest.TestCase):
         record = sorted_as("toolkit", 0.92)
         self.assertEqual(record["outcome"], triage.ASK)
         self.assertEqual(record["trigger"], "container:toolkit")
+        self.assertIn("PREP", record["meaning"])
 
     def test_an_unsure_choice_is_held_with_no_trigger(self):
         record = sorted_as("toolkit", 0.54)

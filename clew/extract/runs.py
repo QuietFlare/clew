@@ -19,6 +19,8 @@ def recorded_timestamp(path):
         record = json.loads(Path(path).read_text())
     except (OSError, ValueError):
         return ""
+    if not isinstance(record, dict):
+        return ""
     for holder in (record, record.get("run") or {}):
         if not isinstance(holder, dict):
             continue

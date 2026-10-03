@@ -5,11 +5,15 @@
 [![Tests](https://github.com/QuietFlare/clew/actions/workflows/ci.yml/badge.svg)](https://github.com/QuietFlare/clew/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
-Clew answers questions about workflow runs that the engine cannot: what a
-bad input reached, what can safely be deleted, and what one run took from
-another. It reads the record the engine already writes, for Nextflow,
-Snakemake, Cromwell, Horus, DNAnexus and Latch, and changes nothing in
-your pipeline.
+Clew turns the lineage your workflow engine already writes into decisions
+you can defend. When an input or container goes bad, it says what to do
+about each output it reached. When the disk fills up, it names the work
+directories that are safe to delete and shows why. You can seal any of
+these decisions as evidence that an auditor checks offline, with no
+access to your systems.
+
+It reads the record from Nextflow, Snakemake, Cromwell, Horus, DNAnexus
+and Latch, and changes nothing in your pipeline.
 
 The examples are from genomics because that is where it was first used.
 The graph underneath is neutral: tasks that read files and write files,

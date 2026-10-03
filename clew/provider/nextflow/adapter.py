@@ -84,8 +84,9 @@ class SheetKind(Trigger):
 
     mode = REMOVE
 
-    def __init__(self, column, members=None, locate=None):
+    def __init__(self, column, members=None, locate=None, about=None):
         self.column, self.members = column, members
+        self.about = about or f"{column} named in the launch sheet"
         self.locate = locate  # optional: graph -> sheet path, when the site knows where runs keep it
 
     def add_arguments(self, parser):

@@ -15,6 +15,8 @@ TRACE, REMOVE = Mode.TRACE, Mode.REMOVE
 
 class Trigger:
     mode = Mode.TRACE
+    # One line saying what a value of this kind names, for a reader choosing among kinds.
+    about = ""
 
     def add_arguments(self, parser):
         """Flags this kind needs, if any."""

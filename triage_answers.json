@@ -1,0 +1,590 @@
+[
+  {
+    "notice": "GATK 4.5 BaseRecalibrator writes wrong covariates for reads with soft clips. Upgrade to 4.6.",
+    "expected": "gatk4",
+    "naming": "named",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "gatk4",
+      "confidence": 0.92,
+      "probabilities": {
+        "multiqc": 0.0,
+        "none": 0.05,
+        "fastqc": 0.0,
+        "bwa": 0.0,
+        "bcftools": 0.0,
+        "gawk": 0.0,
+        "samtools": 0.0,
+        "gcnvkernel": 0.02,
+        "gatk4": 0.93,
+        "mosdepth": 0.0,
+        "vcftools": 0.0,
+        "htslib": 0.0,
+        "strelka": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "samtools 1.21: stats reports a wrong insert size on CRAM input.",
+    "expected": "samtools",
+    "naming": "named",
+    "baseline": "samtools",
+    "answer": {
+      "type": "choice",
+      "choice": "samtools",
+      "confidence": 0.98,
+      "probabilities": {
+        "htslib": 0.0,
+        "bcftools": 0.0,
+        "fastqc": 0.0,
+        "bwa": 0.0,
+        "gawk": 0.0,
+        "multiqc": 0.0,
+        "gatk4": 0.0,
+        "gcnvkernel": 0.0,
+        "mosdepth": 0.0,
+        "strelka": 0.0,
+        "samtools": 0.98,
+        "none": 0.02,
+        "vcftools": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "Strelka2 2.9.10 miscounts indel alleles next to homopolymers.",
+    "expected": "strelka",
+    "naming": "named",
+    "baseline": "strelka",
+    "answer": {
+      "type": "choice",
+      "choice": "strelka",
+      "confidence": 0.92,
+      "probabilities": {
+        "strelka": 0.92,
+        "vcftools": 0.0,
+        "htslib": 0.0,
+        "gatk4": 0.0,
+        "fastqc": 0.0,
+        "mosdepth": 0.0,
+        "bwa": 0.0,
+        "gcnvkernel": 0.0,
+        "samtools": 0.0,
+        "gawk": 0.0,
+        "none": 0.08,
+        "bcftools": 0.0,
+        "multiqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "MultiQC 1.33 drops samples whose names contain a dot.",
+    "expected": "multiqc",
+    "naming": "named",
+    "baseline": "multiqc",
+    "answer": {
+      "type": "choice",
+      "choice": "multiqc",
+      "confidence": 0.96,
+      "probabilities": {
+        "mosdepth": 0.0,
+        "gatk4": 0.0,
+        "htslib": 0.0,
+        "gcnvkernel": 0.0,
+        "gawk": 0.0,
+        "multiqc": 0.97,
+        "none": 0.03,
+        "bcftools": 0.0,
+        "strelka": 0.0,
+        "samtools": 0.0,
+        "fastqc": 0.0,
+        "vcftools": 0.0,
+        "bwa": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "bcftools stats 1.21 counts multiallelic sites twice.",
+    "expected": "bcftools",
+    "naming": "named",
+    "baseline": "bcftools",
+    "answer": {
+      "type": "choice",
+      "choice": "bcftools",
+      "confidence": 0.93,
+      "probabilities": {
+        "gcnvkernel": 0.0,
+        "samtools": 0.0,
+        "gawk": 0.0,
+        "htslib": 0.0,
+        "bcftools": 0.9400000000000001,
+        "none": 0.06,
+        "vcftools": 0.0,
+        "strelka": 0.0,
+        "gatk4": 0.0,
+        "mosdepth": 0.0,
+        "bwa": 0.0,
+        "multiqc": 0.0,
+        "fastqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "mosdepth 0.3.10 reports zero coverage for the last window of each contig.",
+    "expected": "mosdepth",
+    "naming": "named",
+    "baseline": "mosdepth",
+    "answer": {
+      "type": "choice",
+      "choice": "mosdepth",
+      "confidence": 0.99,
+      "probabilities": {
+        "bcftools": 0.0,
+        "bwa": 0.0,
+        "htslib": 0.0,
+        "gatk4": 0.0,
+        "gawk": 0.0,
+        "mosdepth": 0.99,
+        "none": 0.01,
+        "multiqc": 0.0,
+        "strelka": 0.0,
+        "gcnvkernel": 0.0,
+        "vcftools": 0.0,
+        "samtools": 0.0,
+        "fastqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "HTSlib 1.21 fails to decode CRAM blocks that embed the reference.",
+    "expected": "htslib",
+    "naming": "named",
+    "baseline": "htslib",
+    "answer": {
+      "type": "choice",
+      "choice": "htslib",
+      "confidence": 0.87,
+      "probabilities": {
+        "bwa": 0.0,
+        "bcftools": 0.0,
+        "vcftools": 0.0,
+        "none": 0.03,
+        "strelka": 0.0,
+        "gawk": 0.0,
+        "gcnvkernel": 0.0,
+        "gatk4": 0.0,
+        "htslib": 0.89,
+        "multiqc": 0.0,
+        "samtools": 0.08,
+        "mosdepth": 0.0,
+        "fastqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "The duplicate marking step flags optical duplicates wrongly on patterned flowcells.",
+    "expected": "gatk4",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "gatk4",
+      "confidence": 0.8,
+      "probabilities": {
+        "mosdepth": 0.0,
+        "gawk": 0.0,
+        "bcftools": 0.0,
+        "gatk4": 0.83,
+        "bwa": 0.0,
+        "none": 0.08,
+        "vcftools": 0.0,
+        "multiqc": 0.0,
+        "strelka": 0.0,
+        "gcnvkernel": 0.05,
+        "htslib": 0.01,
+        "samtools": 0.03,
+        "fastqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "Advisory for the short-read aligner: mem mode clips supplementary alignments wrongly.",
+    "expected": "bwa",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "bwa",
+      "confidence": 0.78,
+      "probabilities": {
+        "strelka": 0.0,
+        "multiqc": 0.0,
+        "none": 0.06,
+        "gcnvkernel": 0.0,
+        "gatk4": 0.0,
+        "samtools": 0.08,
+        "fastqc": 0.0,
+        "gawk": 0.0,
+        "htslib": 0.06,
+        "vcftools": 0.0,
+        "bcftools": 0.0,
+        "bwa": 0.8,
+        "mosdepth": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "The read quality report shows wrong per-base scores for reads longer than 500 bases.",
+    "expected": "fastqc",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "fastqc",
+      "confidence": 0.91,
+      "probabilities": {
+        "bcftools": 0.0,
+        "vcftools": 0.0,
+        "fastqc": 0.92,
+        "gatk4": 0.01,
+        "htslib": 0.01,
+        "mosdepth": 0.0,
+        "bwa": 0.0,
+        "gcnvkernel": 0.0,
+        "samtools": 0.0,
+        "gawk": 0.0,
+        "strelka": 0.0,
+        "multiqc": 0.01,
+        "none": 0.05
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "bgzip and tabix: indexes for files over 4 GB are truncated.",
+    "expected": "htslib",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "htslib",
+      "confidence": 0.91,
+      "probabilities": {
+        "none": 0.07,
+        "vcftools": 0.0,
+        "bwa": 0.0,
+        "fastqc": 0.0,
+        "mosdepth": 0.0,
+        "gcnvkernel": 0.0,
+        "gatk4": 0.0,
+        "gawk": 0.0,
+        "strelka": 0.0,
+        "multiqc": 0.0,
+        "samtools": 0.0,
+        "htslib": 0.92,
+        "bcftools": 0.01
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "The TsTv-by-count and TsTv-by-qual summaries are off by one in the last bin.",
+    "expected": "vcftools",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "vcftools",
+      "confidence": 0.95,
+      "probabilities": {
+        "mosdepth": 0.0,
+        "fastqc": 0.0,
+        "gcnvkernel": 0.0,
+        "none": 0.03,
+        "vcftools": 0.97,
+        "samtools": 0.0,
+        "bwa": 0.0,
+        "multiqc": 0.0,
+        "gawk": 0.0,
+        "gatk4": 0.0,
+        "htslib": 0.0,
+        "strelka": 0.0,
+        "bcftools": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "Base quality recalibration tables come out wrong when the known-sites file has no index.",
+    "expected": "gatk4",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "gatk4",
+      "confidence": 0.9,
+      "probabilities": {
+        "bwa": 0.0,
+        "none": 0.07,
+        "multiqc": 0.0,
+        "gatk4": 0.92,
+        "htslib": 0.0,
+        "strelka": 0.0,
+        "fastqc": 0.0,
+        "bcftools": 0.0,
+        "gcnvkernel": 0.01,
+        "samtools": 0.0,
+        "vcftools": 0.0,
+        "gawk": 0.0,
+        "mosdepth": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "The small variant caller run in single-sample mode ignores the call regions file.",
+    "expected": "strelka",
+    "naming": "described",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "strelka",
+      "confidence": 0.77,
+      "probabilities": {
+        "none": 0.09,
+        "gcnvkernel": 0.0,
+        "mosdepth": 0.0,
+        "gawk": 0.0,
+        "bcftools": 0.0,
+        "bwa": 0.0,
+        "gatk4": 0.11,
+        "multiqc": 0.0,
+        "samtools": 0.0,
+        "htslib": 0.0,
+        "strelka": 0.8,
+        "vcftools": 0.0,
+        "fastqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "STAR 2.7.11 writes corrupted splice junction files in two-pass mode.",
+    "expected": "none",
+    "naming": "absent",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.99,
+      "probabilities": {
+        "gcnvkernel": 0.0,
+        "htslib": 0.0,
+        "vcftools": 0.0,
+        "fastqc": 0.0,
+        "bcftools": 0.0,
+        "strelka": 0.0,
+        "multiqc": 0.0,
+        "gawk": 0.0,
+        "bwa": 0.0,
+        "none": 1.0,
+        "gatk4": 0.0,
+        "samtools": 0.0,
+        "mosdepth": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "Salmon 1.10 shows a quantification bias on long reads.",
+    "expected": "none",
+    "naming": "absent",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1.0,
+      "probabilities": {
+        "bcftools": 0.0,
+        "bwa": 0.0,
+        "htslib": 0.0,
+        "gawk": 0.0,
+        "gatk4": 0.0,
+        "mosdepth": 0.0,
+        "gcnvkernel": 0.0,
+        "none": 1.0,
+        "strelka": 0.0,
+        "vcftools": 0.0,
+        "multiqc": 0.0,
+        "samtools": 0.0,
+        "fastqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "DeepVariant 1.6 miscalls in the HLA region with the PacBio model.",
+    "expected": "none",
+    "naming": "absent",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.98,
+      "probabilities": {
+        "strelka": 0.0,
+        "vcftools": 0.0,
+        "fastqc": 0.0,
+        "gcnvkernel": 0.0,
+        "none": 0.98,
+        "gatk4": 0.02,
+        "samtools": 0.0,
+        "bcftools": 0.0,
+        "bwa": 0.0,
+        "multiqc": 0.0,
+        "gawk": 0.0,
+        "mosdepth": 0.0,
+        "htslib": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "The cluster scheduler is down for maintenance on Saturday.",
+    "expected": "none",
+    "naming": "absent",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1.0,
+      "probabilities": {
+        "gcnvkernel": 0.0,
+        "fastqc": 0.0,
+        "samtools": 0.0,
+        "bcftools": 0.0,
+        "vcftools": 0.0,
+        "bwa": 0.0,
+        "mosdepth": 0.0,
+        "htslib": 0.0,
+        "none": 1.0,
+        "gatk4": 0.0,
+        "strelka": 0.0,
+        "multiqc": 0.0,
+        "gawk": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "BLAST+ 2.15 changes its database format.",
+    "expected": "none",
+    "naming": "absent",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 1.0,
+      "probabilities": {
+        "gcnvkernel": 0.0,
+        "bwa": 0.0,
+        "samtools": 0.0,
+        "none": 1.0,
+        "htslib": 0.0,
+        "vcftools": 0.0,
+        "strelka": 0.0,
+        "fastqc": 0.0,
+        "gawk": 0.0,
+        "mosdepth": 0.0,
+        "gatk4": 0.0,
+        "bcftools": 0.0,
+        "multiqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "fastp 0.23 drops reads when adapter trimming meets a poly-G tail.",
+    "expected": "none",
+    "naming": "near miss",
+    "baseline": "none",
+    "answer": {
+      "type": "choice",
+      "choice": "none",
+      "confidence": 0.99,
+      "probabilities": {
+        "htslib": 0.0,
+        "gawk": 0.0,
+        "bcftools": 0.0,
+        "gatk4": 0.0,
+        "bwa": 0.0,
+        "none": 1.0,
+        "fastqc": 0.0,
+        "samtools": 0.0,
+        "strelka": 0.0,
+        "gcnvkernel": 0.0,
+        "vcftools": 0.0,
+        "mosdepth": 0.0,
+        "multiqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": null
+  },
+  {
+    "notice": "BWA-MEM2 2.2.1 indexes cannot be read by earlier releases.",
+    "expected": "none",
+    "naming": "near miss",
+    "baseline": "bwa",
+    "answer": {
+      "type": "choice",
+      "choice": "bwa",
+      "confidence": 0.54,
+      "probabilities": {
+        "mosdepth": 0.0,
+        "gatk4": 0.0,
+        "gcnvkernel": 0.0,
+        "fastqc": 0.0,
+        "strelka": 0.0,
+        "bcftools": 0.0,
+        "gawk": 0.0,
+        "samtools": 0.01,
+        "none": 0.39,
+        "vcftools": 0.0,
+        "htslib": 0.01,
+        "bwa": 0.59,
+        "multiqc": 0.0
+      }
+    },
+    "model": "jev-1.13.0",
+    "miss": "false alarm"
+  }
+]

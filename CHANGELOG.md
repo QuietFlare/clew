@@ -15,11 +15,26 @@ follow [Semantic Versioning](https://semver.org/).
   `TYPESAFE_API_KEY` is set and by name matching without it.
   `--print-request` and `--answer` let another caller, a pipeline plugin
   for example, do the asking. `--dsn` logs `NoticeReceived` and
-  `NoticeTriaged`.
+  `NoticeTriaged`. With `--pipeline`, the adapter's own trigger kinds are
+  offered too, through the same lookup `impact` uses, so a notice about
+  a subject or a ligand becomes that kind's trigger. A kind with more
+  than 50 values is offered only where the notice names the value.
+  A kind that removes its subject is asked only when the notice writes
+  the id out. A confident choice of an unnamed id is held for a person.
+  A dismissal is refused when the notice writes out an id the run's
+  record contains, or when a kind could not be offered at all.
 - `clew.agent.mainsheet`: Clew's commands as tools for a Mainsheet agent,
-  and `examples/clew-agent.yaml`, an agent with no other tools. It triages
+  and `clew/agent/agent.yaml`, an agent with no other tools. It triages
   each notice in an inbox, plans and seals the ones triage asks about, and
   writes a recommendation for a person on the ones triage holds.
+- `clew decide`: a person's decision on a notice that triage held. They
+  ask one of the triggers triage offered, or dismiss the notice, under
+  their own name. The decision is written beside the record, goes into
+  the sealed bundle, and with `--dsn` is logged as `NoticeDecided`.
+- `clew ui`: a local page that picks a run folder and a run, takes a
+  notice and runs the agent over it, showing each step as its file
+  appears. It listens on this machine only, needs the token in its
+  link, and uses the standard library. Running a notice needs Mainsheet.
 
 ## [0.5.0] - 2026-09-16
 

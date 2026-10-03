@@ -16,7 +16,8 @@ A held notice gets a recommendation, never a decision: clew_recommend
 writes review.json for a person and changes nothing else.
 
 Optional settings, all from the environment: CLEW_TRIAGE_BACKEND (jev or
-name), CLEW_PIPELINE, CLEW_WORK_ROOT and CLEW_RESULTS, passed to the
+name), CLEW_PIPELINE and CLEW_ADAPTER_ARGS (the adapter and its own flags,
+such as a launch sheet), CLEW_WORK_ROOT and CLEW_RESULTS, passed to the
 commands that take them.
 """
 
@@ -25,6 +26,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -72,11 +74,24 @@ def record_of(base, notice):
     return json.loads(path.read_text()) if path.is_file() else None
 
 
+def decision_of(base, notice):
+    """A person's decision on a held notice, or None while there is none."""
+    path = base / "out" / notice / "decision.json"
+    return json.loads(path.read_text()) if path.is_file() else None
+
+
 def run_clew(*argv):
     """One clew command, with no shell between the arguments and the program."""
     done = subprocess.run([sys.executable, "-m", "clew", *map(str, argv)],
                           capture_output=True, text=True, timeout=300)
     return done.returncode, done.stdout, done.stderr
+
+
+def pipeline_flags(env=None):
+    """The adapter and its own flags, the same for triage and impact so they cannot disagree."""
+    env = os.environ if env is None else env
+    flags = ["--pipeline", env["CLEW_PIPELINE"]] if env.get("CLEW_PIPELINE") else []
+    return flags + shlex.split(env.get("CLEW_ADAPTER_ARGS", ""))
 
 
 def _failed(command, code, out, err):
@@ -85,6 +100,14 @@ def _failed(command, code, out, err):
 
 
 # -------------------------------------------------------------------- tools
+
+def _state(record, decision):
+    if record is None:
+        return "waiting"
+    if decision:
+        return f"held, then a person decided: {decision['decision']}"
+    return record["outcome"]
+
 
 def inbox(base):
     """Every notice waiting or already sorted. Ids and states, never the text."""
@@ -96,7 +119,7 @@ def inbox(base):
         listed.append({
             "notice": path.stem,
             "sha256": hashlib.sha256(path.read_text().strip().encode("utf-8")).hexdigest()[:12],
-            "state": record["outcome"] if record else "waiting",
+            "state": _state(record, decision_of(base, path.stem)),
         })
     return listed
 
@@ -105,7 +128,7 @@ def triage(base, notice):
     source = notice_file(base, notice)
     target = out_dir(base, notice) / "triage.json"
     argv = ["triage", "--graph", base / "graph.json", "--notice-file", source,
-            "--json", target, "--source", f"inbox/{source.name}"]
+            "--json", target, "--source", f"inbox/{source.name}"] + pipeline_flags()
     if os.environ.get("CLEW_TRIAGE_BACKEND"):
         argv += ["--backend", os.environ["CLEW_TRIAGE_BACKEND"]]
     code, out, err = run_clew(*argv)
@@ -113,24 +136,31 @@ def triage(base, notice):
         raise _failed("triage", code, out, err)
     record = json.loads(target.read_text())
     return {key: record[key] for key in
-            ("outcome", "choice", "confidence", "trigger", "reason", "backend", "model")}
+            ("outcome", "choice", "confidence", "trigger", "reason", "backend", "model", "notes")}
 
 
-def impact(base, notice):
+def impact(base, notice, env=None):
+    env = os.environ if env is None else env
     notice_file(base, notice)
     record = record_of(base, notice)
     if record is None:
         raise ToolError(f"{notice} has not been triaged; call clew_triage first")
-    if record["outcome"] != "ask":
+    trigger = record["trigger"]
+    if record["outcome"] == "held":
+        # A held notice moves only on a person's recorded decision to ask a trigger.
+        decision = decision_of(base, notice)
+        if not decision or decision["decision"] != "ask":
+            raise ToolError(f"{notice} is held, and no person has decided to ask a trigger")
+        trigger = decision["trigger"]
+    elif record["outcome"] != "ask":
         raise ToolError(f"{notice} was {record['outcome']}; impact runs only on a "
                         "trigger that triage asked")
     target = out_dir(base, notice) / "plan.json"
     argv = ["impact", "--graph", base / "graph.json",
-            "--trigger", record["trigger"], "--json", target]
-    for variable, flag in (("CLEW_PIPELINE", "--pipeline"), ("CLEW_WORK_ROOT", "--work-root"),
-                           ("CLEW_RESULTS", "--results")):
-        if os.environ.get(variable):
-            argv += [flag, os.environ[variable]]
+            "--trigger", trigger, "--json", target] + pipeline_flags(env)
+    for variable, flag in (("CLEW_WORK_ROOT", "--work-root"), ("CLEW_RESULTS", "--results")):
+        if env.get(variable):
+            argv += [flag, env[variable]]
     code, out, err = run_clew(*argv)
     if code != 0 or not target.is_file():
         raise _failed("impact", code, out, err)
@@ -147,19 +177,31 @@ def seal(base, notice):
     plan, bundle = folder / "plan.json", folder / "bundle"
     if not plan.is_file():
         raise ToolError(f"{notice} has no plan; call clew_impact first")
-    code, out, err = run_clew("evidence", "build", "--out", bundle, "--plan", plan,
-                              "--input", base / "graph.json",
-                              "--input", folder / "triage.json")
+    inputs = ["--input", base / "graph.json", "--input", folder / "triage.json"]
+    if (folder / "decision.json").is_file():
+        inputs += ["--input", folder / "decision.json"]
+    code, out, err = run_clew("evidence", "build", "--out", bundle, "--plan", plan, *inputs)
     if code != 0:
         raise _failed("evidence build", code, out, err)
     code, out, err = run_clew("evidence", "verify", bundle)
     return {"bundle": str(bundle), "verified": code == 0}
 
 
+def decide(base, notice, actor, ask=None, reason=""):
+    """Record a person's decision. Never offered to the agent as a tool: it is not the agent's to make."""
+    notice_file(base, notice)
+    argv = ["decide", "--record", out_dir(base, notice) / "triage.json", "--actor", actor,
+            "--reason", reason or ""] + (["--ask", ask] if ask else ["--dismiss"])
+    code, out, err = run_clew(*argv)
+    if code != 0:
+        raise _failed("decide", code, out, err)
+    return decision_of(base, notice)
+
+
 def options(base):
     """What this run used, in the words triage offers to the classifier."""
     code, out, err = run_clew("triage", "--graph", base / "graph.json",
-                              "--print-request", "options")
+                              "--print-request", "options", *pipeline_flags())
     if code != 0:
         raise _failed("triage --print-request", code, out, err)
     return json.loads(out)["questions"]["trigger"]["criteria"]

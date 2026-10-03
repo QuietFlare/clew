@@ -29,6 +29,7 @@ def read_library(path):
 
 class LigandKind(Trigger):
     mode = REMOVE
+    about = "ligand in the docked library"
 
     def add_arguments(self, parser):
         parser.add_argument("--ligands", metavar="SMI",
