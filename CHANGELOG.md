@@ -6,6 +6,21 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `clew triage`: a written notice becomes a trigger, or is held for a
+  person. The options are the graph's own tools, inputs and labels. A
+  classifier picks one with a confidence, and versioned settings decide
+  whether to ask, hold or dismiss. Works with TypeSafe's Jev when
+  `TYPESAFE_API_KEY` is set and by name matching without it.
+  `--print-request` and `--answer` let another caller, a pipeline plugin
+  for example, do the asking. `--dsn` logs `NoticeReceived` and
+  `NoticeTriaged`.
+- `clew.agent.mainsheet`: Clew's commands as tools for a Mainsheet agent,
+  and `examples/clew-agent.yaml`, an agent with no other tools. It triages
+  each notice in an inbox, plans and seals the ones triage asks about, and
+  writes a recommendation for a person on the ones triage holds.
+
 ## [0.5.0] - 2026-09-16
 
 ### Added

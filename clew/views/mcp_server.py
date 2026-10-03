@@ -3,7 +3,7 @@ An MCP server over sealed bundles, so an auditor can ask in their own words.
 
     clew mcp --bundles /path/to/bundles
 
-JSON-RPC 2.0 over stdin/stdout, no SDK. Clew ships no model and calls none;
+JSON-RPC 2.0 over stdin/stdout, no SDK. This server ships no model and calls none;
 the auditor's client supplies the conversation. The tools compute from the
 bundles deterministically, so a model cannot change what comes back, and no
 path leads from its output into a verdict. Nothing here writes: recording a

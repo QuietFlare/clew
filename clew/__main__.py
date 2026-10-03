@@ -14,6 +14,8 @@ COMMANDS = {
              "the shipped sample run: three triggers, one engine"),
     "impact": ("clew.questions.impact",
                "what a removal, defect or update reaches, and what to do"),
+    "triage": ("clew.intake.triage",
+               "turn a written notice into a trigger, or hold it for a person"),
     "gate": ("clew.questions.gate",
              "block a run whose inputs the log says are not usable"),
     "reclaim": ("clew.questions.reclaim",
