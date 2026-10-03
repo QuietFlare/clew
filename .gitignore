@@ -22,3 +22,6 @@ uv.lock
 
 # coverage.py data from a local coverage run
 .coverage
+
+# pitch notes, kept local
+hackathon/
