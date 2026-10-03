@@ -1,0 +1,22 @@
+{
+  "graph": "clew/data/graph5.json",
+  "about": "Release notes as their projects published them, pinned by tag. Notes for a tool the run used should give that tool. Notes for any other project should give none.",
+  "cases": [
+    {"repository": "broadinstitute/gatk", "tag": "4.7.0.0", "expected": "gatk4"},
+    {"repository": "samtools/samtools", "tag": "1.24", "expected": "samtools"},
+    {"repository": "samtools/bcftools", "tag": "1.24", "expected": "bcftools"},
+    {"repository": "samtools/htslib", "tag": "1.24", "expected": "htslib"},
+    {"repository": "lh3/bwa", "tag": "v0.7.19", "expected": "bwa"},
+    {"repository": "s-andrews/FastQC", "tag": "v0.13.0", "expected": "fastqc"},
+    {"repository": "brentp/mosdepth", "tag": "v0.3.14", "expected": "mosdepth"},
+    {"repository": "MultiQC/MultiQC", "tag": "v1.35", "expected": "multiqc"},
+    {"repository": "Illumina/strelka", "tag": "v2.9.10", "expected": "strelka"},
+    {"repository": "alexdobin/STAR", "tag": "2.7.11b", "expected": "none"},
+    {"repository": "COMBINE-lab/salmon", "tag": "v2.8.0", "expected": "none"},
+    {"repository": "OpenGene/fastp", "tag": "v1.3.7", "expected": "none"},
+    {"repository": "bwa-mem2/bwa-mem2", "tag": "v2.3", "expected": "none"},
+    {"repository": "google/deepvariant", "tag": "v1.10.0", "expected": "none"},
+    {"repository": "lh3/minimap2", "tag": "v2.31", "expected": "none"},
+    {"repository": "nextflow-io/nextflow", "tag": "v26.04.6", "expected": "none"}
+  ]
+}

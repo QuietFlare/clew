@@ -27,6 +27,10 @@ follow [Semantic Versioning](https://semver.org/).
   and `clew/agent/agent.yaml`, an agent with no other tools. It triages
   each notice in an inbox, plans and seals the ones triage asks about, and
   writes a recommendation for a person on the ones triage holds.
+- `evals/triage_eval.py`: release notes of sixteen projects at pinned
+  tags, each tried with a release heading and bare. It fails when a real
+  problem is dismissed or a headed notice is acted on wrongly, and
+  appends each run to a baseline.
 - `clew decide`: a person's decision on a notice that triage held. They
   ask one of the triggers triage offered, or dismiss the notice, under
   their own name. The decision is written beside the record, goes into

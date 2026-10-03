@@ -297,6 +297,11 @@ class TestByName(unittest.TestCase):
     def test_two_names_are_held(self):
         self.assertEqual(self.decided("toolkit and helper both changed"), triage.HELD)
 
+    def test_a_longer_hyphenated_name_is_another_thing(self):
+        """toolkit-next is not toolkit, the way bwa-mem2 is not bwa."""
+        self.assertEqual(self.decided("toolkit-next 2.3 changes its index format"), triage.HELD)
+        self.assertEqual(self.decided("the new-toolkit fork is out"), triage.HELD)
+
     def test_a_name_inside_a_longer_word_is_not_a_match(self):
         self.assertEqual(self.decided("toolkits in general"), triage.HELD)
 

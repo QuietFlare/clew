@@ -102,10 +102,15 @@ def checked(document, criteria, model):
             "probabilities": probabilities, "model": answered_by}
 
 
-def names(notice, word):
-    """Whether the notice contains the word standing alone, in any case."""
-    return re.search(rf"(?<![A-Za-z0-9]){re.escape(word)}(?![A-Za-z0-9])",
-                     notice, re.IGNORECASE) is not None
+def names(notice, word, whole=False):
+    """
+    Whether the notice contains the word standing alone, in any case. With
+    `whole`, a longer hyphenated name does not count, so bwa is not found
+    in bwa-mem2.
+    """
+    before = r"(?<![A-Za-z0-9])" + (r"(?<![A-Za-z0-9]-)" if whole else "")
+    after = r"(?!-?[A-Za-z0-9])" if whole else r"(?![A-Za-z0-9])"
+    return re.search(before + re.escape(word) + after, notice, re.IGNORECASE) is not None
 
 
 def by_name(notice, words):
@@ -114,7 +119,7 @@ def by_name(notice, words):
     one does. `words` is {option: word}. No confidence comes back: a name
     is there or it is not, and its absence shows nothing.
     """
-    named = sorted(option for option, word in words.items() if names(notice, word))
+    named = sorted(option for option, word in words.items() if names(notice, word, whole=True))
     return {"choice": named[0] if len(named) == 1 else NONE,
             "confidence": None, "probabilities": None, "model": None,
             "named": named}

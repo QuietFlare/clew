@@ -28,3 +28,6 @@ hackathon/
 
 # local editor and preview settings
 .claude/
+
+# release notes fetched by the evals
+evals/.cache/
