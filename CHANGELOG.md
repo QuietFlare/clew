@@ -37,6 +37,11 @@ follow [Semantic Versioning](https://semver.org/).
   person's own coding agent, with `clew serve` registered as its MCP
   server. The skill runs under that person's permissions; `agent.yaml`
   is for running unattended under a policy.
+- `clew build adapter` and `clew build extractor`: the Providers tab's
+  build from a terminal. An agent writes the file under Mainsheet, the
+  conformance check runs on what it left, and the command prints the
+  checks and the approve line. It installs nothing. Exit 0 when every
+  check passed, 1 when one failed, 2 when the agent wrote no file.
 - `clew providers --approve verdict.json --actor NAME`: a person installs
   a provider file the judge passed, from the verdict alone. The judges
   print the name, the work folder and the file's hash for this.

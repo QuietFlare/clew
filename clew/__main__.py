@@ -18,6 +18,8 @@ COMMANDS = {
                "turn an incident report into a trigger, or hold it for a person"),
     "decide": ("clew.intake.decide",
                "record a person's decision on an incident that triage held"),
+    "build": ("clew.builder.build",
+              "have an agent write an adapter or an extractor, then check it"),
     "serve": ("clew.agent.server",
               "Clew's working tools over MCP, for any agent"),
     "ui": ("clew.ui.app",

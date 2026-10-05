@@ -25,7 +25,6 @@ import hmac
 import importlib.util
 import json
 import os
-import re
 import secrets
 import shlex
 import shutil
@@ -39,7 +38,9 @@ from pathlib import Path
 
 from clew.agent import tools
 from clew.builder import adapter as builder
+from clew.builder import build
 from clew.builder import extractor as extractor_builder
+from clew.builder.build import ADAPTER, BRIEF, EXTRACTOR, NOISE, VERDICT, WRITTEN
 from clew.contracts import Adapter, Extractor, discover
 from clew.contracts.registry import LOCAL_VARIABLE, approval_of, file_hash
 from clew.extract.runs import Runs
@@ -55,20 +56,10 @@ MOST_SHEET = 5 << 20
 MOST_NOTES = 2000
 MOST_CODE = 100000
 
-# Tracing chatter from an agent run with no trace viewer listening.
-NOISE = ("Transient error HTTPConnectionPool", "Failed to export span batch")
-SPENT = re.compile(r"turns: (\d+)\s+cost_usd: ([0-9.]+|None)")
 
 DEFINITION = Path(tools.__file__).with_name("agent.yaml")
 
-# What a build leaves in its job folder.
 BUILD = "build"
-BRIEF = "agent.yaml"
-VERDICT = "verdict.json"
-ADAPTER, EXTRACTOR = "adapter", "extractor"
-WRITTEN = {ADAPTER: ("adapter.py", "test_adapter.py"),
-           EXTRACTOR: (extractor_builder.WRITTEN, "test_extractor.py")}
-AGENTS = {ADAPTER: builder.AGENT, EXTRACTOR: extractor_builder.AGENT}
 
 
 class Refused(Exception):
@@ -573,49 +564,22 @@ class App:
         return {"job": job.name}
 
     def construct(self, job, found, run, sheet):
-        """Brief the agent, run it, then judge what it left. The judge is a process of its own."""
+        """Brief the agent, run it, then check what it left. The same steps as `clew build`."""
         try:
-            agent_home, agent = self.home / "mainsheet", AGENTS[job.what]
             if job.what == ADAPTER:
                 graph = found.load(run)
                 (job.folder / "graph.json").write_text(json.dumps(graph))
                 job.extract = {"engine": found.kind, "run": run, "tasks": len(graph["tasks"]),
                                "edges": len(graph["edges"]), "coverage": graph.get("coverage") or []}
-                if sheet:
-                    # Under its own name: an adapter may look for the sheet among the run's inputs.
-                    (job.folder / "sheet").mkdir()
-                    job.sheet = Path(shutil.copy(sheet, job.folder / "sheet" / sheet.name))
-                brief = builder.definition(job.folder, agent_home, sys.executable, sheet=job.sheet,
-                                           **job.brief)
-            else:
-                brief = extractor_builder.definition(job.record, agent_home, sys.executable,
-                                                     **job.brief)
-            before = set((agent_home / "instances").glob(f"{agent}-*"))
-
-            def made():
-                new = sorted(set((agent_home / "instances").glob(f"{agent}-*")) - before,
-                             key=lambda instance: instance.stat().st_mtime)
-                return new[-1] / "work" if new else None
-            job.made = made
-            (job.folder / BRIEF).write_text(json.dumps(brief, indent=2) + "\n")
-            self.launch(job, self.home, {}, job.folder / BRIEF)
-            work, left = job.folder / "work", made()
-            work.mkdir()
-            code = WRITTEN[job.what][0]
-            for name in WRITTEN[job.what]:
-                # Only a plain file the agent wrote: a link could point anywhere.
-                if left and (left / name).is_file() and not (left / name).is_symlink():
-                    shutil.copy(left / name, work / name)
-            if not (work / code).is_file():
+                job.sheet = build.keep_sheet(job.folder, sheet) if sheet else None
+            definition, job.made = build.brief(job.folder, self.home / "mainsheet", job.what, job.brief,
+                                               sheet=job.sheet, record=job.record)
+            self.launch(job, self.home, {}, definition)
+            if not build.collect(job.folder, job.what, job.made()):
                 if job.state == "running":
                     job.state, job.error = "failed", f"the agent finished and wrote no {job.what}"
                 return
-            if job.what == ADAPTER:
-                verdict = builder.judged(work, job.folder / "graph.json", job.brief["name"], job.sheet)
-            else:
-                verdict = extractor_builder.judged(work, job.brief["name"], job.record)
-            verdict["sha256"] = file_hash(work / code)
-            (job.folder / VERDICT).write_text(json.dumps(verdict, indent=2) + "\n")
+            build.check(job.folder, job.what, job.brief["name"], sheet=job.sheet, record=job.record)
             if job.state == "running":
                 job.state = "finished"
         except (SystemExit, Exception) as bad:      # a job must end in a state the page can show
@@ -636,7 +600,7 @@ class App:
             raise Refused(f"the {job.what} changed after the judge saw it; build it again")
         try:
             builder.install(work, self.providers, job.brief["name"], body.get("actor") or "", verdict,
-                            written=code, agent=AGENTS[job.what])
+                            written=code, agent=build.AGENTS[job.what])
         except builder.Refused as bad:
             raise Refused(str(bad))
         return build_status(job, self.providers)
@@ -644,24 +608,19 @@ class App:
 
 def run_agent(job, home, roots, definition=DEFINITION):
     """One agent run over the job folder, its output kept line by line."""
-    if importlib.util.find_spec("mainsheet") is None:
-        raise Refused("Mainsheet is not installed in this environment, so the agent cannot run")
-    agent_home = home / "mainsheet"
-    agent_home.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, CLEW_AGENT_DIR=str(job.folder), MAINSHEET_HOME=str(agent_home), **roots)
-    ran = subprocess.Popen([sys.executable, "-m", "mainsheet.agent.main", str(definition)],
-                           cwd=agent_home, env=env, text=True, bufsize=1,
-                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    for line in ran.stdout:
+    def say(line):
         job.say(line)
-        spent = SPENT.search(line)
-        if spent:
-            job.turns = int(spent.group(1))
-            job.cost = None if spent.group(2) == "None" else float(spent.group(2))
-    if ran.wait() != 0:
+        if build.spent(line):
+            job.turns, job.cost = build.spent(line)
+    try:
+        status = build.mainsheet(definition, home / "mainsheet", say,
+                                 env=dict(roots, CLEW_AGENT_DIR=str(job.folder)))
+    except build.Refused as bad:
+        raise Refused(str(bad))
+    if status != 0:
         job.state = "failed"
         job.error = next((line for line in reversed(job.log) if "failed" in line or "rror" in line),
-                         f"the agent exited with status {ran.returncode}")
+                         f"the agent exited with status {status}")
         if "authenticate" in job.error and not os.environ.get("ANTHROPIC_API_KEY"):
             job.error += ". Set ANTHROPIC_API_KEY in the terminal that starts clew ui."
 
