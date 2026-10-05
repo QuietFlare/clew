@@ -64,6 +64,10 @@ table { border-collapse: collapse; width: 100%; font-size: .88rem; margin-top: .
 th, td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid hsl(var(--hairline)); }
 th { color: hsl(var(--steel)); font-weight: 500; }
 pre { margin: 0; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow: auto; }
+pre.code { max-height: 34rem; padding: .6rem .7rem; background: hsl(var(--muted)); border-radius: calc(var(--radius) - 2px);
+           font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
+td.pass { color: hsl(var(--ok)); }
+td.miss { color: hsl(var(--destructive)); font-weight: 600; }
 details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 2px; }
@@ -76,6 +80,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
     <button role="tab" aria-selected="true" data-tab="impact">Impact</button>
     <button role="tab" aria-selected="false" data-tab="drift">Drift</button>
     <button role="tab" aria-selected="false" data-tab="reclaim">Reclaim</button>
+    <button role="tab" aria-selected="false" data-tab="providers">Providers</button>
   </nav>
   <div id="badges"></div>
 </header>
@@ -97,19 +102,20 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
       </div>
       <div id="folders"></div>
       <p class="note" id="found"></p>
-      <p style="margin:.4rem 0 0"><button class="plain" id="near" hidden></button></p>
+      <p style="margin:.4rem 0 0"><button class="plain" id="near" hidden></button>
+        <button class="plain" id="unread" hidden>Have an agent write an extractor for this folder</button></p>
       <label for="run">Run</label>
       <select id="run" disabled></select>
       <label for="adapter">Pipeline adapter: adds its own kinds, such as subjects from a launch sheet</label>
       <select id="adapter"><option value="">None, the run's tools and files only</option></select>
       <div id="adapter-flags"></div>
-      <p class="note">Without an adapter, only tools and files are offered. A notice about a subject is then held, not matched.</p>
+      <p class="note">Without an adapter, only tools and files are offered. An incident about a subject is then held, not matched.</p>
     </section>
 
     <section class="card">
-      <h2>2. Notice</h2>
-      <label for="notice">What changed or went wrong, in plain words</label>
-      <textarea id="notice" placeholder="The duplicate marking step flags optical duplicates wrongly on patterned flowcells."></textarea>
+      <h2>2. Incident</h2>
+      <label for="incident">What changed or went wrong, in plain words</label>
+      <textarea id="incident" placeholder="The duplicate marking step flags optical duplicates wrongly on patterned flowcells."></textarea>
       <label for="work">Work folder, to check that outputs still exist (optional)</label>
       <input type="text" class="path" id="work" spellcheck="false">
       <label for="results">Results folder (optional)</label>
@@ -133,7 +139,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
     <section class="card" id="review-card" hidden><h2>The agent's recommendation</h2><dl class="kv" id="review"></dl></section>
     <section class="card" id="decide-card" hidden>
       <h2>Your decision</h2>
-      <p class="note" style="margin-top:0">This notice was held. Ask one of the triggers triage offered, or dismiss it. Your name goes into the record.</p>
+      <p class="note" style="margin-top:0">This incident was held. Ask one of the triggers triage offered, or dismiss it. Your name goes into the record.</p>
       <label for="actor">Your name or email</label>
       <input type="text" id="actor" autocomplete="off">
       <label for="choice">Trigger to ask</label>
@@ -142,7 +148,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
       <input type="text" id="why" autocomplete="off">
       <p class="row" style="margin:1rem 0 0">
         <button class="go" id="ask">Ask this trigger</button>
-        <button class="plain" id="dismiss">Dismiss the notice</button>
+        <button class="plain" id="dismiss">Dismiss the incident</button>
       </p>
     </section>
     <section class="card" id="decided-card" hidden><h2>Decision</h2><dl class="kv" id="decided"></dl></section>
@@ -154,6 +160,89 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
 
 <main id="tab-drift" hidden><section class="card"><h2>Drift</h2><p>Where two runs of one workflow part ways. This tab is not built yet. The command works today: <code>clew drift</code>.</p></section></main>
 <main id="tab-reclaim" hidden><section class="card"><h2>Reclaim</h2><p>Which work folders are safe to delete. This tab is not built yet. The command works today: <code>clew reclaim</code>.</p></section></main>
+
+<main id="tab-providers" hidden>
+  <div>
+    <section class="card">
+      <h2>1. What to build</h2>
+      <select id="b-what" aria-label="What to build">
+        <option value="adapter">An adapter: what an incident names, in a run Clew reads</option>
+        <option value="extractor">An extractor: a run record Clew cannot read yet</option>
+      </select>
+      <div id="b-for-adapter">
+        <p class="note" id="b-run"></p>
+        <label for="b-sheet">Launch sheet: the file that lists what the run was started for (optional)</label>
+        <div class="row">
+          <input type="text" class="path" id="b-sheet" spellcheck="false">
+          <button class="plain" id="b-pick">Browse</button>
+        </div>
+        <p class="note">The agent reads this file to find the ids, so its contents go to the model. Leave it empty if they must not.</p>
+      </div>
+      <div id="b-for-extractor" hidden>
+        <label for="b-record">Record folder: where the engine wrote the record of its runs</label>
+        <div class="row">
+          <input type="text" class="path" id="b-record" spellcheck="false">
+          <button class="plain" id="b-pick-record">Browse</button>
+        </div>
+        <p class="note">The agent reads the files in this folder to learn the format, so their contents go to the model. Pick the run's own folder, not one that holds other things.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. The brief</h2>
+      <label for="b-name">Name: lowercase letters, digits, - or _</label>
+      <input type="text" id="b-name" autocomplete="off" spellcheck="false">
+      <div id="b-adapter-brief">
+        <label for="b-kind">What one id is called, as one lowercase word, such as unit or batch</label>
+        <input type="text" id="b-kind" autocomplete="off" spellcheck="false">
+        <div class="check">
+          <input type="checkbox" id="b-removable">
+          <label for="b-removable" style="margin:0">One can be withdrawn, and what only it fed is then removed</label>
+        </div>
+      </div>
+      <label for="b-notes">Anything the agent should know (optional)</label>
+      <textarea id="b-notes" style="min-height:4.5rem"></textarea>
+      <p style="margin:1rem 0 0"><button class="go" id="b-go" disabled>Build</button></p>
+      <p class="note" id="b-who"></p>
+      <p class="error" id="b-error" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Installed here</h2>
+      <p class="note mono" id="b-folder" style="margin-top:0"></p>
+      <table id="b-local"></table>
+    </section>
+  </div>
+
+  <div>
+    <section class="card">
+      <h2>Progress</h2>
+      <ol class="steps" id="b-steps"><li class="skipped"><span></span><span>Nothing built yet</span><span></span></li></ol>
+      <p class="note" id="b-spent"></p>
+    </section>
+    <section class="card" id="b-judge-card" hidden>
+      <h2>The judge</h2>
+      <p class="note" id="b-judge-note" style="margin-top:0"></p>
+      <dl class="kv" id="b-kinds"></dl>
+      <table id="b-checks"></table>
+    </section>
+    <section class="card" id="b-code-card" hidden>
+      <h2 id="b-code-title">The code, as the judge saw it</h2>
+      <p class="note mono" id="b-hash" style="margin-top:0"></p>
+      <pre class="code" id="b-code"></pre>
+      <details><summary>The agent's own tests</summary><pre class="code" id="b-tests"></pre></details>
+    </section>
+    <section class="card" id="b-approve-card" hidden>
+      <h2>Your approval</h2>
+      <p class="note" style="margin-top:0">Nothing is installed until you approve it. Your name and the hash of this file go into a record beside it, and a later change to the file stops it loading.</p>
+      <label for="b-actor">Your name or email</label>
+      <input type="text" id="b-actor" autocomplete="off">
+      <p style="margin:1rem 0 0"><button class="go" id="b-install">Approve and install</button></p>
+    </section>
+    <section class="card" id="b-approved-card" hidden><h2>Approval</h2><dl class="kv" id="b-approved"></dl></section>
+    <section class="card" id="b-log-card" hidden><details><summary>Agent log</summary><pre id="b-log"></pre></details></section>
+  </div>
+</main>
 
 <script>
 "use strict";
@@ -175,7 +264,10 @@ async function api(path, body) {
   return data;
 }
 
-function fail(message) { $("error").textContent = message; $("error").hidden = !message; }
+function fail(message, where) {
+  const line = $(where || "error");
+  line.textContent = message; line.hidden = !message;
+}
 
 function pairs(list, rows) {
   list.replaceChildren();
@@ -185,7 +277,7 @@ function pairs(list, rows) {
   }
 }
 
-let here = null, engines = [], adapters = [], polling = null, ready = false, current = null;
+let here = null, engines = [], adapters = [], polling = null, ready = false, current = null, built = null;
 
 function adapter_fields() {
   const chosen = adapters.find((a) => a.name === $("adapter").value);
@@ -198,7 +290,15 @@ function adapter_fields() {
 }
 
 function ready_to_run() {
-  $("go").disabled = !(ready && $("run").value && $("notice").value.trim()) || polling !== null;
+  $("go").disabled = !(ready && $("run").value && $("incident").value.trim()) || polling !== null;
+  const extractor = $("b-what").value === "extractor";
+  $("b-for-adapter").hidden = $("b-adapter-brief").hidden = extractor;
+  $("b-for-extractor").hidden = !extractor;
+  const briefed = extractor ? $("b-record").value.trim() : $("run").value && $("b-kind").value.trim();
+  $("b-go").disabled = !(ready && $("b-name").value.trim() && briefed) || polling !== null;
+  $("b-run").textContent = here && $("run").value ?
+    "For the " + here.engine + " run " + $("run").value + " in " + here.path + ". Change it on the Impact tab." :
+    "Pick a run on the Impact tab first. The adapter is written for that run's record.";
 }
 
 async function open(path) {
@@ -230,19 +330,92 @@ async function open(path) {
        " Open the folder your workflow was launched from.");
   }
   $("near").hidden = !here.nearby || !!here.engine;
+  $("unread").hidden = !!here.engine || !!here.nearby;
   if (here.nearby) $("near").textContent = "Use " + here.nearby.name;
   ready_to_run();
 }
 
-function show(job) {
-  $("steps").replaceChildren(...job.steps.map((step) => {
+function progress(list, spent, job) {
+  list.replaceChildren(...job.steps.map((step) => {
     const item = el("li", null, step.state);
     const dot = el("span"); dot.append(el("span", null, "dot"));
     item.append(dot, el("span", step.label), el("span", step.detail || (step.state === "running" ? "working" : "")));
     return item;
   }));
-  $("spent").textContent = job.turns === null ? "" :
+  spent.textContent = job.turns === null ? "" :
     job.turns + " agent turns" + (job.cost === null ? "" : ", $" + job.cost.toFixed(3));
+}
+
+function listed(state) {
+  engines = state.engines;
+  $("engine").replaceChildren($("engine").firstElementChild, ...engines.map((e) => {
+    const o = el("option", e.folder ? e.name : e.name + " (folder picking not built yet)");
+    o.value = e.name; o.disabled = !e.folder; return o;
+  }));
+  adapters = state.adapters;
+  const chosen = $("adapter").value;
+  $("adapter").replaceChildren($("adapter").firstElementChild, ...adapters.map((a) => {
+    const o = el("option", a.name + (a.kinds.length ? ": " + a.kinds.join(", ") : "")); o.value = a.name;
+    o.selected = a.name === chosen; return o;
+  }));
+  $("b-folder").textContent = state.providers;
+  const head = el("tr"); head.append(el("th", "File"), el("th", "Adapter"), el("th", "State"));
+  const rows = state.local.map((one) => {
+    const row = el("tr");
+    row.append(el("td", one.file), el("td", one.name || ""),
+      el("td", one.problem ? "Refused: " + one.problem : "approved by " + one.actor +
+        (one.approved_at ? ", " + one.approved_at.slice(0, 10) : ""), one.problem ? "miss" : ""));
+    return row;
+  });
+  if (rows.length === 0) { const none = el("tr"); none.append(el("td", "None yet")); rows.push(none); }
+  $("b-local").replaceChildren(head, ...rows);
+}
+
+function show_build(job) {
+  progress($("b-steps"), $("b-spent"), job);
+  const v = job.verdict; $("b-judge-card").hidden = !v;
+  const extractor = job.what === "extractor";
+  $("b-judge-note").textContent = extractor ?
+    "Checks the agent never saw, run on this record. They show the graph is well formed and that Clew can pick the folder. Nobody gave the judge the run's true lineage: compare what it found with what you know of the run, and read the code." :
+    "Checks the agent never saw, run on this run and this sheet. They show Clew can use the adapter. They do not show its matching is right: read the code.";
+  $("b-code-title").textContent = "The " + job.what + ", as the judge saw it";
+  const counted = (counts) => Object.entries(counts || {}).map(([name, n]) => n + " " + name).join(", ");
+  if (v) {
+    const g = v.graph || {};
+    pairs($("b-kinds"), extractor ? [
+      ["Tasks", g.tasks === undefined ? "" : g.tasks + ", joined by " + g.edges + " files read"],
+      ["Steps", counted(g.processes)], ["Statuses", counted(g.statuses)],
+      ["Outside inputs", (g.external || []).join(", ")],
+      ["Runs listed", (g.runs || []).map((r) => r.name + " (" + r.tasks + " tasks)").join(", ")],
+      ["Not covered", (g.coverage || []).join(" ")]] :
+      v.kinds.flatMap((k) => [
+      ["Kind", k.kind + ": " + k.about + " (" + k.mode + ")"],
+      ["Ids", k.ids + " found, " + k.reached + " reach a task" + (k.ids > k.reached ? ", " + (k.ids - k.reached) + " reach none" : "")],
+      ["Reach none", k.unreached.join(", ")]]));
+    const head = el("tr"); head.append(el("th", "Check"), el("th", "Result"), el("th", "Why"));
+    $("b-checks").replaceChildren(head, ...v.checks.map((c) => {
+      const row = el("tr");
+      row.append(el("td", c.name), el("td", c.passed ? "passed" : "FAILED", c.passed ? "pass" : "miss"), el("td", c.detail));
+      return row;
+    }));
+  }
+  $("b-code-card").hidden = job.code === null;
+  $("b-code").textContent = job.code || "";
+  $("b-tests").textContent = job.tests || "The agent left no tests.";
+  $("b-hash").textContent = v ? "sha256 " + v.sha256 : "";
+  $("b-approve-card").hidden = !job.can_install;
+  const a = job.approval; $("b-approved-card").hidden = !a;
+  if (a) pairs($("b-approved"), [["Approved by", a.actor], ["At", a.approved_at], ["File hash", a.sha256],
+    ["Written by", a.written_by],
+    ["Use it", extractor ? "Open the folder on the Impact tab. Clew now reads it as a " + a.name + " record." :
+      "Choose " + a.name + " under Pipeline adapter on the Impact tab, and give it the sheet."]]);
+  $("b-log-card").hidden = job.log.length === 0;
+  $("b-log").textContent = job.log.join("\\n");
+  fail(job.state === "failed" ? (job.error || "the build failed") : "", "b-error");
+}
+
+function show(job) {
+  progress($("steps"), $("spent"), job);
 
   const t = job.triage; $("triage-card").hidden = !t;
   if (t) pairs($("triage"), [["Outcome", t.outcome], ["Choice", t.choice],
@@ -305,19 +478,72 @@ async function settle(action) {
 }
 
 async function poll(name) {
+  const where = name === built ? "b-error" : "error";
   try {
     const job = await api("/api/job", {job: name});
-    show(job);
+    (job.kind === "build" ? show_build : show)(job);
     if (job.state !== "running") { clearInterval(polling); polling = null; ready_to_run(); }
-  } catch (bad) { clearInterval(polling); polling = null; fail(bad.message); ready_to_run(); }
+  } catch (bad) { clearInterval(polling); polling = null; fail(bad.message, where); ready_to_run(); }
 }
+
+$("b-go").addEventListener("click", async () => {
+  fail("", "b-error");
+  try {
+    const started = await api("/api/build", $("b-what").value === "extractor" ?
+      {what: "extractor", record: $("b-record").value, name: $("b-name").value, notes: $("b-notes").value} :
+      {path: here.path, run: $("run").value, name: $("b-name").value,
+       kind: $("b-kind").value, removable: $("b-removable").checked, notes: $("b-notes").value,
+       sheet: $("b-sheet").value});
+    built = started.job;
+    polling = setInterval(() => poll(started.job), 1000);
+    ready_to_run();
+    poll(started.job);
+  } catch (bad) { fail(bad.message, "b-error"); }
+});
+$("b-install").addEventListener("click", async () => {
+  fail("", "b-error");
+  if (!$("b-actor").value.trim()) { fail("Write your name first. The approval is recorded under it.", "b-error"); return; }
+  try {
+    show_build(await api("/api/install", {job: built, actor: $("b-actor").value}));
+    listed(await api("/api/state"));
+    if (here) open(here.path);
+  } catch (bad) { fail(bad.message, "b-error"); }
+});
+$("b-pick-record").addEventListener("click", async () => {
+  $("b-pick-record").disabled = true;
+  try {
+    const chosen = await api("/api/pick", {path: $("b-record").value || (here ? here.path : "")});
+    if (chosen.path) { $("b-record").value = chosen.path; ready_to_run(); }
+    else if (!chosen.available) fail("This system has no folder dialog. Type the path of the folder.", "b-error");
+  } catch (bad) { fail(bad.message, "b-error"); }
+  $("b-pick-record").disabled = false;
+});
+$("b-what").addEventListener("change", ready_to_run);
+$("b-record").addEventListener("input", ready_to_run);
+$("unread").addEventListener("click", () => {
+  $("b-what").value = "extractor";
+  $("b-record").value = here.path;
+  tab_to("providers");
+  ready_to_run();
+});
+$("b-pick").addEventListener("click", async () => {
+  $("b-pick").disabled = true;
+  try {
+    const chosen = await api("/api/pick", {path: here ? here.path : "", what: "file"});
+    if (chosen.path) $("b-sheet").value = chosen.path;
+    else if (!chosen.available) fail("This system has no file dialog. Type the path of the sheet.", "b-error");
+  } catch (bad) { fail(bad.message, "b-error"); }
+  $("b-pick").disabled = false;
+});
+$("b-name").addEventListener("input", ready_to_run);
+$("b-kind").addEventListener("input", ready_to_run);
 
 $("go").addEventListener("click", async () => {
   fail("");
   try {
     const adapter_args = {};
     for (const input of $("adapter-flags").querySelectorAll("input")) adapter_args[input.dataset.flag] = input.value;
-    const started = await api("/api/run", {path: here.path, run: $("run").value, notice: $("notice").value,
+    const started = await api("/api/run", {path: here.path, run: $("run").value, incident: $("incident").value,
       work_root: $("work").value, results: $("results").value,
       pipeline: $("adapter").value, adapter_args});
     current = started.job;
@@ -341,38 +567,34 @@ $("pick").addEventListener("click", async () => {
 });
 $("path").addEventListener("keydown", (event) => { if (event.key === "Enter") open($("path").value); });
 $("up").addEventListener("click", () => here && here.parent && open(here.parent));
-$("notice").addEventListener("input", ready_to_run);
+$("incident").addEventListener("input", ready_to_run);
 $("run").addEventListener("change", ready_to_run);
 $("engine").addEventListener("change", () => here && open(here.path));
 $("adapter").addEventListener("change", adapter_fields);
 
-for (const tab of document.querySelectorAll("nav button")) {
-  tab.addEventListener("click", () => {
-    for (const other of document.querySelectorAll("nav button")) {
-      other.setAttribute("aria-selected", String(other === tab));
-      $("tab-" + other.dataset.tab).hidden = other !== tab;
-    }
-  });
+function tab_to(name) {
+  for (const other of document.querySelectorAll("nav button")) {
+    other.setAttribute("aria-selected", String(other.dataset.tab === name));
+    $("tab-" + other.dataset.tab).hidden = other.dataset.tab !== name;
+  }
 }
+for (const tab of document.querySelectorAll("nav button")) tab.addEventListener("click", () => tab_to(tab.dataset.tab));
 
 (async () => {
   try {
     const state = await api("/api/state");
-    engines = state.engines;
-    $("engine").append(...engines.map((e) => {
-      const o = el("option", e.folder ? e.name : e.name + " (folder picking not built yet)");
-      o.value = e.name; o.disabled = !e.folder; return o;
-    }));
     $("badges").append(
       el("span", state.classifier === "jev" ? "Triage: Jev" : "Triage: name matching, no Jev key", "badge" + (state.classifier === "jev" ? " ok" : "")),
       el("span", !state.mainsheet ? "Agent: Mainsheet not installed" : state.api_key ? "Agent: ready" : "Agent: no ANTHROPIC_API_KEY set",
          "badge" + (!state.mainsheet ? " bad" : state.api_key ? " ok" : "")));
-    adapters = state.adapters;
-    $("adapter").append(...adapters.map((a) => {
-      const o = el("option", a.name + (a.kinds.length ? ": " + a.kinds.join(", ") : "")); o.value = a.name; return o;
-    }));
+    listed(state);
+    $("b-who").textContent = "Written by an agent on " + state.builder.model +
+      ". A build takes some minutes. The agent works in a folder of its own and reads only Clew's source and what you give it here.";
     ready = state.mainsheet;
-    if (!ready) fail("Mainsheet is not installed in this environment, so Run is off. Install clew-agent, or run this from the Mainsheet environment.");
+    if (!ready) {
+      const off = "Mainsheet is not installed in this environment, so the agent cannot run. Install clew-agent, or run this from the Mainsheet environment.";
+      fail(off); fail(off, "b-error");
+    }
     open(state.start);
   } catch (bad) {
     fail(bad.message);

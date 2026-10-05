@@ -4,15 +4,20 @@ Clew in a browser tab, on this machine only.
     clew ui                       # prints a link and opens it
     clew ui --port 8770 --home ~/.clew/ui --no-browser
 
-Pick a run folder, pick a run, paste a notice and press Run. The page
-extracts the run's graph, then hands the notice to the Clew agent, which
+Pick a run folder, pick a run, describe an incident and press Run. The page
+extracts the run's graph, then hands the incident to the Clew agent, which
 triages it, plans and seals. Each step shows when its file appears on
 disk, so the page reports what happened and not what the agent says
 happened.
 
+The Providers tab has an agent write an adapter for a run and its launch
+sheet, or an extractor for a folder Clew cannot read yet. A judge checks
+what it wrote, the page shows the code, and nothing is installed until a
+person approves it under their own name.
+
 The server listens on 127.0.0.1, answers only requests that carry the
 token in the printed link, and uses the standard library alone. Running a
-notice needs Mainsheet in the same environment.
+incident needs Mainsheet in the same environment.
 """
 
 import argparse
@@ -32,23 +37,38 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from clew.agent import mainsheet as tools
+from clew.agent import tools
+from clew.builder import adapter as builder
+from clew.builder import extractor as extractor_builder
 from clew.contracts import Adapter, Extractor, discover
+from clew.contracts.registry import LOCAL_VARIABLE, approval_of, file_hash
 from clew.extract.runs import Runs
 from clew.ui.page import PAGE
 
-NOTICE = "notice"
-MOST_NOTICE = 20000
+INCIDENT = "incident"
+MOST_INCIDENT = 20000
 MOST_BODY = 1 << 20
 MOST_LOG = 400
 MOST_RUNS = 200
 MOST_ITEMS = 15
+MOST_SHEET = 5 << 20
+MOST_NOTES = 2000
+MOST_CODE = 100000
 
 # Tracing chatter from an agent run with no trace viewer listening.
 NOISE = ("Transient error HTTPConnectionPool", "Failed to export span batch")
 SPENT = re.compile(r"turns: (\d+)\s+cost_usd: ([0-9.]+|None)")
 
 DEFINITION = Path(tools.__file__).with_name("agent.yaml")
+
+# What a build leaves in its job folder.
+BUILD = "build"
+BRIEF = "agent.yaml"
+VERDICT = "verdict.json"
+ADAPTER, EXTRACTOR = "adapter", "extractor"
+WRITTEN = {ADAPTER: ("adapter.py", "test_adapter.py"),
+           EXTRACTOR: (extractor_builder.WRITTEN, "test_extractor.py")}
+AGENTS = {ADAPTER: builder.AGENT, EXTRACTOR: extractor_builder.AGENT}
 
 
 class Refused(Exception):
@@ -102,43 +122,50 @@ def browse(path):
 
 
 PROMPT = "Pick the folder your workflow was launched from"
+PROMPT_FILE = "Pick the sheet the workflow was launched from"
 
 
-def picker(start):
-    """The command that opens this system's own folder dialog, or None when it has none."""
+def picker(start, file=False):
+    """The command that opens this system's own folder or file dialog, or None when it has none."""
+    prompt = PROMPT_FILE if file else PROMPT
     if sys.platform == "darwin":
         # The start folder travels as an argument, never inside the script text.
         return ["osascript", "-e", "on run argv", "-e", "tell me to activate", "-e",
-                f'POSIX path of (choose folder with prompt "{PROMPT}" '
+                f'POSIX path of (choose {"file" if file else "folder"} with prompt "{prompt}" '
                 "default location POSIX file (item 1 of argv))", "-e", "end run", "--", start]
     if sys.platform == "win32":
+        dialog, chosen = ("OpenFileDialog", "FileName") if file else \
+            ("FolderBrowserDialog", "SelectedPath")
         return ["powershell", "-NoProfile", "-Command",
                 "Add-Type -AssemblyName System.Windows.Forms; "
-                "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-                "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }"]
+                f"$d = New-Object System.Windows.Forms.{dialog}; "
+                f"if ($d.ShowDialog() -eq 'OK') {{ $d.{chosen} }}"]
     if shutil.which("zenity"):
-        return ["zenity", "--file-selection", "--directory", f"--title={PROMPT}",
-                f"--filename={start}/"]
+        return ["zenity", "--file-selection", *([] if file else ["--directory"]),
+                f"--title={prompt}", f"--filename={start}/"]
     if shutil.which("kdialog"):
-        return ["kdialog", "--getexistingdirectory", start, "--title", PROMPT]
+        return ["kdialog", "--getopenfilename" if file else "--getexistingdirectory",
+                start, "--title", prompt]
     if importlib.util.find_spec("tkinter"):
+        ask = "askopenfilename" if file else "askdirectory"
         return [sys.executable, "-c",
                 "import sys, tkinter, tkinter.filedialog as f; r = tkinter.Tk(); r.withdraw(); "
-                "r.attributes('-topmost', True); print(f.askdirectory(initialdir=sys.argv[1]))", start]
+                f"r.attributes('-topmost', True); print(f.{ask}(initialdir=sys.argv[1]))", start]
     return None
 
 
-def pick(start):
-    """A folder chosen in the system's dialog on this machine. No path when it was cancelled."""
+def pick(start, file=False):
+    """A folder, or a file, chosen in the system's dialog on this machine. No path when it was cancelled."""
     begin = Path(start or Path.home()).expanduser()
-    command = picker(str(begin if begin.is_dir() else Path.home()))
+    command = picker(str(begin if begin.is_dir() else Path.home()), file)
     if command is None:
         return {"available": False, "path": None}
     try:
         chosen = subprocess.run(command, capture_output=True, text=True, timeout=300).stdout.strip()
     except (OSError, subprocess.TimeoutExpired):
         return {"available": True, "path": None}
-    return {"available": True, "path": chosen if chosen and Path(chosen).is_dir() else None}
+    there = bool(chosen) and (Path(chosen).is_file() if file else Path(chosen).is_dir())
+    return {"available": True, "path": chosen if there else None}
 
 
 def adapter_flags(adapter):
@@ -160,8 +187,11 @@ def adapters():
 # --------------------------------------------------------------------- jobs
 
 class Job:
-    def __init__(self, name, folder):
-        self.name, self.folder = name, folder
+    def __init__(self, name, folder, kind=INCIDENT):
+        self.name, self.folder, self.kind = name, folder, kind
+        self.brief = {}
+        self.what, self.sheet, self.record = ADAPTER, None, None
+        self.made = lambda: None
         self.state = "running"
         self.error = None
         self.extract = None
@@ -185,7 +215,7 @@ def read(path):
 
 def status(job):
     """What the job folder shows, step by step. Files decide, not the agent's own account."""
-    out = job.folder / "out" / NOTICE
+    out = job.folder / "out" / INCIDENT
     record, plan = read(out / "triage.json"), read(out / "plan.json")
     review, decision = read(out / "review.json"), read(out / "decision.json")
     sealed = (out / "bundle" / "manifest.json").is_file()
@@ -208,8 +238,8 @@ def status(job):
                 + f", by {decision['actor']}") if decision else ""
         steps.append(step("decision", "Your decision", decision is not None, detail=said))
     why = None if asked or outcome is None else \
-        "a person dismissed the notice" if decision else \
-        "after your decision" if outcome == "held" else f"the notice was {outcome}"
+        "a person dismissed the incident" if decision else \
+        "after your decision" if outcome == "held" else f"the incident was {outcome}"
     steps += [step("impact", "Impact", plan is not None, skipped=None if plan else why,
                    detail=(f"{plan['tasks_affected']} of {plan['tasks_total']} tasks affected"
                            if plan else "")),
@@ -219,7 +249,7 @@ def status(job):
                    if sealed else "")]
     steps.append(step("act", "Act", False, skipped="acting on a plan is not available yet"))
 
-    # A held notice with no decision is not a step that failed or was skipped:
+    # A held incident with no decision is not a step that failed or was skipped:
     # it is open, and waits for a person.
     open_decision = outcome == "held" and decision is None and job.state != "running"
     for one in steps:
@@ -272,6 +302,69 @@ def status(job):
     return answer
 
 
+def text_of(path):
+    try:
+        return Path(path).read_text(errors="replace")[:MOST_CODE]
+    except OSError:
+        return None
+
+
+def build_status(job, providers):
+    """What a build's folder shows, step by step: the brief, what the agent wrote, the verdict, the approval."""
+    work, live = job.folder / "work", job.made()
+    code, tests = WRITTEN[job.what]
+    wrote, tested = ((work / name).is_file() or bool(live and (live / name).is_file())
+                     for name in (code, tests))
+    verdict = read(job.folder / VERDICT)
+    passed = bool(verdict and verdict["passed"])
+    target = builder.installed_as(providers, job.brief["name"])
+    approval = approval_of(target)[0] if target.is_file() else None
+    # An approval counts for this build only when it names the file the judge saw.
+    approval = approval if approval and verdict and approval.get("sha256") == verdict["sha256"] else None
+
+    def step(key, label, done, detail="", skipped=None):
+        return {"key": key, "label": label, "detail": skipped or detail,
+                "state": "done" if done else "skipped" if skipped else "waiting"}
+
+    checks = verdict["checks"] if verdict else []
+    missed = sum(1 for check in checks if not check["passed"])
+    # An extractor is built from the record itself, so there is no graph to extract first.
+    first = [] if job.what == EXTRACTOR else [
+        step("extract", "Extract", job.extract is not None,
+             detail=(f"{job.extract['engine']} run {job.extract['run']}: "
+                     f"{job.extract['tasks']} tasks" if job.extract else ""))]
+    asked = f"the record in {job.record.name}" if job.what == EXTRACTOR else \
+        f"one {job.brief['kind']} per id, " + (f"sheet {job.sheet.name}" if job.sheet else "no sheet")
+    steps = first + [
+             step("brief", "Brief", (job.folder / BRIEF).is_file(), detail=asked),
+             step(job.what, job.what.capitalize(), wrote,
+                  detail="written by the agent" if wrote else ""),
+             step("tests", "Its tests", tested, detail="written by the agent" if tested else ""),
+             step("judge", "Judge", passed,
+                  detail=f"passed, {len(checks)} checks" if passed else ""),
+             step("approval", "Approval", approval is not None,
+                  detail=(f"by {approval['actor']}, installed as {target.name}" if approval else ""),
+                  skipped=None if passed or not verdict else "needs a verdict that passed")]
+    for one in steps:
+        if one["key"] == "judge" and verdict and not passed:
+            one["state"], one["detail"] = "failed", f"{missed} of {len(checks)} checks failed"
+        if one["key"] == "approval" and one["state"] == "waiting" and passed and job.state != "running":
+            one["state"], one["detail"] = "open", "waiting for you"
+    waiting = next((s for s in steps if s["state"] == "waiting"), None)
+    if waiting and job.state in ("running", "failed"):
+        waiting["state"] = job.state
+    for later in steps:
+        if later["state"] == "waiting":
+            later["state"] = "skipped"
+            later["detail"] = "not yet" if job.state == "running" else "not reached"
+
+    return {"job": job.name, "kind": BUILD, "state": job.state, "error": job.error, "steps": steps,
+            "extract": job.extract, "turns": job.turns, "cost": job.cost, "log": job.log,
+            "folder": str(job.folder), "what": job.what, "brief": job.brief, "verdict": verdict,
+            "code": text_of(work / code), "tests": text_of(work / tests),
+            "approval": approval, "can_install": passed and approval is None and job.state != "running"}
+
+
 class App:
     """The state behind the page: where jobs live, the one job that may run, the token."""
 
@@ -279,6 +372,8 @@ class App:
         self.home = Path(home).expanduser().resolve()
         self.token = token or secrets.token_urlsafe(24)
         self.launch = launch or run_agent
+        # Adapters a person approved live here, and load from here.
+        self.providers = Path(os.environ.get(LOCAL_VARIABLE) or self.home / "providers").expanduser()
         self.jobs = {}
         self.lock = threading.Lock()
 
@@ -291,20 +386,49 @@ class App:
                             for name, e in sorted(discover(Extractor).items())],
                 "adapters": [{"name": name, "kinds": sorted(a.triggers), "flags": adapter_flags(a)}
                              for name, a in sorted(adapters().items())],
+                "local": self.local(), "providers": str(self.providers),
+                "builder": {"agent": builder.AGENT, "model": builder.MODEL},
                 "home": str(self.home), "start": str(Path.home())}
 
-    def start(self, body):
-        notice = (body.get("notice") or "").strip()
-        if not notice:
-            raise Refused("write the notice first")
-        if len(notice) > MOST_NOTICE:
-            raise Refused(f"the notice is longer than {MOST_NOTICE} characters")
+    def local(self):
+        """Each provider file in the local folder and whether it may load. Nothing is imported to say so."""
+        listed = []
+        for source in sorted(self.providers.glob("*.py")):
+            approval, problem = approval_of(source)
+            approval = approval or {}
+            listed.append({"file": source.name, "name": approval.get("name"),
+                           "actor": approval.get("actor"), "approved_at": approval.get("approved_at"),
+                           "written_by": approval.get("written_by"), "problem": problem})
+        return listed
+
+    def chosen(self, body):
+        """The run a request names, checked against the folder's own record."""
         found = recognise(body.get("path") or "")
         if not found:
             raise Refused("that folder holds no run record Clew can read")
         run = body.get("run") or ""
         if run not in {r["name"] for r in found.records()}:
             raise Refused(f"no run named {run!r} in that folder")
+        return found, run
+
+    def new_job(self, kind=INCIDENT):
+        """A job and its folder. One at a time, of either kind."""
+        with self.lock:
+            if any(job.state == "running" for job in self.jobs.values()):
+                raise Refused("a run is still going; wait for it to finish", 409)
+            name = time.strftime("%Y%m%d-%H%M%S-") + secrets.token_hex(2)
+            folder = self.home / "jobs" / name
+            folder.mkdir(parents=True)
+            job = self.jobs[name] = Job(name, folder, kind)
+        return job
+
+    def start(self, body):
+        incident = (body.get("incident") or "").strip()
+        if not incident:
+            raise Refused("write the incident first")
+        if len(incident) > MOST_INCIDENT:
+            raise Refused(f"the incident is longer than {MOST_INCIDENT} characters")
+        found, run = self.chosen(body)
         roots = {}
         for key, variable in (("work_root", "CLEW_WORK_ROOT"), ("results", "CLEW_RESULTS")):
             value = (body.get(key) or "").strip()
@@ -331,27 +455,22 @@ class App:
                 given += [flag, str(Path(value).expanduser())]
             roots["CLEW_PIPELINE"] = pipeline
             roots["CLEW_ADAPTER_ARGS"] = shlex.join(given)
-        with self.lock:
-            if any(job.state == "running" for job in self.jobs.values()):
-                raise Refused("a run is still going; wait for it to finish", 409)
-            name = time.strftime("%Y%m%d-%H%M%S-") + secrets.token_hex(2)
-            folder = self.home / "jobs" / name
-            (folder / "inbox").mkdir(parents=True)
-            job = self.jobs[name] = Job(name, folder)
-            job.roots = roots
-        threading.Thread(target=self.work, args=(job, found, run, notice, roots),
+        job = self.new_job()
+        (job.folder / "inbox").mkdir()
+        job.roots = roots
+        threading.Thread(target=self.work, args=(job, found, run, incident, roots),
                          daemon=True).start()
-        return {"job": name}
+        return {"job": job.name}
 
-    def work(self, job, found, run, notice, roots):
+    def work(self, job, found, run, incident, roots):
         try:
             graph = found.load(run)
             (job.folder / "graph.json").write_text(json.dumps(graph))
-            (job.folder / "inbox" / f"{NOTICE}.txt").write_text(notice + "\n")
+            (job.folder / "inbox" / f"{INCIDENT}.txt").write_text(incident + "\n")
             job.extract = {"engine": found.kind, "run": run, "tasks": len(graph["tasks"]),
                            "edges": len(graph["edges"]), "coverage": graph.get("coverage") or []}
             self.launch(job, self.home, roots)
-            bundle = job.folder / "out" / NOTICE / "bundle"
+            bundle = job.folder / "out" / INCIDENT / "bundle"
             if (bundle / "manifest.json").is_file():
                 job.verified = tools.run_clew("evidence", "verify", bundle)[0] == 0
             if job.state == "running":
@@ -360,7 +479,7 @@ class App:
             job.state, job.error = "failed", str(bad) or repr(bad)
 
     def decide(self, body):
-        """A person's decision on a held notice. Asking a trigger carries on to a sealed plan."""
+        """A person's decision on a held incident. Asking a trigger carries on to a sealed plan."""
         job = self.jobs.get(body.get("job") or "")
         if not job:
             raise Refused("no such run", 404)
@@ -370,7 +489,7 @@ class App:
         if action not in ("ask", "dismiss"):
             raise Refused("the decision is ask or dismiss")
         try:
-            tools.decide(job.folder, NOTICE, (body.get("actor") or "").strip(),
+            tools.decide(job.folder, INCIDENT, (body.get("actor") or "").strip(),
                          ask=(body.get("trigger") or "") if action == "ask" else None,
                          reason=body.get("reason") or "")
         except tools.ToolError as bad:
@@ -384,8 +503,8 @@ class App:
         """After a person asks a trigger: the plan and its seal. Two commands, no model."""
         try:
             env = dict(os.environ, **job.roots)
-            tools.impact(job.folder, NOTICE, env=env)
-            job.verified = tools.seal(job.folder, NOTICE)["verified"]
+            tools.impact(job.folder, INCIDENT, env=env)
+            job.verified = tools.seal(job.folder, INCIDENT)["verified"]
             job.state = "finished"
         except (tools.ToolError, SystemExit, Exception) as bad:
             job.state, job.error = "failed", str(bad) or repr(bad)
@@ -394,17 +513,143 @@ class App:
         job = self.jobs.get(body.get("job") or "")
         if not job:
             raise Refused("no such run", 404)
-        return status(job)
+        return build_status(job, self.providers) if job.kind == BUILD else status(job)
+
+    def build(self, body):
+        """Start an agent on an adapter for one run. What it writes loads nowhere until a person approves it."""
+        if body.get("what") == EXTRACTOR:
+            return self.build_extractor(body)
+        name, kind = (body.get("name") or "").strip(), (body.get("kind") or "").strip()
+        try:
+            builder.check_brief(name, kind)
+        except builder.Refused as bad:
+            raise Refused(str(bad))
+        if name in adapters() or builder.installed_as(self.providers, name).exists():
+            raise Refused(f"an adapter named {name} is already installed; choose another name")
+        found, run = self.chosen(body)
+        sheet = (body.get("sheet") or "").strip()
+        if sheet:
+            sheet = Path(sheet).expanduser()
+            if not sheet.is_file():
+                raise Refused(f"{sheet} is not a file")
+            if sheet.stat().st_size > MOST_SHEET:
+                raise Refused(f"the sheet is larger than {MOST_SHEET >> 20} MB")
+        notes = (body.get("notes") or "").strip()
+        if len(notes) > MOST_NOTES:
+            raise Refused(f"the notes are longer than {MOST_NOTES} characters")
+        job = self.new_job(BUILD)
+        job.brief = {"name": name, "kind": kind, "removable": bool(body.get("removable")),
+                     "notes": notes}
+        threading.Thread(target=self.construct, args=(job, found, run, sheet or None),
+                         daemon=True).start()
+        return {"job": job.name}
+
+    def build_extractor(self, body):
+        """Start an agent on an extractor for a folder no installed extractor reads."""
+        name = (body.get("name") or "").strip()
+        try:
+            extractor_builder.check_brief(name)
+        except builder.Refused as bad:
+            raise Refused(str(bad))
+        if name in discover(Extractor) or builder.installed_as(self.providers, name).exists():
+            raise Refused(f"an extractor named {name} is already installed; choose another name")
+        given = (body.get("record") or "").strip()
+        if not given or not Path(given).expanduser().is_dir():
+            raise Refused("pick the folder the engine wrote its record in")
+        record = Path(given).expanduser().resolve()
+        # The agent may read everything under it, so not a folder that holds the rest of the machine.
+        if record == Path.home() or record in Path.home().parents:
+            raise Refused("pick the run's own folder, not one that holds everything else")
+        found = recognise(record)
+        if found:
+            raise Refused(f"Clew already reads that folder as a {found.kind} record")
+        notes = (body.get("notes") or "").strip()
+        if len(notes) > MOST_NOTES:
+            raise Refused(f"the notes are longer than {MOST_NOTES} characters")
+        job = self.new_job(BUILD)
+        job.what, job.record = EXTRACTOR, record
+        job.brief = {"name": name, "notes": notes}
+        threading.Thread(target=self.construct, args=(job, None, None, None), daemon=True).start()
+        return {"job": job.name}
+
+    def construct(self, job, found, run, sheet):
+        """Brief the agent, run it, then judge what it left. The judge is a process of its own."""
+        try:
+            agent_home, agent = self.home / "mainsheet", AGENTS[job.what]
+            if job.what == ADAPTER:
+                graph = found.load(run)
+                (job.folder / "graph.json").write_text(json.dumps(graph))
+                job.extract = {"engine": found.kind, "run": run, "tasks": len(graph["tasks"]),
+                               "edges": len(graph["edges"]), "coverage": graph.get("coverage") or []}
+                if sheet:
+                    # Under its own name: an adapter may look for the sheet among the run's inputs.
+                    (job.folder / "sheet").mkdir()
+                    job.sheet = Path(shutil.copy(sheet, job.folder / "sheet" / sheet.name))
+                brief = builder.definition(job.folder, agent_home, sys.executable, sheet=job.sheet,
+                                           **job.brief)
+            else:
+                brief = extractor_builder.definition(job.record, agent_home, sys.executable,
+                                                     **job.brief)
+            before = set((agent_home / "instances").glob(f"{agent}-*"))
+
+            def made():
+                new = sorted(set((agent_home / "instances").glob(f"{agent}-*")) - before,
+                             key=lambda instance: instance.stat().st_mtime)
+                return new[-1] / "work" if new else None
+            job.made = made
+            (job.folder / BRIEF).write_text(json.dumps(brief, indent=2) + "\n")
+            self.launch(job, self.home, {}, job.folder / BRIEF)
+            work, left = job.folder / "work", made()
+            work.mkdir()
+            code = WRITTEN[job.what][0]
+            for name in WRITTEN[job.what]:
+                # Only a plain file the agent wrote: a link could point anywhere.
+                if left and (left / name).is_file() and not (left / name).is_symlink():
+                    shutil.copy(left / name, work / name)
+            if not (work / code).is_file():
+                if job.state == "running":
+                    job.state, job.error = "failed", f"the agent finished and wrote no {job.what}"
+                return
+            if job.what == ADAPTER:
+                verdict = builder.judged(work, job.folder / "graph.json", job.brief["name"], job.sheet)
+            else:
+                verdict = extractor_builder.judged(work, job.brief["name"], job.record)
+            verdict["sha256"] = file_hash(work / code)
+            (job.folder / VERDICT).write_text(json.dumps(verdict, indent=2) + "\n")
+            if job.state == "running":
+                job.state = "finished"
+        except (SystemExit, Exception) as bad:      # a job must end in a state the page can show
+            job.state, job.error = "failed", str(bad) or repr(bad)
+
+    def install(self, body):
+        """A person's approval of a built provider: their name, and the hash of the file the judge saw."""
+        job = self.jobs.get(body.get("job") or "")
+        if not job or job.kind != BUILD:
+            raise Refused("no such build", 404)
+        if job.state == "running":
+            raise Refused("the build is still going; approve when it has finished", 409)
+        work, verdict = job.folder / "work", read(job.folder / VERDICT)
+        if not verdict:
+            raise Refused("this build has no verdict, so there is nothing to approve")
+        code = WRITTEN[job.what][0]
+        if not (work / code).is_file() or file_hash(work / code) != verdict["sha256"]:
+            raise Refused(f"the {job.what} changed after the judge saw it; build it again")
+        try:
+            builder.install(work, self.providers, job.brief["name"], body.get("actor") or "", verdict,
+                            written=code, agent=AGENTS[job.what])
+        except builder.Refused as bad:
+            raise Refused(str(bad))
+        return build_status(job, self.providers)
 
 
-def run_agent(job, home, roots):
+def run_agent(job, home, roots, definition=DEFINITION):
     """One agent run over the job folder, its output kept line by line."""
     if importlib.util.find_spec("mainsheet") is None:
         raise Refused("Mainsheet is not installed in this environment, so the agent cannot run")
     agent_home = home / "mainsheet"
     agent_home.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, CLEW_AGENT_DIR=str(job.folder), MAINSHEET_HOME=str(agent_home), **roots)
-    ran = subprocess.Popen([sys.executable, "-m", "mainsheet.agent.main", str(DEFINITION)],
+    ran = subprocess.Popen([sys.executable, "-m", "mainsheet.agent.main", str(definition)],
                            cwd=agent_home, env=env, text=True, bufsize=1,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for line in ran.stdout:
@@ -458,8 +703,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {"error": "open the link the terminal printed"})
         routes = {"/api/state": lambda body: app.state(),
                   "/api/browse": lambda body: browse(body.get("path")),
-                  "/api/pick": lambda body: pick(body.get("path")),
-                  "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide}
+                  "/api/pick": lambda body: pick(body.get("path"), body.get("what") == "file"),
+                  "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
+                  "/api/build": app.build, "/api/install": app.install}
         route = routes.get(self.path)
         if not route:
             return self.send(404, {"error": "not found"})
@@ -497,7 +743,10 @@ def main(argv=None):
         server, link = serve(args.home, args.port)
     except OSError as bad:
         raise SystemExit(f"cannot listen on port {args.port}: {bad.strerror or bad}")
-    print(f"Clew UI: {link}\nruns are kept in {server.app.home}\nCtrl-C stops it", flush=True)
+    # Every command this server runs, and the server itself, loads approved adapters from here.
+    os.environ[LOCAL_VARIABLE] = str(server.app.providers)
+    print(f"Clew UI: {link}\nruns are kept in {server.app.home}\n"
+          f"approved adapters are kept in {server.app.providers}\nCtrl-C stops it", flush=True)
     if not args.no_browser:
         webbrowser.open(link)
     try:

@@ -9,8 +9,8 @@ Each case is one project's release notes at a pinned tag, fetched from
 GitHub and cached, so a rerun reads the same text. A case is tried under
 the heading a release email carries and as the bare notes.
 
-It fails when a real problem is dismissed, or when a headed notice is
-acted on wrongly. A bare notice that never names its tool may raise a
+It fails when a real problem is dismissed, or when a headed incident is
+acted on wrongly. A bare incident that never names its tool may raise a
 false alarm: that costs one unneeded plan and is reported, not failed.
 """
 
@@ -58,16 +58,16 @@ def notes(repository, tag):
     return body
 
 
-def sort(notice, graph, offered, backend, key):
-    asked = triage.request(notice, offered, triage.DEFAULT)
+def sort(incident, graph, offered, backend, key):
+    asked = triage.request(incident, offered, triage.DEFAULT)
     if backend == "name":
         words = {option: trigger.split(":", 1)[1] for option, trigger, _ in offered}
-        answer = classifier.by_name(notice, words)
+        answer = classifier.by_name(incident, words)
     else:
         criteria = asked["questions"][classifier.QUESTION]["criteria"]
         answer = classifier.checked(classifier.jev(asked, key), criteria, triage.DEFAULT["model"])
-    return triage.triage(notice, offered, triage.DEFAULT, answer, backend,
-                         named=triage.named_in_run(notice, graph))
+    return triage.triage(incident, offered, triage.DEFAULT, answer, backend,
+                         named=triage.named_in_run(incident, graph))
 
 
 def grade(expected, record):
@@ -142,7 +142,7 @@ def main(argv=None):
     if any(totals[form]["dismissed_wrongly"] for form in FORMS):
         failures.append("a real problem was dismissed")
     if totals["headed"]["acted_wrongly"]:
-        failures.append("a headed notice was acted on wrongly")
+        failures.append("a headed incident was acted on wrongly")
     print("\nFAIL: " + " and ".join(failures) if failures else "\nPASS")
 
     if not args.no_baseline:

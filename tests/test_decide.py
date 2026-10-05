@@ -1,4 +1,4 @@
-"""A person's decision on a held notice: what it must carry, and what it may not do."""
+"""A person's decision on a held incident: what it must carry, and what it may not do."""
 
 import sys
 import unittest
@@ -11,7 +11,7 @@ from clew.intake import decide
 HELD = {"outcome": "held", "choice": "none", "confidence": 0.49,
         "reason": "none at 0.49, below the dismissal bar 0.9", "request_sha256": "a" * 64,
         "settings": {"version": "v1", "hash": "b" * 64},
-        "notice": {"sha256": "c" * 64, "text": "n"},
+        "incident": {"sha256": "c" * 64, "text": "n"},
         "options": {"toolkit": "container:toolkit", "U3": "unit:U3"}}
 
 
@@ -21,7 +21,7 @@ class TestDecide(unittest.TestCase):
                              at="2026-10-03T16:00:00+00:00")
         self.assertEqual((made["decision"], made["trigger"], made["actor"]),
                          ("ask", "unit:U3", "qa.lead@example.org"))
-        self.assertEqual(made["notice"], "c" * 64)
+        self.assertEqual(made["incident"], "c" * 64)
         self.assertEqual(made["triage"]["confidence"], 0.49)
         self.assertEqual(made["decided_at"], "2026-10-03T16:00:00+00:00")
 
@@ -42,14 +42,14 @@ class TestDecide(unittest.TestCase):
         self.assertIn("one of", self.refused(actor="qa"))
         self.assertIn("one of", self.refused(actor="qa", ask="unit:U3", dismiss=True))
 
-    def test_a_notice_that_was_not_held_takes_no_decision(self):
+    def test_a_incident_that_was_not_held_takes_no_decision(self):
         for outcome in ("ask", "dismissed"):
             self.assertIn("not held", self.refused(dict(HELD, outcome=outcome), actor="qa", dismiss=True))
 
     def test_the_event_goes_in_under_the_person(self):
         event = decide.decided(decide.decide(HELD, "qa.lead@example.org", dismiss=True))
         self.assertEqual((event["event_type"], event["actor"], event["subject"]),
-                         ("NoticeDecided", "qa.lead@example.org", "c" * 64))
+                         ("IncidentDecided", "qa.lead@example.org", "c" * 64))
         self.assertNotIn("actor", event["body"])
 
 

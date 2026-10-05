@@ -1,15 +1,15 @@
 """
-Can a typed classifier turn a written notice into the right trigger?
+Can a typed classifier turn an incident report into the right trigger?
 
     python examples/jev_triage_trial.py --dry-run
     python examples/jev_triage_trial.py --out triage_answers.json
 
 The options are the tools the shipped sarek run actually used, read from
-its graph, plus `none`. Each notice is one call. The answer is compared
+its graph, plus `none`. Each incident is one call. The answer is compared
 with a hand-written key and with a baseline that picks a tool only when
-its name appears in the notice.
+its name appears in the incident.
 
-The notices and the key are written by hand for this trial. They show
+The incidents and the key are written by hand for this trial. They show
 where the classifier is weak, not how it does on real advisories.
 """
 
@@ -25,12 +25,12 @@ GRAPH = Path(__file__).resolve().parent.parent / "clew" / "data" / "graph5.json"
 NONE = "none"
 
 INSTRUCTIONS = (
-    "The notice reports a defect or a change in a software tool. Which tool "
+    "The incident reports a defect or a change in a software tool. Which tool "
     "used in this run does it concern? Choose none when the tool it "
     "concerns was not used in this run.")
 
-# (notice, expected tool, how the notice names it)
-NOTICES = [
+# (incident, expected tool, how the incident names it)
+INCIDENTS = [
     ("GATK 4.5 BaseRecalibrator writes wrong covariates for reads with soft "
      "clips. Upgrade to 4.6.", "gatk4", "named"),
     ("samtools 1.21: stats reports a wrong insert size on CRAM input.",
@@ -88,21 +88,21 @@ def tools_in(graph):
     return used
 
 
-def request(notice, used, model):
+def request(incident, used, model):
     criteria = {tool: "in the image used by " + ", ".join(sorted(processes))
                 for tool, processes in sorted(used.items())}
-    criteria[NONE] = "the notice concerns nothing this run used"
+    criteria[NONE] = "the incident concerns nothing this run used"
     return {
         "model": model,
-        "state": {"notice": notice},
+        "state": {"incident": incident},
         "questions": {"tool": {"type": "choice", "instructions": INSTRUCTIONS,
                                "criteria": criteria}},
     }
 
 
-def by_name(notice, used):
-    """The baseline: the one tool whose name the notice contains, else none."""
-    hits = [tool for tool in used if tool in notice.lower()]
+def by_name(incident, used):
+    """The baseline: the one tool whose name the incident contains, else none."""
+    hits = [tool for tool in used if tool in incident.lower()]
     return hits[0] if len(hits) == 1 else NONE
 
 
@@ -119,18 +119,18 @@ def kind_of_miss(expected, got):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--model", default=MODEL)
-    parser.add_argument("--limit", type=int, help="stop after this many notices")
+    parser.add_argument("--limit", type=int, help="stop after this many incidents")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the first request and send nothing")
     parser.add_argument("--out", metavar="PATH", help="write every answer as JSON")
     args = parser.parse_args(argv)
 
     used = tools_in(json.loads(GRAPH.read_text()))
-    todo = NOTICES[:args.limit]
+    todo = INCIDENTS[:args.limit]
 
     if args.dry_run:
         print(json.dumps(request(todo[0][0], used, args.model), indent=2))
-        print(f"\n{len(todo)} notices, {len(used)} tools, nothing sent")
+        print(f"\n{len(todo)} incidents, {len(used)} tools, nothing sent")
         return 0
 
     key = os.environ.get("TYPESAFE_API_KEY")
@@ -138,15 +138,15 @@ def main(argv=None):
         raise SystemExit("set TYPESAFE_API_KEY first")
 
     rows = []
-    for notice, expected, naming in todo:
-        reply = ask(request(notice, used, args.model), key)
+    for incident, expected, naming in todo:
+        reply = ask(request(incident, used, args.model), key)
         answer = reply["answers"]["tool"]
         miss = kind_of_miss(expected, answer["choice"])
-        rows.append({"notice": notice, "expected": expected, "naming": naming,
-                     "baseline": by_name(notice, used), "answer": answer,
+        rows.append({"incident": incident, "expected": expected, "naming": naming,
+                     "baseline": by_name(incident, used), "answer": answer,
                      "model": reply.get("model"), "miss": miss})
         print(f"{(miss or 'ok'):<11} {naming:<10} {expected:<9} "
-              f"{answer['choice']:<10} {answer['confidence']:.2f}  {notice[:48]}")
+              f"{answer['choice']:<10} {answer['confidence']:.2f}  {incident[:48]}")
 
     right = [r for r in rows if not r["miss"]]
     wrong = [r for r in rows if r["miss"]]

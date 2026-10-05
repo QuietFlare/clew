@@ -3,11 +3,11 @@ The classifier behind triage: one closed question in, one answer out.
 
 An answer is {choice, confidence, probabilities, model}. `jev` asks
 TypeSafe's System One endpoint over the standard library. `by_name` needs
-no key and no network, and picks an option only when the notice names it.
+no key and no network, and picks an option only when the incident names it.
 An answer made elsewhere, by a pipeline plugin for example, goes through
 `checked` like a live one.
 
-Nothing here decides what happens to a notice. That is the settings' job,
+Nothing here decides what happens to an incident. That is the settings' job,
 in triage, so swapping the classifier changes no rule.
 """
 
@@ -21,7 +21,7 @@ ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 KEY_VARIABLE = "TYPESAFE_API_KEY"
 
 # The one question a triage request carries, and the option that means
-# the notice concerns nothing in this graph.
+# the incident concerns nothing in this graph.
 QUESTION = "trigger"
 NONE = "none"
 
@@ -102,24 +102,24 @@ def checked(document, criteria, model):
             "probabilities": probabilities, "model": answered_by}
 
 
-def names(notice, word, whole=False):
+def names(incident, word, whole=False):
     """
-    Whether the notice contains the word standing alone, in any case. With
+    Whether the incident contains the word standing alone, in any case. With
     `whole`, a longer hyphenated name does not count, so bwa is not found
     in bwa-mem2.
     """
     before = r"(?<![A-Za-z0-9])" + (r"(?<![A-Za-z0-9]-)" if whole else "")
     after = r"(?!-?[A-Za-z0-9])" if whole else r"(?![A-Za-z0-9])"
-    return re.search(before + re.escape(word) + after, notice, re.IGNORECASE) is not None
+    return re.search(before + re.escape(word) + after, incident, re.IGNORECASE) is not None
 
 
-def by_name(notice, words):
+def by_name(incident, words):
     """
-    The option whose word the notice contains, standing alone, when exactly
+    The option whose word the incident contains, standing alone, when exactly
     one does. `words` is {option: word}. No confidence comes back: a name
     is there or it is not, and its absence shows nothing.
     """
-    named = sorted(option for option, word in words.items() if names(notice, word, whole=True))
+    named = sorted(option for option, word in words.items() if names(incident, word, whole=True))
     return {"choice": named[0] if len(named) == 1 else NONE,
             "confidence": None, "probabilities": None, "model": None,
             "named": named}

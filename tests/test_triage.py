@@ -1,5 +1,5 @@
 """
-Triage: a written notice becomes a trigger, or is held.
+Triage: an incident report becomes a trigger, or is held.
 
 The classifier is never called here. Its answers are written out by hand,
 which is also how an answer made elsewhere arrives, so the same checks
@@ -93,12 +93,12 @@ class TestOptions(unittest.TestCase):
         options = {option for option, _, _ in triage.options(graph)}
         self.assertLessEqual({"container toolkit", "site toolkit"}, options)
 
-    def test_a_kind_with_many_values_is_offered_only_where_the_notice_names_one(self):
+    def test_a_kind_with_many_values_is_offered_only_where_the_incident_names_one(self):
         graph = json.loads(json.dumps(GRAPH))
         for n in range(triage.NAMED_ONLY_ABOVE + 10):
             graph["tasks"][f"t{n}"] = {"hash": f"t{n}", "labels": {"lot": f"L{n}"}}
         notes = []
-        offered = triage.options(graph, notice="lot L7 was recalled", notes=notes)
+        offered = triage.options(graph, incident="lot L7 was recalled", notes=notes)
         lots = [trigger for _, trigger, _ in offered if trigger.startswith("lot:")]
         self.assertEqual(lots, ["lot:L7"])
         self.assertTrue(any("lot: 60 values" in note for note in notes), notes)
@@ -189,15 +189,15 @@ class TestPipelineKinds(unittest.TestCase):
 
 
 class TestRemovalsMustBeNamed(unittest.TestCase):
-    """An id that takes a source away is asked only when the notice writes it out."""
+    """An id that takes a source away is asked only when the incident writes it out."""
 
-    def sorted_as(self, notice, choice, confidence=0.99):
+    def sorted_as(self, incident, choice, confidence=0.99):
         site = pipeline(unit=ListedKind({"U3": ["a"]}))
         offered = triage.options(GRAPH, adapter=site)
         answer = {"choice": choice, "confidence": confidence, "probabilities": {}, "model": MODEL}
-        return triage.triage(notice, offered, triage.V1, answer, "jev", removes={"unit"})
+        return triage.triage(incident, offered, triage.V1, answer, "jev", removes={"unit"})
 
-    def test_a_removal_the_notice_names_is_asked(self):
+    def test_a_removal_the_incident_names_is_asked(self):
         record = self.sorted_as("U3 withdrew", "U3")
         self.assertEqual((record["outcome"], record["trigger"]), ("ask", "unit:U3"))
 
@@ -219,10 +219,10 @@ class TestDismissalIsRefused(unittest.TestCase):
 
     NAMED = dict(GRAPH, tasks=dict(GRAPH["tasks"], a=dict(GRAPH["tasks"]["a"], name="PREP (unit_003)")))
 
-    def sorted_as(self, notice, graph, **given):
+    def sorted_as(self, incident, graph, **given):
         answer = {"choice": "none", "confidence": 0.99, "probabilities": {}, "model": MODEL}
-        return triage.triage(notice, triage.options(graph), triage.V1, answer, "jev",
-                             named=triage.named_in_run(notice, graph), **given)
+        return triage.triage(incident, triage.options(graph), triage.V1, answer, "jev",
+                             named=triage.named_in_run(incident, graph), **given)
 
     def test_an_id_the_run_contains_and_no_option_covers_is_held(self):
         record = self.sorted_as("unit_003 withdrew on 2 October", self.NAMED)
@@ -230,7 +230,7 @@ class TestDismissalIsRefused(unittest.TestCase):
         self.assertEqual(record["named_in_run"], ["unit_003"])
         self.assertIn("Choose the pipeline's adapter", record["reason"])
 
-    def test_a_notice_about_nothing_in_the_run_is_still_dismissed(self):
+    def test_a_incident_about_nothing_in_the_run_is_still_dismissed(self):
         record = self.sorted_as("gadget 2.7.11 corrupts its output, see ticket AB12", self.NAMED)
         self.assertEqual(record["outcome"], "dismissed")
 
@@ -250,9 +250,9 @@ class TestDismissalIsRefused(unittest.TestCase):
 
 class TestRequest(unittest.TestCase):
     def test_the_request_carries_the_pinned_model_and_none(self):
-        asked = triage.request("a notice", triage.options(GRAPH), triage.V1)
+        asked = triage.request("an incident", triage.options(GRAPH), triage.V1)
         self.assertEqual(asked["model"], MODEL)
-        self.assertEqual(asked["state"], {"notice": "a notice"})
+        self.assertEqual(asked["state"], {"incident": "an incident"})
         self.assertIn(classifier.NONE, asked["questions"]["trigger"]["criteria"])
 
 
@@ -269,7 +269,7 @@ class TestDeciding(unittest.TestCase):
         self.assertIsNone(record["trigger"])
 
     def test_dismissing_needs_more_than_asking(self):
-        """0.75 would ask a trigger and must not dismiss a notice."""
+        """0.75 would ask a trigger and must not dismiss an incident."""
         self.assertEqual(sorted_as("toolkit", 0.75)["outcome"], triage.ASK)
         self.assertEqual(sorted_as("none", 0.75)["outcome"], triage.HELD)
         self.assertEqual(sorted_as("none", 0.98)["outcome"], triage.DISMISSED)
@@ -285,8 +285,8 @@ class TestDeciding(unittest.TestCase):
 class TestByName(unittest.TestCase):
     WORDS = {"toolkit": "toolkit", "helper": "helper", "other": "other"}
 
-    def decided(self, notice):
-        return triage.decide(classifier.by_name(notice, self.WORDS), triage.V1)[0]
+    def decided(self, incident):
+        return triage.decide(classifier.by_name(incident, self.WORDS), triage.V1)[0]
 
     def test_one_name_is_asked(self):
         self.assertEqual(self.decided("Toolkit 2.1 truncates indexes"), triage.ASK)
@@ -354,18 +354,18 @@ class TestSettings(unittest.TestCase):
 
 
 class TestEvents(unittest.TestCase):
-    def test_both_events_share_the_notice_hash(self):
+    def test_both_events_share_the_incident_hash(self):
         record = sorted_as("toolkit", 0.92)
         first, second = triage.received("n", "feed"), triage.triaged(record, 7)
-        self.assertEqual(first["event_type"], "NoticeReceived")
-        self.assertEqual(second["event_type"], "NoticeTriaged")
+        self.assertEqual(first["event_type"], "IncidentReceived")
+        self.assertEqual(second["event_type"], "IncidentTriaged")
         self.assertEqual(first["subject"], second["subject"])
         self.assertEqual(first["body"], {"text": "n", "source": "feed"})
 
     def test_the_triage_event_points_back_and_leaves_the_text_out(self):
         body = triage.triaged(sorted_as("toolkit", 0.92), 7)["body"]
         self.assertEqual(body["received_seq"], 7)
-        self.assertNotIn("notice", body)
+        self.assertNotIn("incident", body)
         self.assertEqual(body["trigger"], "container:toolkit")
 
 
@@ -383,9 +383,9 @@ class TestCommand(unittest.TestCase):
         Path(self.graph).write_text(json.dumps(GRAPH))
 
     def test_print_request_sends_nothing_and_exits_clean(self):
-        code, out = self.run_triage("--graph", self.graph, "--print-request", "a notice")
+        code, out = self.run_triage("--graph", self.graph, "--print-request", "an incident")
         self.assertEqual(code, 0)
-        self.assertEqual(json.loads(out)["state"], {"notice": "a notice"})
+        self.assertEqual(json.loads(out)["state"], {"incident": "an incident"})
 
     def test_a_supplied_answer_is_recorded_and_exits_by_outcome(self):
         supplied = Path(self.dir.name) / "answer.json"
@@ -394,7 +394,7 @@ class TestCommand(unittest.TestCase):
                                          ("none", 0.99, 3)):
             supplied.write_text(json.dumps(answer(choice, confidence)))
             got, out = self.run_triage("--graph", self.graph, "--answer", str(supplied),
-                                       "--json", str(record), "a notice")
+                                       "--json", str(record), "an incident")
             self.assertEqual(got, code, out)
             self.assertEqual(json.loads(record.read_text())["backend"], "supplied")
 
@@ -402,7 +402,7 @@ class TestCommand(unittest.TestCase):
         supplied = Path(self.dir.name) / "answer.json"
         supplied.write_text(json.dumps(answer("invented", 0.9)))
         with self.assertRaises(SystemExit) as stopped:
-            self.run_triage("--graph", self.graph, "--answer", str(supplied), "a notice")
+            self.run_triage("--graph", self.graph, "--answer", str(supplied), "an incident")
         self.assertIn("triage refused", str(stopped.exception))
 
     def test_name_matching_prints_the_next_command(self):
@@ -411,7 +411,7 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn(f"clew impact --graph {self.graph} --trigger container:toolkit", out)
 
-    def test_an_empty_notice_is_an_error(self):
+    def test_an_empty_incident_is_an_error(self):
         with self.assertRaises(SystemExit):
             self.run_triage("--graph", self.graph, "   ")
 

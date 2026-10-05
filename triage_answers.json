@@ -1,6 +1,6 @@
 [
   {
-    "notice": "GATK 4.5 BaseRecalibrator writes wrong covariates for reads with soft clips. Upgrade to 4.6.",
+    "incident": "GATK 4.5 BaseRecalibrator writes wrong covariates for reads with soft clips. Upgrade to 4.6.",
     "expected": "gatk4",
     "naming": "named",
     "baseline": "none",
@@ -28,7 +28,7 @@
     "miss": null
   },
   {
-    "notice": "samtools 1.21: stats reports a wrong insert size on CRAM input.",
+    "incident": "samtools 1.21: stats reports a wrong insert size on CRAM input.",
     "expected": "samtools",
     "naming": "named",
     "baseline": "samtools",
@@ -56,7 +56,7 @@
     "miss": null
   },
   {
-    "notice": "Strelka2 2.9.10 miscounts indel alleles next to homopolymers.",
+    "incident": "Strelka2 2.9.10 miscounts indel alleles next to homopolymers.",
     "expected": "strelka",
     "naming": "named",
     "baseline": "strelka",
@@ -84,7 +84,7 @@
     "miss": null
   },
   {
-    "notice": "MultiQC 1.33 drops samples whose names contain a dot.",
+    "incident": "MultiQC 1.33 drops samples whose names contain a dot.",
     "expected": "multiqc",
     "naming": "named",
     "baseline": "multiqc",
@@ -112,7 +112,7 @@
     "miss": null
   },
   {
-    "notice": "bcftools stats 1.21 counts multiallelic sites twice.",
+    "incident": "bcftools stats 1.21 counts multiallelic sites twice.",
     "expected": "bcftools",
     "naming": "named",
     "baseline": "bcftools",
@@ -140,7 +140,7 @@
     "miss": null
   },
   {
-    "notice": "mosdepth 0.3.10 reports zero coverage for the last window of each contig.",
+    "incident": "mosdepth 0.3.10 reports zero coverage for the last window of each contig.",
     "expected": "mosdepth",
     "naming": "named",
     "baseline": "mosdepth",
@@ -168,7 +168,7 @@
     "miss": null
   },
   {
-    "notice": "HTSlib 1.21 fails to decode CRAM blocks that embed the reference.",
+    "incident": "HTSlib 1.21 fails to decode CRAM blocks that embed the reference.",
     "expected": "htslib",
     "naming": "named",
     "baseline": "htslib",
@@ -196,7 +196,7 @@
     "miss": null
   },
   {
-    "notice": "The duplicate marking step flags optical duplicates wrongly on patterned flowcells.",
+    "incident": "The duplicate marking step flags optical duplicates wrongly on patterned flowcells.",
     "expected": "gatk4",
     "naming": "described",
     "baseline": "none",
@@ -224,7 +224,7 @@
     "miss": null
   },
   {
-    "notice": "Advisory for the short-read aligner: mem mode clips supplementary alignments wrongly.",
+    "incident": "Advisory for the short-read aligner: mem mode clips supplementary alignments wrongly.",
     "expected": "bwa",
     "naming": "described",
     "baseline": "none",
@@ -252,7 +252,7 @@
     "miss": null
   },
   {
-    "notice": "The read quality report shows wrong per-base scores for reads longer than 500 bases.",
+    "incident": "The read quality report shows wrong per-base scores for reads longer than 500 bases.",
     "expected": "fastqc",
     "naming": "described",
     "baseline": "none",
@@ -280,7 +280,7 @@
     "miss": null
   },
   {
-    "notice": "bgzip and tabix: indexes for files over 4 GB are truncated.",
+    "incident": "bgzip and tabix: indexes for files over 4 GB are truncated.",
     "expected": "htslib",
     "naming": "described",
     "baseline": "none",
@@ -308,7 +308,7 @@
     "miss": null
   },
   {
-    "notice": "The TsTv-by-count and TsTv-by-qual summaries are off by one in the last bin.",
+    "incident": "The TsTv-by-count and TsTv-by-qual summaries are off by one in the last bin.",
     "expected": "vcftools",
     "naming": "described",
     "baseline": "none",
@@ -336,7 +336,7 @@
     "miss": null
   },
   {
-    "notice": "Base quality recalibration tables come out wrong when the known-sites file has no index.",
+    "incident": "Base quality recalibration tables come out wrong when the known-sites file has no index.",
     "expected": "gatk4",
     "naming": "described",
     "baseline": "none",
@@ -364,7 +364,7 @@
     "miss": null
   },
   {
-    "notice": "The small variant caller run in single-sample mode ignores the call regions file.",
+    "incident": "The small variant caller run in single-sample mode ignores the call regions file.",
     "expected": "strelka",
     "naming": "described",
     "baseline": "none",
@@ -392,7 +392,7 @@
     "miss": null
   },
   {
-    "notice": "STAR 2.7.11 writes corrupted splice junction files in two-pass mode.",
+    "incident": "STAR 2.7.11 writes corrupted splice junction files in two-pass mode.",
     "expected": "none",
     "naming": "absent",
     "baseline": "none",
@@ -420,7 +420,7 @@
     "miss": null
   },
   {
-    "notice": "Salmon 1.10 shows a quantification bias on long reads.",
+    "incident": "Salmon 1.10 shows a quantification bias on long reads.",
     "expected": "none",
     "naming": "absent",
     "baseline": "none",
@@ -448,7 +448,7 @@
     "miss": null
   },
   {
-    "notice": "DeepVariant 1.6 miscalls in the HLA region with the PacBio model.",
+    "incident": "DeepVariant 1.6 miscalls in the HLA region with the PacBio model.",
     "expected": "none",
     "naming": "absent",
     "baseline": "none",
@@ -476,7 +476,7 @@
     "miss": null
   },
   {
-    "notice": "The cluster scheduler is down for maintenance on Saturday.",
+    "incident": "The cluster scheduler is down for maintenance on Saturday.",
     "expected": "none",
     "naming": "absent",
     "baseline": "none",
@@ -504,7 +504,7 @@
     "miss": null
   },
   {
-    "notice": "BLAST+ 2.15 changes its database format.",
+    "incident": "BLAST+ 2.15 changes its database format.",
     "expected": "none",
     "naming": "absent",
     "baseline": "none",
@@ -532,7 +532,7 @@
     "miss": null
   },
   {
-    "notice": "fastp 0.23 drops reads when adapter trimming meets a poly-G tail.",
+    "incident": "fastp 0.23 drops reads when adapter trimming meets a poly-G tail.",
     "expected": "none",
     "naming": "near miss",
     "baseline": "none",
@@ -560,7 +560,7 @@
     "miss": null
   },
   {
-    "notice": "BWA-MEM2 2.2.1 indexes cannot be read by earlier releases.",
+    "incident": "BWA-MEM2 2.2.1 indexes cannot be read by earlier releases.",
     "expected": "none",
     "naming": "near miss",
     "baseline": "bwa",

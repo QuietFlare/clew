@@ -27,7 +27,7 @@ RUNS = ROOT / "tests" / "fixtures" / "horus_run"
 RECORD = {"outcome": "ask", "choice": "shell", "confidence": 0.9, "trigger": "container:shell",
           "reason": "0.90, at or above the asking bar 0.6", "backend": "jev",
           "model": "jev-1.13.0", "options": {"shell": "container:shell"},
-          "notice": {"sha256": "0" * 64, "text": "n"}}
+          "incident": {"sha256": "0" * 64, "text": "n"}}
 PLAN = {"trigger": "container:shell", "policy_version": "v1", "tasks_affected": 1,
         "tasks_total": 4, "actions": {"REGENERATE": 1},
         "plan": [{"process": "analyse", "action": "REGENERATE", "rule": "R8"}]}
@@ -36,7 +36,7 @@ PLAN = {"trigger": "container:shell", "policy_version": "v1", "tasks_affected": 
 def leaves(outcome="ask", plan=True, review=None):
     """A stand-in for the agent: it writes what a run with this outcome leaves behind."""
     def launch(job, home, roots):
-        out = job.folder / "out" / ui.NOTICE
+        out = job.folder / "out" / ui.INCIDENT
         out.mkdir(parents=True)
         (out / "triage.json").write_text(json.dumps(dict(RECORD, outcome=outcome)))
         if plan and outcome == "ask":
@@ -83,7 +83,7 @@ class Served(unittest.TestCase):
         self.fail("the job never finished")
 
     def start(self, **over):
-        body = dict({"path": str(RUNS), "run": "horus_run", "notice": "shell is broken"}, **over)
+        body = dict({"path": str(RUNS), "run": "horus_run", "incident": "shell is broken"}, **over)
         return self.call("/api/run", body)
 
 
@@ -146,10 +146,10 @@ class TestRun(Served):
         self.assertEqual((job["turns"], job["cost"]), (12, 0.03))
         folder = Path(job["folder"])
         self.assertTrue((folder / "graph.json").is_file())
-        self.assertEqual((folder / "inbox" / "notice.txt").read_text(), "shell is broken\n")
+        self.assertEqual((folder / "inbox" / "incident.txt").read_text(), "shell is broken\n")
 
-    def test_an_empty_notice_or_an_unknown_run_is_refused(self):
-        self.assertEqual(self.start(notice="  ")[0], 400)
+    def test_an_empty_incident_or_an_unknown_run_is_refused(self):
+        self.assertEqual(self.start(incident="  ")[0], 400)
         self.assertEqual(self.start(run="absent")[0], 400)
         self.assertEqual(self.start(path=self.tmp.name)[0], 400)
         self.assertEqual(self.start(work_root="/no/such/folder")[0], 400)
@@ -160,7 +160,7 @@ class TestHeld(Served):
         "verdict": "dismiss", "trigger": None, "reason": "another tool",
         "status": "recommendation, not a decision", "recommended_by": "clew"}))
 
-    def test_a_held_notice_shows_a_recommendation_and_no_plan(self):
+    def test_a_held_incident_shows_a_recommendation_and_no_plan(self):
         job = self.finished(self.start()[1]["job"])
         states = {s["key"]: s["state"] for s in job["steps"]}
         self.assertEqual(states["impact"], "skipped")
@@ -218,20 +218,20 @@ class TestPicking(unittest.TestCase):
 
     def test_no_dialog_at_all_is_said(self):
         from unittest import mock
-        with mock.patch.object(ui, "picker", lambda start: None):
+        with mock.patch.object(ui, "picker", lambda start, file=False: None):
             self.assertEqual(ui.pick("/"), {"available": False, "path": None})
 
     def test_a_cancelled_dialog_gives_no_path(self):
         from unittest import mock
         done = mock.Mock(stdout="\n")
-        with mock.patch.object(ui, "picker", lambda start: ["x"]), \
+        with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
                 mock.patch.object(ui.subprocess, "run", return_value=done):
             self.assertEqual(ui.pick("/"), {"available": True, "path": None})
 
     def test_a_chosen_folder_comes_back(self):
         from unittest import mock
         done = mock.Mock(stdout=str(RUNS) + "/\n")
-        with mock.patch.object(ui, "picker", lambda start: ["x"]), \
+        with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
                 mock.patch.object(ui.subprocess, "run", return_value=done):
             self.assertEqual(Path(ui.pick("/")["path"]), RUNS)
 
@@ -276,7 +276,7 @@ class TestAdapters(Served):
 
 
 class TestDecision(Served):
-    """A held notice waits for a person. Their choice is recorded and, when it asks, carried on."""
+    """A held incident waits for a person. Their choice is recorded and, when it asks, carried on."""
     launch = staticmethod(leaves("held"))
 
     def setUp(self):
@@ -294,7 +294,7 @@ class TestDecision(Served):
                      "trigger": "container:shell", "reason": "the shell step"}, **over)
         return self.call("/api/decide", body)
 
-    def test_a_held_notice_is_open_and_offers_what_triage_offered(self):
+    def test_a_held_incident_is_open_and_offers_what_triage_offered(self):
         states = {s["key"]: s["state"] for s in self.job["steps"]}
         self.assertEqual(states["decision"], "open")
         self.assertEqual(states["impact"], "skipped")
@@ -330,3 +330,168 @@ class TestDecision(Served):
     def test_a_second_decision_is_refused(self):
         self.finished(self.decide()[1]["job"])
         self.assertEqual(self.decide(action="dismiss")[0], 400)
+
+
+DOCKING = ROOT / "tests" / "fixtures" / "pantheon_vina"
+ADAPTER = (ROOT / "tests" / "fixtures" / "builder" / "adapter.py").read_text()
+
+
+def writes(adapter=ADAPTER, tests="import unittest\n", linked=None):
+    """A stand-in for the building agent: it leaves these files in a new instance's work folder."""
+    def launch(job, home, roots, definition):
+        work = home / "mainsheet" / "instances" / "adapter-builder-0a1b2c3d" / "work"
+        work.mkdir(parents=True)
+        if linked:
+            (work / "adapter.py").symlink_to(linked)
+        elif adapter:
+            (work / "adapter.py").write_text(adapter)
+        if tests:
+            (work / "test_adapter.py").write_text(tests)
+        job.definition = definition
+        job.turns, job.cost = 30, 1.2
+    return launch
+
+
+class TestBuild(Served):
+    """An agent writes an adapter, a judge checks it, and a person's name installs it."""
+    launch = staticmethod(writes())
+
+    def setUp(self):
+        import os
+        from unittest import mock
+        from clew.contracts.registry import LOCAL_VARIABLE, TRIAL_VARIABLE
+        # The judge is a process of its own: it finds this checkout by path,
+        # and the provider folder is this test's, never the machine's.
+        clean = {k: v for k, v in os.environ.items() if k not in (LOCAL_VARIABLE, TRIAL_VARIABLE)}
+        patched = mock.patch.dict(os.environ, dict(clean, PYTHONPATH=str(ROOT)), clear=True)
+        patched.start()
+        self.addCleanup(patched.stop)
+        super().setUp()
+        self.providers = Path(self.tmp.name).resolve() / "providers"
+
+    def build(self, **over):
+        body = dict({"path": str(DOCKING), "run": "pantheon_vina", "name": "site-ligands",
+                     "kind": "ligand", "removable": True, "notes": "second column",
+                     "sheet": str(DOCKING / "ligands.smi")}, **over)
+        return self.call("/api/build", body)
+
+    def built(self, **over):
+        status, started = self.build(**over)
+        self.assertEqual(status, 200, started)
+        return self.finished(started["job"])
+
+    def states(self, job):
+        return {s["key"]: s["state"] for s in job["steps"]}
+
+    def test_a_build_ends_judged_and_waits_for_a_person(self):
+        job = self.built()
+        self.assertEqual((job["state"], job["error"], job["kind"]), ("finished", None, "build"))
+        self.assertEqual(self.states(job), {"extract": "done", "brief": "done", "adapter": "done",
+                                            "tests": "done", "judge": "done", "approval": "open"})
+        self.assertTrue(job["verdict"]["passed"], job["verdict"]["checks"])
+        self.assertEqual(job["verdict"]["kinds"][0]["reached"], 3)
+        self.assertEqual(job["code"], ADAPTER)
+        self.assertTrue(job["can_install"])
+        self.assertEqual((job["turns"], job["cost"]), (30, 1.2))
+        # Nothing is installed by a build.
+        self.assertFalse(self.providers.exists())
+
+    def test_the_agent_is_briefed_from_the_job_folder_and_nothing_else_of_the_site(self):
+        job = self.built()
+        folder = Path(job["folder"])
+        brief = json.loads((folder / "agent.yaml").read_text())
+        self.assertEqual((brief["name"], brief["tools"]["servers"]), ("adapter-builder", {}))
+        for said in (str(folder / "graph.json"), str(folder / "sheet" / "ligands.smi"),
+                     'name = "site-ligands"', "second column", "REMOVE"):
+            self.assertIn(said, brief["task"])
+        self.assertNotIn(str(DOCKING), json.dumps(brief))
+        self.assertEqual((folder / "sheet" / "ligands.smi").read_text(),
+                         (DOCKING / "ligands.smi").read_text())
+        self.assertEqual(self.server.app.jobs[job["job"]].definition, folder / "agent.yaml")
+
+    def test_an_approval_installs_the_file_the_judge_saw_under_the_approver(self):
+        job = self.built()
+        status, after = self.call("/api/install", {"job": job["job"], "actor": "qa.lead@example.org"})
+        self.assertEqual(status, 200, after)
+        self.assertEqual(self.states(after)["approval"], "done")
+        self.assertFalse(after["can_install"])
+        self.assertEqual((self.providers / "site_ligands.py").read_text(), ADAPTER)
+        record = json.loads((self.providers / "site_ligands.approval.json").read_text())
+        self.assertEqual((record["actor"], record["sha256"]),
+                         ("qa.lead@example.org", job["verdict"]["sha256"]))
+        local, = self.call("/api/state")[1]["local"]
+        self.assertEqual((local["file"], local["name"], local["actor"], local["problem"]),
+                         ("site_ligands.py", "site-ligands", "qa.lead@example.org", None))
+        # Installed once: not again, and the name is taken for the next build.
+        self.assertEqual(self.call("/api/install", {"job": job["job"], "actor": "x"})[0], 400)
+        self.assertEqual(self.build()[0], 400)
+
+    def test_an_approval_needs_a_name_and_the_file_as_judged(self):
+        job = self.built()
+        self.assertEqual(self.call("/api/install", {"job": job["job"], "actor": " "})[0], 400)
+        self.assertEqual(self.call("/api/install", {"job": "absent", "actor": "x"})[0], 404)
+        (Path(job["folder"]) / "work" / "adapter.py").write_text(ADAPTER + "\n# later\n")
+        status, refused = self.call("/api/install", {"job": job["job"], "actor": "qa"})
+        self.assertEqual(status, 400)
+        self.assertIn("changed after the judge saw it", refused["error"])
+        self.assertFalse(self.providers.exists())
+
+    def test_a_changed_file_in_the_provider_folder_is_listed_as_refused(self):
+        job = self.built()
+        self.call("/api/install", {"job": job["job"], "actor": "qa.lead@example.org"})
+        (self.providers / "site_ligands.py").write_text(ADAPTER + "\n# later\n")
+        local, = self.call("/api/state")[1]["local"]
+        self.assertIn("changed since qa.lead@example.org approved it", local["problem"])
+
+    def test_an_adapter_the_judge_fails_cannot_be_installed(self):
+        self.server.app.launch = writes(ADAPTER.replace("if value is not None and value not in ids:",
+                                                        "if False:"))
+        job = self.built()
+        self.assertFalse(job["verdict"]["passed"])
+        self.assertEqual((self.states(job)["judge"], self.states(job)["approval"]), ("failed", "skipped"))
+        self.assertFalse(job["can_install"])
+        status, refused = self.call("/api/install", {"job": job["job"], "actor": "qa"})
+        self.assertEqual(status, 400)
+        self.assertIn("did not pass", refused["error"])
+
+    def test_an_agent_that_writes_no_adapter_is_a_failed_build(self):
+        self.server.app.launch = writes(adapter=None)
+        job = self.built()
+        self.assertEqual((job["state"], self.states(job)["adapter"]), ("failed", "failed"))
+        self.assertIn("wrote no adapter", job["error"])
+        self.assertIsNone(job["verdict"])
+
+    def test_a_link_left_as_the_adapter_is_not_followed(self):
+        self.server.app.launch = writes(linked=DOCKING / "ligands.smi")
+        job = self.built()
+        self.assertEqual(job["state"], "failed")
+        self.assertIsNone(job["code"])
+
+    def test_a_brief_is_checked_before_any_job_starts(self):
+        for bad in ({"name": "Site Ligands"}, {"name": "sarek"}, {"kind": "two words"},
+                    {"sheet": "/no/such/file"}, {"run": "absent"}, {"path": self.tmp.name},
+                    {"notes": "x" * 2001}):
+            status, refused = self.build(**bad)
+            self.assertEqual(status, 400, bad)
+        self.assertEqual(self.server.app.jobs, {})
+
+    def test_a_build_and_a_incident_do_not_run_together(self):
+        gate = threading.Event()
+        self.server.app.launch = lambda job, home, roots, definition: gate.wait(5)
+        first = self.build()[1]["job"]
+        self.assertEqual(self.build(name="other")[0], 409)
+        self.assertEqual(self.call("/api/run", {"path": str(RUNS), "run": "horus_run",
+                                                "incident": "n"})[0], 409)
+        gate.set()
+        self.finished(first)
+
+    def test_a_sheet_is_picked_as_a_file(self):
+        from unittest import mock
+        with mock.patch.object(ui.sys, "platform", "darwin"):
+            self.assertIn("choose file", " ".join(ui.picker("/x", file=True)))
+            self.assertIn("choose folder", " ".join(ui.picker("/x")))
+        for chosen, found in ((DOCKING / "ligands.smi", str(DOCKING / "ligands.smi")), (DOCKING, None)):
+            done = mock.Mock(stdout=f"{chosen}\n")
+            with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
+                    mock.patch.object(ui.subprocess, "run", return_value=done):
+                self.assertEqual(ui.pick("/", file=True)["path"], found)

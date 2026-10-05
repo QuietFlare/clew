@@ -8,37 +8,71 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- `clew triage`: a written notice becomes a trigger, or is held for a
+- `clew triage`: an incident report becomes a trigger, or is held for a
   person. The options are the graph's own tools, inputs and labels. A
   classifier picks one with a confidence, and versioned settings decide
   whether to ask, hold or dismiss. Works with TypeSafe's Jev when
   `TYPESAFE_API_KEY` is set and by name matching without it.
   `--print-request` and `--answer` let another caller, a pipeline plugin
-  for example, do the asking. `--dsn` logs `NoticeReceived` and
-  `NoticeTriaged`. With `--pipeline`, the adapter's own trigger kinds are
-  offered too, through the same lookup `impact` uses, so a notice about
+  for example, do the asking. `--dsn` logs `IncidentReceived` and
+  `IncidentTriaged`. With `--pipeline`, the adapter's own trigger kinds are
+  offered too, through the same lookup `impact` uses, so an incident about
   a subject or a ligand becomes that kind's trigger. A kind with more
-  than 50 values is offered only where the notice names the value.
-  A kind that removes its subject is asked only when the notice writes
+  than 50 values is offered only where the incident names the value.
+  A kind that removes its subject is asked only when the incident writes
   the id out. A confident choice of an unnamed id is held for a person.
-  A dismissal is refused when the notice writes out an id the run's
+  A dismissal is refused when the incident writes out an id the run's
   record contains, or when a kind could not be offered at all.
-- `clew.agent.mainsheet`: Clew's commands as tools for a Mainsheet agent,
+- `clew.agent.tools`: Clew's commands as tools for an agent,
   and `clew/agent/agent.yaml`, an agent with no other tools. It triages
-  each notice in an inbox, plans and seals the ones triage asks about, and
+  each incident in an inbox, plans and seals the ones triage asks about, and
   writes a recommendation for a person on the ones triage holds.
+- `clew serve --dir DIR`: the same tools over MCP, for any agent that
+  speaks it. JSON-RPC over stdin and stdout with no SDK. No tool takes a
+  trigger and none decides a held incident. Both this server and the
+  Mainsheet one are built from one table in `clew.agent.tools`.
+  `clew/agent/agent.yaml` now names `clew serve` as a command, so the
+  agent definition is the whole agent and no Python is loaded into it.
+- `skills/clew-incident/SKILL.md`: the same flow as a skill for a
+  person's own coding agent, with `clew serve` registered as its MCP
+  server. The skill runs under that person's permissions; `agent.yaml`
+  is for running unattended under a policy.
+- `clew providers --approve verdict.json --actor NAME`: a person installs
+  a provider file the judge passed, from the verdict alone. The judges
+  print the name, the work folder and the file's hash for this.
+  `skills/clew-provider/SKILL.md` has a person's own coding agent write
+  an adapter or an extractor, run the judge, and stop there.
 - `evals/triage_eval.py`: release notes of sixteen projects at pinned
   tags, each tried with a release heading and bare. It fails when a real
-  problem is dismissed or a headed notice is acted on wrongly, and
+  problem is dismissed or a headed incident is acted on wrongly, and
   appends each run to a baseline.
-- `clew decide`: a person's decision on a notice that triage held. They
-  ask one of the triggers triage offered, or dismiss the notice, under
+- `clew decide`: a person's decision on an incident that triage held. They
+  ask one of the triggers triage offered, or dismiss the incident, under
   their own name. The decision is written beside the record, goes into
-  the sealed bundle, and with `--dsn` is logged as `NoticeDecided`.
+  the sealed bundle, and with `--dsn` is logged as `IncidentDecided`.
 - `clew ui`: a local page that picks a run folder and a run, takes a
-  notice and runs the agent over it, showing each step as its file
+  incident and runs the agent over it, showing each step as its file
   appears. It listens on this machine only, needs the token in its
-  link, and uses the standard library. Running a notice needs Mainsheet.
+  link, and uses the standard library. Running an incident needs Mainsheet.
+- Local provider files: when `CLEW_PROVIDER_DIR` names a folder, Clew
+  loads each single-file provider in it that a person approved. The
+  record beside the file names the approver and the file's hash, and a
+  file changed since then is refused. `clew providers` lists each file,
+  who approved it and what it registered.
+- `clew ui`, Providers tab: an agent writes an adapter for a run and its
+  launch sheet. A judge the agent never sees then checks that Clew can
+  use it: each id reaches tasks of the run, an unknown id is refused,
+  triage offers the ids and `impact` answers for one. The file may take
+  no installed adapter's name and register nothing else. The page shows
+  the checks and the code, and installs the adapter only when a person
+  approves it under their name. `clew.builder` holds the brief, the
+  judge and the install.
+- The same tab builds an extractor for a folder no installed extractor
+  reads, and the Impact tab offers it when a folder is not recognised.
+  The judge checks that the graph meets the contract, that the folder is
+  recognised and its runs load, and that other folders are left alone.
+  It has no true lineage to compare with, so it reports the tasks, steps
+  and outside inputs it found for the approver to check.
 
 ## [0.5.0] - 2026-09-16
 

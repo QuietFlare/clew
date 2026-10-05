@@ -46,7 +46,8 @@ ALLOWED = {
     "intake": {"graph", "ledger", "contracts"},
     # An agent's tools reach Clew through its command line and import none of it.
     "agent": set(),
-    "ui": {"agent", "contracts", "extract", "views"},
+    "builder": {"contracts", "graph", "intake"},
+    "ui": {"agent", "builder", "contracts", "extract", "views"},
 }
 
 IMPORT = re.compile(r"^\s*(?:from|import)\s+clew\.(\w+)", re.MULTILINE)
