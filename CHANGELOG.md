@@ -6,6 +6,57 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-07
+
+### Added
+
+- `clew build judge <folder>`, and "Check again" on the Providers tab: the
+  conformance check runs again on what a build left, without the agent.
+- `clew build adapter --kind` and the page's kind field take several
+  kinds, comma-separated, one Trigger each on the one sheet.
+- `--separable` and its box: the brief asks the agent for a contribution
+  rule, so one id's share of a step's output can be dropped in place.
+- A dismissal is sealed. `clew evidence seal --incident triage.json
+  --decision decision.json` with no plan, and `verify` checks the decision
+  is about the record beside it, by a named person, on the request and
+  settings it shows. The UI and the agent seal a dismissal as they seal a
+  plan. A plan's bundle now carries its incident record and the decision
+  that asked it, and `verify` checks they belong together.
+- `clew decide --ask` on a removal asserts the fact. With `--dsn`, the
+  log gets `Withdrawn` on the subject under the person's name, so the
+  gate reads it with nobody typing it in. `--fact TYPE` names it otherwise.
+
+### Changed
+
+- Approved providers live in `~/.clew/providers` unless
+  `CLEW_PROVIDER_DIR` names another folder. Every command, `clew build`
+  and the UI read the same folder, and the `next:` hint after triage
+  pastes as it is. Files approved under the old UI folder,
+  `~/.clew/ui/providers`, move by hand.
+- A provider file changed, refused or removed is unregistered at the next
+  `discover`, instead of answering from memory until a restart.
+- `clew evidence seal` is the command; `build` stays as its old name.
+- The dashboard leads with one row per sealed answer: the incident as it
+  arrived, the trigger, the outcome, who decided, the verdicts and whether
+  the bundle verifies. Limits are stated once with how many bundles they
+  apply to. Each verifier check is its own line.
+- The UI picks the run once, in a bar under the header that every tab
+  reads. Labels are shorter, and the Providers tab says what an adapter
+  and an extractor are, that they are independent, and that an approval
+  is per machine.
+- The builder agent's commands may name no absolute path outside Clew's
+  source, what it was given, its own work folder, the interpreter and the
+  system. In the first live run it had listed a folder named inside the
+  graph.
+- The extractor judge accepts `--run` beside `--record`, as Clew's own
+  extractors have it.
+
+### Fixed
+
+- `clew build`, the UI and `clew providers --approve` agreed on no folder
+  for approved providers, so a provider approved in one was invisible to
+  another.
+
 ## [0.6.0] - 2026-10-06
 
 ### Added
@@ -347,7 +398,8 @@ First release on PyPI as `clew-lineage`.
 - A CI gate that fails closed on unknown subjects.
 - A self-contained dashboard and a read-only MCP server for auditors.
 
-[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/QuietFlare/clew/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/QuietFlare/clew/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/QuietFlare/clew/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/QuietFlare/clew/compare/v0.3.0...v0.4.0

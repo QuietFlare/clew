@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clew-lineage"
-version = "0.6.0"
+version = "0.6.1"
 description = "Lineage-based impact analysis and remediation for workflow runs: what a bad input, container or incident report reached, what to re-run, delete or disclose, sealed as evidence an auditor verifies offline. Incident triage with a typed classifier, MCP tools for agents, and agent-written providers under a conformance check."
 readme = "README.md"
 requires-python = ">=3.9"
