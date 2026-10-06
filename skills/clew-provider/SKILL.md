@@ -70,10 +70,9 @@ Then stop, and finish with: how the ids appear in the run or how the record maps
 A person installs the file after reading it:
 
 ```bash
-export CLEW_PROVIDER_DIR=~/.clew/providers
 clew providers --approve verdict.json --actor "their name"
 ```
 
-The approval record pins the file's hash. The file loads from then on, for every Clew command run with that `CLEW_PROVIDER_DIR`, until someone changes it.
+The file lands in `~/.clew/providers`, or the folder `CLEW_PROVIDER_DIR` names. The approval record pins the file's hash, and the file loads from then on for every Clew command, until someone changes it.
 
 A provider that should ship to other sites is a package instead: the same class, declared under the `clew.adapters` or `clew.extractors` entry point group, as the guide shows. Nothing in the file changes.

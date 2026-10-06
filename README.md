@@ -156,6 +156,10 @@ A held incident waits for a person, who decides under their own name:
 clew decide --record triage.json --ask container:gatk4 --actor "qa lead" --reason "the advisory names our version"
 ```
 
+Asking a removal, `patient:donor_003` say, asserts the withdrawal as a
+fact. With a log attached it is written there, under the person's name,
+and the gate reads it. Nobody types a withdrawal in by hand.
+
 Exit codes say what happened: 0 asks, 1 holds, 3 dismisses. A pipeline
 plugin can do the asking itself with `--print-request` and `--answer`.
 
@@ -282,8 +286,11 @@ clew build adapter --graph graph.json --name site-ligands --kind ligand --sheet 
 clew providers --approve ~/.clew/ui/jobs/<build>/verdict.json --actor "your name"
 ```
 
-The approval record pins the file's hash. A changed file stops loading
-until someone approves it again. [skills/clew-provider](skills/clew-provider/SKILL.md)
+Approved files live in `~/.clew/providers`, or the folder
+`CLEW_PROVIDER_DIR` names, and every command loads them from there. The
+approval record pins the file's hash. A changed file stops loading until
+someone approves it again. `clew build judge <folder>` runs the check
+again on a finished build without the agent. [skills/clew-provider](skills/clew-provider/SKILL.md)
 gives the same brief to a person's own coding agent.
 
 ## What is guaranteed

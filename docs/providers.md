@@ -31,11 +31,11 @@ the ids, impact answers. Then a person reads the code and installs it
 under their own name:
 
 ```bash
-export CLEW_PROVIDER_DIR=~/.clew/providers
 clew providers --approve verdict.json --actor "your name"
 ```
 
-The approval pins the file's hash. From then on every Clew command run
+The file lands in `~/.clew/providers`, or the folder `CLEW_PROVIDER_DIR`
+names. The approval pins the file's hash. From then on every Clew command run
 with that folder loads it, and `--pipeline <name>` or the adapter menu in
 the UI picks it. A changed file stops loading until someone approves it
 again. Nothing you build replaces what Clew ships: a new name is required.
@@ -261,20 +261,18 @@ adapter's answers, and writes a graph and a plan beside them.
 
 ## Without a package
 
-A single file can be a provider too. Set `CLEW_PROVIDER_DIR` to a folder,
-and every `.py` file in it loads, on one condition: a record beside it,
+A single file can be a provider too. Every `.py` file in `~/.clew/providers`,
+or the folder `CLEW_PROVIDER_DIR` names, loads, on one condition: a record beside it,
 `<file>.approval.json`, names the person who approved it and the sha256
 of the file as they saw it. A file with no record, or one changed since,
 is listed by `clew providers` as refused and loads nowhere. The record is
 written for you:
 
 ```bash
-export CLEW_PROVIDER_DIR=~/.clew/providers
 clew providers --approve verdict.json --actor "your name"
 ```
 
-`verdict.json` is what the conformance check prints, below. `clew ui`
-sets the folder to `<home>/providers` itself.
+`verdict.json` is what the conformance check prints, below.
 
 ## An agent writes it
 
