@@ -234,7 +234,8 @@ def status(job):
     steps += [step("impact", "Impact", plan is not None, skipped=None if plan else why,
                    detail=(f"{plan['tasks_affected']} of {plan['tasks_total']} tasks affected"
                            if plan else "")),
-              step("evidence", "Evidence", sealed, skipped=None if sealed else why,
+              step("evidence", "Evidence", sealed,
+                   skipped=None if sealed or (decision and decision["decision"] == "dismiss") else why,
                    detail="sealed" + ("" if job.verified is None else
                                       ", verified" if job.verified else ", NOT verified")
                    if sealed else "")]
@@ -486,10 +487,18 @@ class App:
                          reason=body.get("reason") or "")
         except tools.ToolError as bad:
             raise Refused(str(bad))
-        if action == "ask":
-            job.state, job.error = "running", None
-            threading.Thread(target=self.carry_on, args=(job,), daemon=True).start()
+        job.state, job.error = "running", None
+        threading.Thread(target=self.carry_on if action == "ask" else self.seal_dismissal,
+                         args=(job,), daemon=True).start()
         return status(job)
+
+    def seal_dismissal(self, job):
+        """After a person dismisses: the dismissal sealed as evidence, no model and no plan."""
+        try:
+            job.verified = tools.seal(job.folder, INCIDENT)["verified"]
+            job.state = "finished"
+        except (tools.ToolError, SystemExit, Exception) as bad:
+            job.state, job.error = "failed", str(bad) or repr(bad)
 
     def carry_on(self, job):
         """After a person asks a trigger: the plan and its seal. Two commands, no model."""

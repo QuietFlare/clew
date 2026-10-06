@@ -167,12 +167,19 @@ def seal(base, incident):
     incident_file(base, incident)
     folder = out_dir(base, incident)
     plan, bundle = folder / "plan.json", folder / "bundle"
-    if not plan.is_file():
+    decision = decision_of(base, incident)
+    if plan.is_file():
+        inputs = ["--input", base / "graph.json", "--input", folder / "triage.json"]
+        if decision:
+            inputs += ["--input", folder / "decision.json"]
+        what = ["--plan", plan, *inputs]
+    elif decision and decision["decision"] == "dismiss":
+        # A dismissal has no plan. It is sealed as the person's decision on the record.
+        what = ["--incident", folder / "triage.json", "--decision", folder / "decision.json",
+                "--input", base / "graph.json"]
+    else:
         raise ToolError(f"{incident} has no plan; call clew_impact first")
-    inputs = ["--input", base / "graph.json", "--input", folder / "triage.json"]
-    if (folder / "decision.json").is_file():
-        inputs += ["--input", folder / "decision.json"]
-    code, out, err = run_clew("evidence", "seal", "--out", bundle, "--plan", plan, *inputs)
+    code, out, err = run_clew("evidence", "seal", "--out", bundle, *what)
     if code != 0:
         raise _failed("evidence seal", code, out, err)
     code, out, err = run_clew("evidence", "verify", bundle)

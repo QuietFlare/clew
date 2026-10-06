@@ -522,6 +522,65 @@ class TestChainAnchoring(BundleTestCase):
         self.assertTrue(bundle.verify_log([], manifest, eventlog)["ok"])
 
 
+RECORD = {"outcome": "held", "choice": "none", "confidence": 0.4, "reason": "below the bar",
+          "request_sha256": "a" * 64, "settings": {"version": "v1", "hash": "b" * 64},
+          "incident": {"sha256": "c" * 64, "text": "the printer is broken"},
+          "options": {"toolkit": "container:toolkit"}}
+DISMISSAL = {"incident": "c" * 64, "decision": "dismiss", "trigger": None, "actor": "qa.lead@example.org",
+             "reason": "not about this run", "decided_at": "2026-10-06T10:00:00+00:00",
+             "triage": {"choice": "none", "confidence": 0.4, "reason": "below the bar",
+                        "request_sha256": "a" * 64, "settings": {"version": "v1", "hash": "b" * 64}}}
+
+
+class TestSealedDismissal(BundleTestCase):
+    """A dismissal has no plan. It is sealed as the person's decision on the record, and verify checks that."""
+
+    def sealed(self, decision=DISMISSAL, record=RECORD):
+        folder = Path(self.tmp)
+        (folder / "triage.json").write_text(json.dumps(record))
+        (folder / "decision.json").write_text(json.dumps(decision))
+        out = folder / "dismissed"
+        ran = self.run_cli("seal", "--incident", str(folder / "triage.json"),
+                           "--decision", str(folder / "decision.json"), "--out", str(out))
+        return ran, out
+
+    def test_a_dismissal_seals_and_verifies_without_a_plan(self):
+        ran, out = self.sealed()
+        self.assertEqual(ran.returncode, 0, ran.stderr)
+        self.assertIn("dismissed by qa.lead@example.org", ran.stdout)
+        self.assertIn("seals a person's dismissal", ran.stdout)
+        checked = self.run_cli("verify", str(out))
+        self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+        self.assertIn("ok   decision", checked.stdout)
+        self.assertIn("a dismissal by qa.lead@example.org", checked.stdout)
+        from clew.ledger import bundlestore
+        store = bundlestore.load_store(str(out))
+        self.assertTrue(bundlestore.check_integrity(store[0][0])["result"]["all_passed"])
+
+    def test_a_decision_about_another_incident_or_an_ask_does_not_verify(self):
+        ran, out = self.sealed(decision=dict(DISMISSAL, incident="d" * 64))
+        checked = self.run_cli("verify", str(out))
+        self.assertEqual(checked.returncode, 1)
+        self.assertIn("names another incident", checked.stdout)
+        ran, out = self.sealed(decision=dict(DISMISSAL, decision="ask", trigger="container:toolkit"))
+        self.assertEqual(ran.returncode, 1)
+        self.assertIn("sealed with its plan", ran.stderr)
+
+    def test_a_tampered_dismissal_fails_the_file_check(self):
+        ran, out = self.sealed()
+        (out / "decision.json").write_text(json.dumps(dict(DISMISSAL, actor="someone else")))
+        checked = self.run_cli("verify", str(out))
+        self.assertEqual(checked.returncode, 1)
+        self.assertIn("FAIL files", checked.stdout)
+
+    def test_a_plan_and_a_decision_are_not_both_sealed_alone(self):
+        folder = Path(self.tmp)
+        (folder / "triage.json").write_text(json.dumps(RECORD))
+        ran = self.run_cli("seal", "--incident", str(folder / "triage.json"), "--out", str(folder / "x"))
+        self.assertEqual(ran.returncode, 1)
+        self.assertIn("either a plan", ran.stderr)
+
+
 class TestDirectoryHygiene(BundleTestCase):
     def test_a_subdirectory_is_caught(self):
         # The easiest place to put something a reader will find and the

@@ -407,6 +407,32 @@ def verify_gate(result, gate_policy, events):
                   f"identically from the bundled facts and gate policy")
 
 
+def verify_decision(record, decision):
+    """
+    A sealed dismissal re-derives nothing; what can be checked is that the
+    decision is about the incident sealed beside it, was made by a named
+    person, on the request and the settings the record shows.
+    """
+    problems = []
+    if decision.get("decision") != "dismiss":
+        problems.append(f"the decision is {decision.get('decision')!r}; without a plan only a "
+                        "dismissal can be sealed")
+    if decision.get("incident") != (record.get("incident") or {}).get("sha256"):
+        problems.append("the decision names another incident than the record")
+    if not (decision.get("actor") or "").strip():
+        problems.append("the decision names nobody")
+    shown = decision.get("triage") or {}
+    if shown.get("request_sha256") != record.get("request_sha256"):
+        problems.append("the decision was made on another request than the record")
+    if shown.get("settings") != record.get("settings"):
+        problems.append("the decision was made under other settings than the record")
+    if problems:
+        return _check("decision", False, "; ".join(problems))
+    return _check("decision", True,
+                  f"a dismissal by {decision['actor']} of the incident the record holds, on the "
+                  "request and settings it shows")
+
+
 def verify_replay(plan, policy_document):
     """
     Recompute every verdict from the bundled facts and the bundled table.

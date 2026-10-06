@@ -1,9 +1,10 @@
 """
 Build and check evidence bundles.
 
-    clew evidence build --plan plan.json --dsn "$CLEW_DSN" \
+    clew evidence seal --plan plan.json --dsn "$CLEW_DSN" \
         --input graph.json               # -> container-build-1.2.3-2026-09-15/
-    clew evidence build --out bundle/ --plan plan.json
+    clew evidence seal --out bundle/ --plan plan.json
+    clew evidence seal --out bundle/ --incident triage.json --decision decision.json
     clew evidence verify bundle/
     clew evidence sign bundle/ --key ~/.ssh/id_ed25519
     clew evidence verify bundle/ --allowed-signers allowed_signers
@@ -127,10 +128,23 @@ def continue_from(previous_dir, since):
     return bundle.bundle_hash(manifest), previous_head
 
 
+def default_out_for_decision(decision, today=None):
+    day = today or datetime.now(timezone.utc).date().isoformat()
+    return f"dismissed-{decision['incident'][:12]}-{day}"
+
+
 def cmd_build(args):
-    plan = load_json(args.plan)
-    args.out = args.out or default_out(plan)
-    policy_document = resolve_policy_for(plan, args.policy)
+    if bool(args.plan) == bool(args.decision):
+        raise SystemExit("seal either a plan (--plan) or a dismissal (--incident and --decision)")
+    if args.decision and not args.incident:
+        raise SystemExit("--decision needs --incident, the triage record it was made on")
+    plan = load_json(args.plan) if args.plan else None
+    record = load_json(args.incident) if args.incident else None
+    decision = load_json(args.decision) if args.decision else None
+    if decision and decision.get("decision") != "dismiss":
+        raise SystemExit("a decision that asks a trigger is sealed with its plan, not on its own")
+    args.out = args.out or (default_out(plan) if plan else default_out_for_decision(decision))
+    policy_document = resolve_policy_for(plan, args.policy) if plan else None
     previous, previous_head = continue_from(args.previous, args.since)
 
     events, log_head = [], {"seq": 0, "hash": "0" * 64}
@@ -165,8 +179,12 @@ def cmd_build(args):
     # Coverage, stated rather than implied. Everything here is a limit of
     # what the bundle witnesses, and a reader should not have to infer any
     # of it from what is absent.
-    undetermined = sum(1 for i in plan.get("plan", []) if not i["action"])
-    coverage = list(plan.get("caveats", []))
+    undetermined = sum(1 for i in (plan or {}).get("plan", []) if not i["action"])
+    coverage = list((plan or {}).get("caveats", []))
+    if decision:
+        coverage.append(
+            "this bundle seals a person's dismissal of an incident, not a plan: nothing was "
+            "computed, and the reason stands as the person gave it")
     if undetermined:
         coverage.append(
             f"{undetermined} of {len(plan.get('plan', []))} items are "
@@ -183,19 +201,19 @@ def cmd_build(args):
             "here starts from the log head the previous bundle recorded, "
             "and that earlier bundle is where those entries are witnessed.")
 
-    documents = {
-        "plan.json": plan,
-        "policy.json": policy_document,
-        "events.json": events,
-        "inputs.json": inputs,
-    }
+    if plan:
+        documents = {"plan.json": plan, "policy.json": policy_document,
+                     "events.json": events, "inputs.json": inputs}
+        description = f"Clew evidence bundle for trigger: {plan.get('trigger')}"
+    else:
+        documents = {"triage.json": record, "decision.json": decision,
+                     "events.json": events, "inputs.json": inputs}
+        description = f"Clew evidence bundle for a dismissed incident: {decision['incident'][:12]}"
     try:
         manifest, digest = bundle.build(
             args.out, documents, log_head=log_head, previous_bundle=previous,
             previous_log_head=previous_head, since=args.since,
-            coverage=coverage, force=args.force,
-            description=f"Clew evidence bundle for trigger: "
-                        f"{plan.get('trigger')}")
+            coverage=coverage, force=args.force, description=description)
     except FileExistsError:
         raise SystemExit(
             f"{args.out} is not empty. A bundle must be exactly what its "
@@ -207,8 +225,12 @@ def cmd_build(args):
     print(f"  files           {len(manifest['files'])}")
     print(f"  log head        seq {log_head['seq']}  {log_head['hash'][:16]}")
     print(f"  events covered  {len(events)}")
-    print(f"  policy          {plan.get('policy_version')} "
-          f"{plan.get('policy_hash', '')[:16]}")
+    if plan:
+        print(f"  policy          {plan.get('policy_version')} "
+              f"{plan.get('policy_hash', '')[:16]}")
+    else:
+        print(f"  decision        dismissed by {decision['actor']}, "
+              f"settings {record.get('settings', {}).get('version')}")
     if previous:
         print(f"  chains to       {previous[:16]}")
     for note in coverage:
@@ -227,8 +249,9 @@ def cmd_build(args):
             body={"bundle_hash": digest,
                   "covers_log_head": log_head,
                   "previous_bundle": previous,
-                  "trigger": plan.get("trigger"),
-                  "policy_version": plan.get("policy_version")})
+                  "trigger": plan.get("trigger") if plan else None,
+                  "policy_version": plan.get("policy_version") if plan else None,
+                  "decision": decision.get("decision") if decision else None})
         print(f"\nsealed into the log as seq {entry['seq']}")
         print("A later truncation past this point now contradicts a bundle")
         print("that has already left the building.")
@@ -276,11 +299,14 @@ def cmd_verify(args):
             result = load_json(directory / "gate.json")
             gate_policy = load_json(directory / "gate-policy.json")
             checks.append(bundle.verify_gate(result, gate_policy, events))
+        elif "decision.json" in sealed:
+            checks.append(bundle.verify_decision(load_json(directory / "triage.json"),
+                                                 load_json(directory / "decision.json")))
         else:
             checks.append(bundle._check(
                 "contents", False,
-                "this bundle seals neither a plan nor a gate result, so there "
-                "is nothing in it to re-derive"))
+                "this bundle seals neither a plan, a gate result nor a "
+                "decision, so there is nothing in it to check"))
 
     checks.append(check_signature(directory, args.allowed_signers))
 
@@ -417,8 +443,11 @@ def main(argv=None):
     build = sub.add_parser("seal", aliases=["build"], help="seal a plan into a bundle")
     build.add_argument("--out", metavar="DIR",
                        help="bundle directory; default <trigger>-<date>")
-    build.add_argument("--plan", required=True,
-                       help="plan JSON from clew impact --json")
+    build.add_argument("--plan", help="plan JSON from clew impact --json")
+    build.add_argument("--incident", metavar="PATH",
+                       help="the triage record, with --decision: seal a dismissal")
+    build.add_argument("--decision", metavar="PATH",
+                       help="a person's dismissal from clew decide, sealed without a plan")
     build.add_argument("--policy", metavar="VERSION|PATH",
                        help="the table the plan was computed under; inferred "
                             "from the plan when it names a shipped version")

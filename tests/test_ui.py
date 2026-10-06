@@ -315,13 +315,18 @@ class TestDecision(Served):
         self.assertTrue(job["verified"])
         self.assertIsNone(job["choices"])
 
-    def test_dismissing_ends_it_with_no_plan(self):
+    def test_dismissing_seals_the_dismissal_and_no_plan(self):
         status, job = self.decide(action="dismiss")
-        self.assertEqual((status, job["state"], job["decision"]["decision"]),
-                         (200, "finished", "dismiss"))
+        self.assertEqual((status, job["decision"]["decision"]), (200, "dismiss"))
+        job = self.finished(job["job"])
+        self.assertEqual(job["state"], "finished", job["error"])
         states = {s["key"]: s for s in job["steps"]}
         self.assertEqual(states["impact"]["state"], "skipped")
         self.assertIn("a person dismissed", states["impact"]["detail"])
+        self.assertEqual(states["evidence"]["state"], "done")
+        self.assertTrue(job["verified"])
+        self.assertIsNone(job["plan"])
+        self.assertTrue((Path(job["bundle"]) / "decision.json").is_file())
 
     def test_a_decision_needs_a_name_and_an_offered_trigger(self):
         self.assertEqual(self.decide(actor="  ")[0], 400)

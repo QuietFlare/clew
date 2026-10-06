@@ -135,6 +135,9 @@ def check_integrity(bundle):
         checks.append(sealed.verify_gate(
             bundle["documents"]["gate.json"],
             bundle["documents"]["gate-policy.json"], events))
+    elif "decision.json" in manifest["files"]:
+        checks.append(sealed.verify_decision(
+            bundle["documents"]["triage.json"], bundle["documents"]["decision.json"]))
 
     return query.answer(
         f"is the evidence in {bundle['name']!r} intact?",
