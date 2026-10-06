@@ -30,6 +30,8 @@ dependencies = []
 [project.optional-dependencies]
 # Only the event log needs a driver. Everything else stays stdlib.
 log = ["psycopg[binary]>=3.1"]
+# The agent that runs the steps: clew ui, clew build and clew/agent/agent.yaml need it.
+agent = ["mainsheet>=0.1"]
 
 [project.urls]
 Homepage = "https://quietflare.net/clew"

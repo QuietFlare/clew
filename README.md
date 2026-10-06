@@ -37,8 +37,9 @@ Python 3.9 or later. The core has no dependencies. The demo runs three
 questions over a real nf-core/sarek run of 81 tasks that ships with the
 package, so you can see every kind of answer before touching your own
 runs. Steps 1 to 5 below need nothing more. Step 6, the agent, needs
-[Mainsheet](https://github.com/QuietFlare/mainsheet) in the same
-environment, and `clew serve` works with any MCP client without it.
+[Mainsheet](https://github.com/QuietFlare/mainsheet), which
+`pip install "clew-lineage[agent]"` brings in. `clew serve` works with
+any MCP client without it.
 
 ## The flow
 
@@ -197,7 +198,7 @@ signs a record of the run. `clew ui` and `clew build` start it for you,
 so both need Mainsheet installed in the same environment:
 
 ```bash
-pip install -e /path/to/mainsheet
+pip install "clew-lineage[agent]"
 clew ui
 ```
 
