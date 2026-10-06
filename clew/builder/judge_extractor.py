@@ -78,7 +78,9 @@ def judge(work, name, record):
     parser = argparse.ArgumentParser(add_help=False)
     extractor.add_arguments(parser)
     flags = [action.option_strings[0] for action in parser._actions if action.option_strings]
-    if not check(f"takes the record through {FLAG}", flags == [FLAG], f"flags: {flags}"):
+    # --run to pick one of several runs is Clew's own convention, so it is allowed beside --record.
+    if not check(f"takes the record through {FLAG}", FLAG in flags and set(flags) <= {FLAG, "--run"},
+                 f"flags: {flags}"):
         return done()
     try:
         graph = extractor.extract(parser.parse_args([FLAG, str(record)]))
