@@ -173,17 +173,20 @@ database, no credentials and no access to the run. `witness` checks a
 live log against what the bundle saw, and `sign` countersigns it with an
 SSH key.
 
-Facts that people assert, a withdrawal, a publication, a policy
-adoption, go into an append-only, hash-chained log on Postgres:
+Optionally, an event log keeps what people decided and adopted, as an
+append-only, hash-chained table on Postgres. Nothing is typed into it by
+hand: `triage` and `decide` write to it when `--dsn` names it, `clew
+rulebook register` records the adoption of a policy version, and a bundle
+built with `--dsn` witnesses the log head it saw, so a later reader can
+tell whether anything was removed afterwards.
 
 ```bash
-clew log append --type withdrawal --subject donor_003 --actor "qa lead"
 clew log verify
 ```
 
-`clew rulebook` shows, diffs and registers the versioned policy table, so
-an old plan replays under the rules that produced it. `clew gate` reads
-the log before a run starts and blocks a run whose inputs it says are not
+`clew rulebook` shows and diffs the versioned policy table, so an old
+plan replays under the rules that produced it. `clew gate` reads the log
+before a run starts and blocks a run whose inputs it says are not
 usable, failing closed on anything unknown.
 
 ### 5. Share: an auditor checks it without you
