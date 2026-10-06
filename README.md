@@ -65,6 +65,8 @@ engine record --> graph.json --> plan.json --> bundle/ --> auditor
                    triage, decide
 ```
 
+![Clew system design](docs/clew.png)
+
 ### 1. Extract: the engine's record becomes one graph
 
 Point Clew at where your workflow was launched. The engine's own record
