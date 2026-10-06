@@ -169,10 +169,9 @@ def seal(base, incident):
     plan, bundle = folder / "plan.json", folder / "bundle"
     decision = decision_of(base, incident)
     if plan.is_file():
-        inputs = ["--input", base / "graph.json", "--input", folder / "triage.json"]
+        what = ["--plan", plan, "--incident", folder / "triage.json", "--input", base / "graph.json"]
         if decision:
-            inputs += ["--input", folder / "decision.json"]
-        what = ["--plan", plan, *inputs]
+            what += ["--decision", folder / "decision.json"]
     elif decision and decision["decision"] == "dismiss":
         # A dismissal has no plan. It is sealed as the person's decision on the record.
         what = ["--incident", folder / "triage.json", "--decision", folder / "decision.json",

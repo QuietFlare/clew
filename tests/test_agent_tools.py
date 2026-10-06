@@ -73,8 +73,10 @@ class TestWorkflow(AgentDirectory):
 
         sealed = tools.seal(self.base, "named")
         self.assertTrue(sealed["verified"])
+        # The incident the plan answers is sealed beside it, as a document and not only a hash.
+        self.assertTrue((Path(sealed["bundle"]) / "triage.json").is_file())
         inputs = json.loads((Path(sealed["bundle"]) / "inputs.json").read_text())
-        self.assertIn("triage.json", json.dumps(inputs))
+        self.assertIn("graph.json", json.dumps(inputs))
         self.assertEqual(tools.inbox(self.base)[0]["state"], "ask")
 
     def test_options_come_from_the_graph(self):
@@ -158,8 +160,8 @@ class TestDecision(AgentDirectory):
         self.assertEqual(plan["trigger"], "container:toolkit")
         sealed = tools.seal(self.base, "vague")
         self.assertTrue(sealed["verified"])
-        inputs = (Path(sealed["bundle"]) / "inputs.json").read_text()
-        self.assertIn("decision.json", inputs)
+        self.assertTrue((Path(sealed["bundle"]) / "decision.json").is_file())
+        self.assertEqual(json.loads((Path(sealed["bundle"]) / "decision.json").read_text())["decision"], "ask")
         self.assertIn("a person decided: ask", tools.inbox(self.base)[1]["state"])
 
     def test_a_dismissed_incident_gets_no_plan(self):

@@ -8,10 +8,12 @@ the bundles are the record: every panel carries the hash of the bundle it
 came from. It shares query.py with the MCP server so the two cannot
 disagree.
 
-Coverage limits, undetermined verdicts and subjects the log has never heard
-of appear near the top at full weight. A dashboard that hides gaps below the
-fold manufactures a clean bill of health. No generation timestamp, so
-unchanged bundles render to identical bytes.
+The page leads with what happened: one row per incident, with the sentence
+that arrived, what it became, who decided and whether the bundle verifies.
+Limits come next, each stated once with how many bundles it applies to,
+because an unanswered item is not a clean one. Hashes come last, for the
+reader who wants to check. No generation timestamp, so unchanged bundles
+render to identical bytes.
 """
 
 import argparse
@@ -71,6 +73,10 @@ ul.coverage { margin: .35rem 0 0; padding-left: 1.1rem; }
 ul.coverage li { color: var(--ink); }
 .chain { font-family: ui-monospace, monospace; font-size: .8rem;
   color: var(--muted); word-break: break-all; }
+.said { font-style: italic; }
+ul.checks { list-style: none; margin: 0; padding: 0; }
+ul.checks li { margin: .15rem 0; }
+.muted { color: var(--muted); }
 @media print {
   body { background: #fff; padding: 0; font-size: 11pt; }
   .panel { break-inside: avoid; }
@@ -95,17 +101,83 @@ def coverage_panel(notes, heading="What this does not cover"):
             f'<ul class="coverage">{items}</ul></div>')
 
 
-# ------------------------------------------------------------------ sections
+def short(digest, n=12):
+    return (digest or "")[:n]
+
+
+# ------------------------------------------------------------- what happened
+
+def told(bundle):
+    """
+    One incident as a reader would describe it: what arrived, what it became,
+    who decided, what the plan said. Drawn only from the bundle's own documents.
+    """
+    documents = bundle["documents"]
+    plan = bundlestore.plan_of(bundle)
+    record = documents.get("triage.json")
+    decision = documents.get("decision.json")
+    gate = documents.get("gate.json")
+    what = {"name": bundle["name"], "hash": bundle["hash"], "said": None, "trigger": None,
+            "outcome": None, "by": None, "verdicts": None, "kind": "plan"}
+    if record:
+        what["said"] = (record.get("incident") or {}).get("text")
+    if plan:
+        what["trigger"] = plan.get("trigger")
+        summary = query.plan_summary(plan)["result"]
+        what["verdicts"] = ", ".join(f"{n} {action}" for action, n in summary["actions"].items())
+        what["outcome"] = (f"asked, {plan['tasks_affected']} of {plan['tasks_total']} tasks"
+                           if "tasks_affected" in plan else "asked")
+        if decision:
+            what["by"] = f"{decision.get('actor')}, after it was held"
+        elif record:
+            what["by"] = (f"settings {record.get('settings', {}).get('version')}, "
+                          f"{record.get('backend')} at {record.get('confidence')}")
+    elif decision:
+        what["kind"] = "decision"
+        what["outcome"] = "dismissed"
+        what["by"] = decision.get("actor")
+        what["trigger"] = "none"
+    elif gate:
+        what["kind"] = "gate"
+        what["said"] = f"gate on {gate.get('samplesheet')}"
+        what["outcome"] = "PASS" if gate.get("passed") else "STOP"
+        what["verdicts"] = ", ".join(f"{n} {status}" for status, n in sorted(gate.get("counts", {}).items()))
+    return what
+
+
+def section_incidents(store):
+    bundles, _, _ = store
+    rows = []
+    for bundle in bundles:
+        what = told(bundle)
+        intact = bundlestore.check_integrity(bundle)["result"]["all_passed"]
+        rows.append(
+            "<tr>"
+            f'<td>{("<span class=said>" + esc(what["said"]) + "</span>") if what["said"] else "<span class=muted>no incident text sealed</span>"}'
+            f'<br><a class="hash" href="#{esc(bundle["name"])}">{esc(bundle["name"])}</a></td>'
+            f"<td><code>{esc(what['trigger'] or '')}</code></td>"
+            f"<td>{esc(what['outcome'] or '')}</td>"
+            f"<td>{esc(what['by'] or '')}</td>"
+            f"<td>{esc(what['verdicts'] or '')}</td>"
+            f"<td>{tag('verified', 'ok') if intact else tag('DID NOT VERIFY', 'bad')}</td>"
+            "</tr>")
+    return ("<h2>Incidents</h2>"
+            "<p>Each row is one sealed answer. The sentence is the incident as it "
+            "arrived, the trigger is what it became, and the last column is the "
+            "verifier's word on the bundle it came from.</p>"
+            "<table><tr><th>Incident</th><th>Trigger</th><th>Outcome</th>"
+            "<th>Decided by</th><th>Verdicts</th><th>Bundle</th></tr>"
+            + "".join(rows) + "</table>")
+
 
 def section_header(store, root):
     bundles, entries, conflicts = store
     parts = [
         "<h1>Clew evidence</h1>",
-        '<p class="lede">A view generated from the bundles below. '
-        '<strong>This page is not the record</strong>, the bundles are, and '
-        'each panel names the bundle hash it was drawn from so anything here '
-        'can be traced back and checked independently with '
-        '<code>clew evidence verify</code>.</p>',
+        '<p class="lede">A view over the bundles below. '
+        '<strong>This page is not the record</strong>, the bundles are. Every '
+        'row names the bundle it came from, and anything here can be checked '
+        'with <code>clew evidence verify</code>.</p>',
         f"<p>{len(bundles)} bundle(s) from <code>{esc(root)}</code>, "
         f"{len(entries)} log entries.</p>",
     ]
@@ -121,30 +193,74 @@ def section_header(store, root):
     return "\n".join(parts)
 
 
+# -------------------------------------------------------------------- limits
+
+def section_unknowns(store):
+    """Second, after what happened, and before any hash. Gaps get the same weight as findings."""
+    bundles, _, _ = store
+    undetermined = unknown_subjects = 0
+    seen = {}
+
+    def note(text):
+        seen[text] = seen.get(text, 0) + 1
+
+    for bundle in bundles:
+        plan = bundlestore.plan_of(bundle)
+        if plan:
+            missing = [i for i in plan.get("plan", []) if not i.get("action")]
+            undetermined += len(missing)
+            if missing:
+                note(f"{len(missing)} of {len(plan.get('plan', []))} items have no verdict: "
+                     "storage was not verified and the answer depends on it")
+        gate = bundle["documents"].get("gate.json")
+        if gate:
+            count = gate.get("counts", {}).get("UNKNOWN", 0)
+            unknown_subjects += count
+            if count:
+                note(f"{count} subjects were not found in the log, commonly an "
+                     "identifier mismatch, not a clean result")
+        for text in bundle["manifest"].get("coverage", []):
+            note(text)
+
+    counts = (
+        f'<div class="counts">'
+        f'<div class="count{" unknown" if undetermined else ""}">'
+        f"<b>{undetermined}</b><span>verdicts withheld</span></div>"
+        f'<div class="count{" unknown" if unknown_subjects else ""}">'
+        f"<b>{unknown_subjects}</b><span>subjects unknown</span></div>"
+        f"</div>")
+    many = len(bundles) > 1
+    notes = [f"{text}" + (f" ({n} of {len(bundles)} bundles)" if many else "")
+             for text, n in sorted(seen.items(), key=lambda item: (-item[1], item[0]))]
+    return ("<h2>What is not known</h2>"
+            "<p>An unanswered item is <strong>not a clean one</strong>. Each "
+            "limit below is stated once, with how many bundles it applies to.</p>"
+            + counts
+            + coverage_panel(notes, "Stated limits of this record"))
+
+
+# ----------------------------------------------------------------- integrity
+
 def section_integrity(store):
     bundles, _, _ = store
     rows = []
     for bundle in bundles:
         result = bundlestore.check_integrity(bundle)
-        checks = result["result"]["checks"]
-        cells = []
-        for check in checks:
-            kind = "ok" if check["ok"] else ("bad" if check["ok"] is False
-                                             else "unknown")
+        items = []
+        for check in result["result"]["checks"]:
+            kind = "ok" if check["ok"] else ("bad" if check["ok"] is False else "unknown")
             label = check["check"] if check["ok"] else (
-                f"{check['check']} FAILED" if check["ok"] is False
-                else f"{check['check']} , ")
-            cells.append(f'{tag(label, kind)} <span class="hash">'
-                         f'{esc(check["detail"])}</span>')
+                f"{check['check']} FAILED" if check["ok"] is False else f"{check['check']} not checked")
+            items.append(f'<li>{tag(label, kind)} <span class="muted">{esc(check["detail"])}</span></li>')
         rows.append(
-            f"<tr><td><code>{esc(bundle['name'])}</code><br>"
+            f'<tr id="{esc(bundle["name"])}"><td><code>{esc(bundle["name"])}</code><br>'
             f'<span class="hash">{esc(bundle["hash"])}</span></td>'
-            f"<td>{'<br>'.join(cells)}</td></tr>")
-
+            f'<td><ul class="checks">{"".join(items)}</ul></td></tr>')
     return ("<h2>Integrity</h2>"
-            "<p>The deterministic verifier's own output, not a rendering of "
-            "it. <code>replay</code> means every verdict was recomputed from "
-            "the sealed facts and matched.</p>"
+            "<p>The verifier's own output. <code>replay</code> means every "
+            "verdict was recomputed from the sealed facts and matched; "
+            "<code>decision</code> means a person's decision is about the record "
+            "sealed beside it.</p>"
             "<table><tr><th>Bundle</th><th>Checks</th></tr>"
             + "".join(rows) + "</table>"
             + coverage_panel([
@@ -157,116 +273,13 @@ def section_integrity(store):
             ]))
 
 
-def section_unknowns(store):
-    """Deliberately near the top. Gaps get the same weight as findings."""
-    bundles, _, _ = store
-    undetermined = unknown_subjects = 0
-    notes = []
-    for bundle in bundles:
-        plan = bundlestore.plan_of(bundle)
-        if plan:
-            missing = [i for i in plan.get("plan", []) if not i.get("action")]
-            undetermined += len(missing)
-            if missing:
-                notes.append(
-                    f"{bundle['name']}: {len(missing)} of "
-                    f"{len(plan.get('plan', []))} items have no verdict, "
-                    "storage was not verified and the answer depends on it.")
-        gate = bundle["documents"].get("gate.json")
-        if gate:
-            count = gate.get("counts", {}).get("UNKNOWN", 0)
-            unknown_subjects += count
-            if count:
-                notes.append(
-                    f"{bundle['name']}: {count} subjects were not found in "
-                    "the log. Commonly an identifier mismatch, not a clean "
-                    "result.")
-        notes.extend(f"{bundle['name']}: {note}"
-                     for note in bundle["manifest"].get("coverage", []))
-
-    counts = (
-        f'<div class="counts">'
-        f'<div class="count{" unknown" if undetermined else ""}">'
-        f"<b>{undetermined}</b><span>verdicts withheld</span></div>"
-        f'<div class="count{" unknown" if unknown_subjects else ""}">'
-        f"<b>{unknown_subjects}</b><span>subjects unknown</span></div>"
-        f"</div>")
-
-    return ("<h2>What is not known</h2>"
-            "<p>Placed here rather than in a footnote. An unanswered item is "
-            "<strong>not a clean one</strong>, and a record that renders its "
-            "gaps quietly manufactures the impression of a clean bill of "
-            "health.</p>"
-            + counts
-            + coverage_panel(sorted(set(notes)), "Stated limits of this record"))
-
-
-def section_log(store):
-    _, entries, _ = store
-    if not entries:
-        return ("<h2>The log</h2>"
-                + coverage_panel(["No log entries are sealed into these "
-                                  "bundles, so nothing here witnesses a log "
-                                  "head or a chain."]))
-    rows = []
-    for entry in entries:
-        body = query.body_of(entry)
-        summary = ", ".join(f"{k}={v}" for k, v in sorted(body.items())
-                            if not isinstance(v, (dict, list)))
-        rows.append(
-            f"<tr><td>{entry['seq']}</td>"
-            f"<td>{esc(entry['effective_from'][:19])}</td>"
-            f"<td>{esc(entry['recorded_at'][:19])}</td>"
-            f"<td><code>{esc(entry['event_type'])}</code></td>"
-            f"<td>{esc(entry['subject'])}</td>"
-            f"<td>{esc(entry['actor'])}</td>"
-            f'<td><span class="hash">{esc(entry["hash"][:16])}</span>'
-            f'<br><span class="hash">{esc(summary[:80])}</span></td></tr>')
-
-    return ("<h2>The log</h2>"
-            "<p>Two clocks. <strong>Effective</strong> is when a decision was "
-            "made in the world; <strong>recorded</strong> is when it reached "
-            "the log. Where they differ, both matter, a fact effective in "
-            "March and recorded in August means work done in between was done "
-            "in good faith and still has to be accounted for.</p>"
-            "<table><tr><th>Seq</th><th>Effective</th><th>Recorded</th>"
-            "<th>Type</th><th>Subject</th><th>Asserted by</th>"
-            "<th>Entry</th></tr>" + "".join(rows) + "</table>"
-            + coverage_panel([
-                "These are the facts someone recorded. Facts never recorded "
-                "cannot appear here, and their absence is not evidence.",
-                "Event types are the recording organisation's vocabulary. "
-                "Clew assigns them no meaning.",
-            ]))
-
-
-def section_policy(store):
-    _, entries, conflicts = store
-    result = bundlestore.with_conflicts(query.policy_history(entries),
-                                        conflicts)
-    adoptions = result["result"]["adoptions"]
-    if not adoptions:
-        return "<h2>Policy</h2>" + coverage_panel(result["coverage"])
-
-    rows = "".join(
-        f"<tr><td><code>{esc(a['version'])}</code></td>"
-        f"<td>{esc(a['effective_from'][:19])}</td>"
-        f"<td>{esc(a['actor'])}</td>"
-        f'<td><span class="hash">{esc(a["policy_hash"])}</span></td></tr>'
-        for a in adoptions)
-    return ("<h2>Policy</h2>"
-            "<p>Which remediation table was in force, and from when. The hash "
-            "is what makes the version label checkable, two parties can prove "
-            "they were reading the same table.</p>"
-            "<table><tr><th>Version</th><th>Effective from</th>"
-            "<th>Adopted by</th><th>sha256</th></tr>" + rows + "</table>"
-            + coverage_panel(result["coverage"]))
-
+# ------------------------------------------------------------------ findings
 
 def section_plan(bundle, store):
     plan = bundlestore.plan_of(bundle)
     policy_document = bundlestore.policy_of(bundle)
     summary = query.plan_summary(plan)["result"]
+    what = told(bundle)
 
     counts = "".join(
         f'<div class="count{" unknown" if action == policy_module.UNDETERMINED else ""}">'
@@ -292,14 +305,31 @@ def section_plan(bundle, store):
             + (f'<br><span class="chain">{esc(chain)}</span>' if chain else "")
             + "</td></tr>")
 
-    return (f"<h3>{esc(plan.get('trigger'))}</h3>"
-            f'<p><span class="hash">bundle {esc(bundle["hash"])}</span><br>'
+    opening = (f'<p class="said">{esc(what["said"])}</p>' if what["said"] else "")
+    return (f"<h3>{esc(plan.get('trigger'))}</h3>" + opening
+            + (f"<p>Decided by {esc(what['by'])}.</p>" if what["by"] else "")
+            + f'<p><span class="hash">bundle {esc(bundle["hash"])}</span><br>'
             f"policy <code>{esc(plan.get('policy_version'))}</code> "
             f'<span class="hash">{esc(plan.get("policy_hash"))}</span></p>'
             f'<div class="counts">{counts}</div>'
             "<table><tr><th>Task</th><th>Verdict</th>"
             "<th>Why, and the chain that reaches it</th></tr>"
             + "".join(rows) + "</table>")
+
+
+def section_decision(bundle):
+    record = bundle["documents"].get("triage.json") or {}
+    decision = bundle["documents"]["decision.json"]
+    shown = decision.get("triage") or {}
+    return (f"<h3>Dismissed by {esc(decision.get('actor'))}</h3>"
+            + (f'<p class="said">{esc((record.get("incident") or {}).get("text"))}</p>'
+               if record.get("incident") else "")
+            + f"<p>Reason: {esc(decision.get('reason') or 'none given')}. "
+            f"Decided {esc((decision.get('decided_at') or '')[:19])}. "
+            f"Triage had said {esc(shown.get('choice'))} at {esc(shown.get('confidence'))}: "
+            f"{esc(shown.get('reason'))}.</p>"
+            f'<p><span class="hash">bundle {esc(bundle["hash"])}</span><br>'
+            f"settings <code>{esc(record.get('settings', {}).get('version'))}</code></p>")
 
 
 def section_gate(bundle):
@@ -337,7 +367,71 @@ def section_bundles(store):
             parts.append(section_plan(bundle, store))
         elif "gate.json" in bundle["documents"]:
             parts.append(section_gate(bundle))
+        elif "decision.json" in bundle["documents"]:
+            parts.append(section_decision(bundle))
     return "\n".join(parts)
+
+
+# ----------------------------------------------------------- log and policy
+
+def section_log(store):
+    _, entries, _ = store
+    if not entries:
+        return ("<h2>The log</h2>"
+                + coverage_panel(["No log entries are sealed into these "
+                                  "bundles, so nothing here witnesses a log "
+                                  "head or a chain."]))
+    rows = []
+    for entry in entries:
+        body = query.body_of(entry)
+        summary = ", ".join(f"{k}={v}" for k, v in sorted(body.items())
+                            if not isinstance(v, (dict, list)))
+        rows.append(
+            f"<tr><td>{entry['seq']}</td>"
+            f"<td>{esc(entry['effective_from'][:19])}</td>"
+            f"<td>{esc(entry['recorded_at'][:19])}</td>"
+            f"<td><code>{esc(entry['event_type'])}</code></td>"
+            f"<td>{esc(entry['subject'])}</td>"
+            f"<td>{esc(entry['actor'])}</td>"
+            f'<td><span class="hash">{esc(entry["hash"][:16])}</span>'
+            f'<br><span class="hash">{esc(summary[:80])}</span></td></tr>')
+
+    return ("<h2>The log</h2>"
+            "<p><strong>Effective</strong> is when a fact became true, "
+            "<strong>recorded</strong> is when the log heard it. Work done "
+            "between the two was done in good faith and still has to be "
+            "accounted for.</p>"
+            "<table><tr><th>Seq</th><th>Effective</th><th>Recorded</th>"
+            "<th>Type</th><th>Subject</th><th>Asserted by</th>"
+            "<th>Entry</th></tr>" + "".join(rows) + "</table>"
+            + coverage_panel([
+                "These are the facts someone recorded. Facts never recorded "
+                "cannot appear here, and their absence is not evidence.",
+                "Event types are the recording organisation's vocabulary. "
+                "Clew assigns them no meaning.",
+            ]))
+
+
+def section_policy(store):
+    _, entries, conflicts = store
+    result = bundlestore.with_conflicts(query.policy_history(entries),
+                                        conflicts)
+    adoptions = result["result"]["adoptions"]
+    if not adoptions:
+        return "<h2>Policy</h2>" + coverage_panel(result["coverage"])
+
+    rows = "".join(
+        f"<tr><td><code>{esc(a['version'])}</code></td>"
+        f"<td>{esc(a['effective_from'][:19])}</td>"
+        f"<td>{esc(a['actor'])}</td>"
+        f'<td><span class="hash">{esc(a["policy_hash"])}</span></td></tr>'
+        for a in adoptions)
+    return ("<h2>Policy</h2>"
+            "<p>Which remediation table was in force, and from when. The hash "
+            "is what makes the version label checkable.</p>"
+            "<table><tr><th>Version</th><th>Effective from</th>"
+            "<th>Adopted by</th><th>sha256</th></tr>" + rows + "</table>"
+            + coverage_panel(result["coverage"]))
 
 
 def render(store, root):
@@ -348,6 +442,7 @@ def render(store, root):
 <style>{STYLE}</style></head>
 <body><main>
 {section_header(store, root)}
+{section_incidents(store)}
 {section_unknowns(store)}
 {section_integrity(store)}
 {section_bundles(store)}
@@ -360,8 +455,8 @@ computation is deterministic and reproducible, and the result follows from the
 inputs. Anyone can re-run it and get the same answer.</p>
 <p><strong>Clew claims nothing about whether the inputs were true or the
 policy was correct.</strong> Those belong to whoever has the domain authority
-to defend them. This is a system of record, not an attester, it does not
-decide whether a use was compliant, it makes it impossible to lose the record
+to defend them. This is a system of record, not an attester. It does not
+decide whether a use was compliant. It makes it impossible to lose the record
 of what was decided, on what basis, and when.</p>
 <p>It does not prove physical destruction. No cryptography reaches a freezer.
 The claim is proof of non-use, not proof of destruction.</p>

@@ -134,15 +134,18 @@ def default_out_for_decision(decision, today=None):
 
 
 def cmd_build(args):
-    if bool(args.plan) == bool(args.decision):
-        raise SystemExit("seal either a plan (--plan) or a dismissal (--incident and --decision)")
+    if not args.plan and not args.decision:
+        raise SystemExit("seal a plan (--plan) or a dismissal (--incident and --decision)")
     if args.decision and not args.incident:
         raise SystemExit("--decision needs --incident, the triage record it was made on")
     plan = load_json(args.plan) if args.plan else None
     record = load_json(args.incident) if args.incident else None
     decision = load_json(args.decision) if args.decision else None
-    if decision and decision.get("decision") != "dismiss":
+    if decision and not plan and decision.get("decision") != "dismiss":
         raise SystemExit("a decision that asks a trigger is sealed with its plan, not on its own")
+    if decision and plan and decision.get("trigger") != plan.get("trigger"):
+        raise SystemExit(f"the decision asks {decision.get('trigger')} and the plan answers "
+                         f"{plan.get('trigger')}; they do not belong together")
     args.out = args.out or (default_out(plan) if plan else default_out_for_decision(decision))
     policy_document = resolve_policy_for(plan, args.policy) if plan else None
     previous, previous_head = continue_from(args.previous, args.since)
@@ -204,6 +207,11 @@ def cmd_build(args):
     if plan:
         documents = {"plan.json": plan, "policy.json": policy_document,
                      "events.json": events, "inputs.json": inputs}
+        # The incident the plan answers, and the decision that asked it, travel with it.
+        if record:
+            documents["triage.json"] = record
+        if decision:
+            documents["decision.json"] = decision
         description = f"Clew evidence bundle for trigger: {plan.get('trigger')}"
     else:
         documents = {"triage.json": record, "decision.json": decision,
@@ -295,6 +303,9 @@ def cmd_verify(args):
             policy_document = load_json(directory / "policy.json")
             checks.append(bundle.verify_policy(plan, policy_document))
             checks.append(bundle.verify_replay(plan, policy_document))
+            if "decision.json" in sealed and "triage.json" in sealed:
+                checks.append(bundle.verify_decision(load_json(directory / "triage.json"),
+                                                     load_json(directory / "decision.json"), plan))
         elif "gate.json" in sealed:
             result = load_json(directory / "gate.json")
             gate_policy = load_json(directory / "gate-policy.json")
@@ -445,9 +456,11 @@ def main(argv=None):
                        help="bundle directory; default <trigger>-<date>")
     build.add_argument("--plan", help="plan JSON from clew impact --json")
     build.add_argument("--incident", metavar="PATH",
-                       help="the triage record, with --decision: seal a dismissal")
+                       help="the triage record the plan answers; with --decision and no "
+                            "plan, a dismissal is sealed on its own")
     build.add_argument("--decision", metavar="PATH",
-                       help="a person's dismissal from clew decide, sealed without a plan")
+                       help="a person's decision from clew decide: the ask behind a plan, "
+                            "or a dismissal sealed without one")
     build.add_argument("--policy", metavar="VERSION|PATH",
                        help="the table the plan was computed under; inferred "
                             "from the plan when it names a shipped version")

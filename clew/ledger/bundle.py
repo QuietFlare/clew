@@ -407,16 +407,21 @@ def verify_gate(result, gate_policy, events):
                   f"identically from the bundled facts and gate policy")
 
 
-def verify_decision(record, decision):
+def verify_decision(record, decision, plan=None):
     """
-    A sealed dismissal re-derives nothing; what can be checked is that the
-    decision is about the incident sealed beside it, was made by a named
-    person, on the request and the settings the record shows.
+    A decision re-derives nothing; what can be checked is that it is about
+    the incident sealed beside it, was made by a named person, on the
+    request and the settings the record shows, and, with a plan, asked the
+    trigger the plan answers. Without a plan, only a dismissal belongs.
     """
     problems = []
-    if decision.get("decision") != "dismiss":
+    if plan is None and decision.get("decision") != "dismiss":
         problems.append(f"the decision is {decision.get('decision')!r}; without a plan only a "
                         "dismissal can be sealed")
+    if plan is not None and (decision.get("decision") != "ask"
+                             or decision.get("trigger") != plan.get("trigger")):
+        problems.append(f"the decision is {decision.get('decision')} {decision.get('trigger') or ''}, "
+                        f"and the plan answers {plan.get('trigger')}")
     if decision.get("incident") != (record.get("incident") or {}).get("sha256"):
         problems.append("the decision names another incident than the record")
     if not (decision.get("actor") or "").strip():
@@ -428,8 +433,9 @@ def verify_decision(record, decision):
         problems.append("the decision was made under other settings than the record")
     if problems:
         return _check("decision", False, "; ".join(problems))
+    what = "a dismissal" if plan is None else f"the ask of {decision['trigger']}"
     return _check("decision", True,
-                  f"a dismissal by {decision['actor']} of the incident the record holds, on the "
+                  f"{what} by {decision['actor']} on the incident the record holds, on the "
                   "request and settings it shows")
 
 

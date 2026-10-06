@@ -578,7 +578,7 @@ class TestSealedDismissal(BundleTestCase):
         (folder / "triage.json").write_text(json.dumps(RECORD))
         ran = self.run_cli("seal", "--incident", str(folder / "triage.json"), "--out", str(folder / "x"))
         self.assertEqual(ran.returncode, 1)
-        self.assertIn("either a plan", ran.stderr)
+        self.assertIn("seal a plan", ran.stderr)
 
 
 class TestDirectoryHygiene(BundleTestCase):
