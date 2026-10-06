@@ -78,6 +78,32 @@ Add `--html` to `impact`, `reclaim` or `drift` for a one-page report.
 
 ![An impact report: how much of the run a bad container reaches, and what to do about each task it touches](docs/impact.png)
 
+## When an incident report arrives
+
+A tool advisory, a release note, a withdrawal. Clew turns the sentence
+into a trigger the run can answer, or holds it for a person.
+
+```bash
+clew triage --graph graph.json "the duplicate marking step flags optical duplicates wrongly"
+```
+
+The options are the run's own tools, inputs and labels, and the kinds a
+pipeline adapter declares. A classifier picks one with a confidence, and
+versioned settings decide: ask, hold or dismiss. With `TYPESAFE_API_KEY`
+set the classifier is TypeSafe's Jev, otherwise names are matched. A held
+incident takes a person's decision, under their name:
+
+```bash
+clew decide --record out/triage.json --ask container:gatk4 --actor "qa lead"
+```
+
+`clew ui` does the same in a browser tab on this machine: pick a run,
+write the incident, and watch triage, impact and evidence appear as their
+files do. `clew serve` offers the same steps as tools over MCP to any
+agent, and `clew/agent/agent.yaml` is a ready agent for Mainsheet that
+runs them under a policy. Both need [Mainsheet](https://github.com/QuietFlare/mainsheet)
+only for the agent, never for the commands.
+
 ## Your runs
 
 One command per engine turns a run into a graph.
@@ -94,7 +120,16 @@ One command per engine turns a run into a graph.
 `clew extract` lists every engine it knows, and `clew providers` shows
 every adapter and extractor installed with the package each came from.
 An engine or pipeline that is not there is one subclass away: see
-[providers](docs/providers.md).
+[providers](docs/providers.md). An agent can write that subclass:
+
+```bash
+clew build adapter --graph graph.json --name site-ligands --kind ligand --sheet ligands.smi
+clew providers --approve ~/.clew/ui/jobs/<build>/verdict.json --actor "your name"
+```
+
+The agent works in a sandbox, a conformance check the agent never sees
+runs on what it wrote, and nothing loads until a person has read the
+code and approved it by name.
 
 Or skip the file: `reclaim`, `drift` and `digest` take `--runs` pointing
 at the engine's own record, a `.lineage` store or a horus-lineage root,

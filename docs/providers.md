@@ -223,3 +223,48 @@ imported but defined no named class is listed as registering nothing.
 
 Nothing leaves the machine. Clew reads the engine's files and your
 adapter's answers, and writes a graph and a plan beside them.
+
+## Without a package
+
+A single file can be a provider too. Set `CLEW_PROVIDER_DIR` to a folder,
+and every `.py` file in it loads, on one condition: a record beside it,
+`<file>.approval.json`, names the person who approved it and the sha256
+of the file as they saw it. A file with no record, or one changed since,
+is listed by `clew providers` as refused and loads nowhere. The record is
+written for you:
+
+```bash
+export CLEW_PROVIDER_DIR=~/.clew/providers
+clew providers --approve verdict.json --actor "your name"
+```
+
+`verdict.json` is what the conformance check prints, below. `clew ui`
+sets the folder to `<home>/providers` itself.
+
+## An agent writes it
+
+`clew build` briefs an agent with the run's graph, the launch sheet and
+what one id is called, or with the folder an unknown engine wrote its
+record in, and runs it under [Mainsheet](https://github.com/QuietFlare/mainsheet).
+The agent may read Clew's source and what it was given, writes only in a
+folder of its own, and has no network.
+
+```bash
+clew build adapter --graph graph.json --name site-ligands --kind ligand --sheet ligands.smi --removable
+clew build extractor --record /path/to/record --name runlog
+```
+
+When the agent ends, a conformance check it never saw runs on what it
+left: `python -m clew.builder.judge` for an adapter, `judge_extractor` for
+an extractor. It loads the file on trial in a process of its own and
+asks whether Clew can use it: the file registers exactly the one provider
+asked for, every id resolves to tasks the run has, an unknown id is
+refused, triage offers the ids and `impact` answers for one. For an
+extractor: the graph meets the contract, the folder is recognised and
+its runs load, and other folders are left alone.
+
+A pass means the file conforms. It does not mean the matching is right,
+and the check cannot know that. The person who approves it reads the
+code first. The Providers tab of `clew ui` runs the same steps with the
+checks and the code on the page, and `skills/clew-provider/SKILL.md`
+gives the same brief to a person's own coding agent, ending at the check.

@@ -52,7 +52,17 @@ clew/provider/   one package per engine, registered through entry points
                  carries the nf-core adapters. See ADR 0012.
 clew/questions/  one module per question asked of the graph: impact,
                  reclaim, drift, gate.
-clew/views/      dashboard, one page per question, MCP server.
+clew/views/      dashboard, one page per question, the auditors' MCP server.
+clew/intake/     where an incident report enters: triage turns it into a
+                 trigger through a classifier and versioned settings, and
+                 decide records a person's choice on a held one.
+clew/agent/      Clew's commands as tools for an agent: a table of seven,
+                 served over MCP by clew serve. The agent definition for
+                 Mainsheet sits beside it. Imports nothing from clew.
+clew/builder/    an agent writes a provider: the brief, the conformance
+                 check it never sees, the approval a person gives.
+clew/ui/         the local page: a run, an incident, the agent at work,
+                 and the Providers tab. Standard library server.
 tests/           the whole suite, provider fixtures under fixtures/.
                  All stdlib unittest.
 ```
