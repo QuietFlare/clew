@@ -207,11 +207,8 @@ def section_unknowns(store):
     for bundle in bundles:
         plan = bundlestore.plan_of(bundle)
         if plan:
-            missing = [i for i in plan.get("plan", []) if not i.get("action")]
-            undetermined += len(missing)
-            if missing:
-                note(f"{len(missing)} of {len(plan.get('plan', []))} items have no verdict: "
-                     "storage was not verified and the answer depends on it")
+            # Counted here; the sealed coverage already says it in words.
+            undetermined += sum(1 for i in plan.get("plan", []) if not i.get("action"))
         gate = bundle["documents"].get("gate.json")
         if gate:
             count = gate.get("counts", {}).get("UNKNOWN", 0)
