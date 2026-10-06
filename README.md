@@ -269,7 +269,9 @@ Clew knows nothing about any field. What a site knows about one pipeline,
 that an id in a launch sheet is a specimen and which tasks it entered,
 lives in an **adapter**. An engine Clew cannot read yet gets an
 **extractor**. Both are one Python class, found by name, with no change
-inside Clew. [docs/providers.md](docs/providers.md) is the guide.
+inside Clew. [How to build your own](docs/providers.md#build-your-own-three-ways)
+has the three ways, by hand, with your own coding agent, or with Clew's,
+and the guide below it.
 
 An agent can write one. It works in a sandbox, a conformance check it
 never sees runs on what it wrote, and nothing loads until a person has

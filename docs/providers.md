@@ -9,6 +9,41 @@ found by name and need no change inside Clew.
 from clew.contracts import Adapter, Extractor
 ```
 
+## Build your own, three ways
+
+An adapter is one Python class: what an id in your launch sheet is
+called, and which tasks of a run it entered. An extractor is one Python
+class: how your engine's record becomes Clew's graph. You need an
+adapter when Clew reads your runs but knows nothing about your subjects,
+and an extractor when `clew extract` does not list your engine. Build
+only the one that is missing.
+
+| Way | Who writes the code | Steps |
+|---|---|---|
+| By hand | You | Read "A domain" or "An extractor" below. Copy the closest shipped provider from `clew/provider/`. Run `python -m clew.builder.judge` on it. Approve it. |
+| Your own coding agent | Claude Code, Cursor or any agent that reads skills | Give it `skills/clew-provider/SKILL.md`. It writes the file and its tests and runs the judge. You read the code and approve it. |
+| Clew's agent | A Mainsheet agent under a policy | `clew build adapter ...` or the Providers tab of `clew ui`. The judge runs on what it left. You read the code and approve it. |
+
+All three end the same way. The conformance check, called the judge, loads
+the file on trial and asks whether Clew can use it: the right name, every
+id resolves to tasks the run has, an unknown id is refused, triage offers
+the ids, impact answers. Then a person reads the code and installs it
+under their own name:
+
+```bash
+export CLEW_PROVIDER_DIR=~/.clew/providers
+clew providers --approve verdict.json --actor "your name"
+```
+
+The approval pins the file's hash. From then on every Clew command run
+with that folder loads it, and `--pipeline <name>` or the adapter menu in
+the UI picks it. A changed file stops loading until someone approves it
+again. Nothing you build replaces what Clew ships: a new name is required.
+
+The worked example in this repository is `tests/fixtures/builder/adapter.py`,
+forty lines, written for the docking run in `tests/fixtures/pantheon_vina`
+and its sheet `ligands.smi`.
+
 ## A domain
 
 A domain is what a site knows about one pipeline. Clew's core sees a
