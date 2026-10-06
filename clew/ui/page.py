@@ -25,26 +25,32 @@ nav button[aria-selected="true"] { color: hsl(var(--foreground)); border-bottom-
          color: hsl(var(--steel)); background: hsl(var(--muted)); white-space: nowrap; }
 .badge.ok { color: hsl(var(--ok)); background: hsl(var(--ok-tint)); border-color: hsl(var(--ok) / .3); }
 .badge.bad { color: hsl(var(--destructive)); background: hsl(var(--destructive-tint)); border-color: hsl(var(--destructive) / .3); }
-main { display: grid; grid-template-columns: minmax(20rem, 26rem) 1fr; gap: 1.5rem; padding: 1.5rem; max-width: 78rem; margin: 0 auto; }
-@media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 1rem; } }
+#runbar { max-width: 78rem; margin: 1rem auto 0; padding: 0 1.5rem; }
+#runbar .card { margin-bottom: 0; }
+#summary { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+#summary strong { font-weight: 600; }
+main { display: grid; grid-template-columns: minmax(20rem, 26rem) 1fr; gap: 1.5rem; padding: 1rem 1.5rem 1.5rem; max-width: 78rem; margin: 0 auto; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 1rem; } #runbar { padding: 0 1rem; } }
 section.card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 1rem 1.1rem; margin-bottom: 1rem; }
 h2 { font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: hsl(var(--accent-strong)); margin: 0 0 .6rem; font-weight: 600; }
 label { display: block; font-size: .82rem; color: hsl(var(--steel)); margin: .7rem 0 .25rem; }
 input[type=text], select, textarea { width: 100%; font: inherit; padding: .45rem .6rem; border: 1px solid hsl(var(--border));
        border-radius: calc(var(--radius) - 2px); background: hsl(var(--card)); color: inherit; }
-textarea { min-height: 7rem; resize: vertical; }
+textarea { min-height: 6rem; resize: vertical; }
 .mono, input.path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
 .row { display: flex; gap: .5rem; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
 button.plain, button.go { font: inherit; border-radius: calc(var(--radius) - 2px); cursor: pointer; padding: .45rem .8rem; }
 button.plain { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: inherit; }
 button.go { border: 0; background: hsl(var(--primary)); color: white; font-weight: 600; padding: .6rem 1.4rem; }
 button:disabled { opacity: .5; cursor: not-allowed; }
-#folders { max-height: 11rem; overflow: auto; border: 1px solid hsl(var(--hairline)); border-radius: calc(var(--radius) - 2px); margin-top: .5rem; }
+#folders { max-height: 9rem; overflow: auto; border: 1px solid hsl(var(--hairline)); border-radius: calc(var(--radius) - 2px); margin-top: .5rem; }
 #folders button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: .3rem .6rem; font: inherit; cursor: pointer; }
 #folders button:hover { background: hsl(var(--muted)); }
 .note { font-size: .82rem; color: hsl(var(--steel)); margin: .4rem 0 0; }
 .error { color: hsl(var(--destructive)); font-size: .88rem; margin-top: .6rem; }
-.check { display: flex; align-items: center; gap: .5rem; margin-top: .9rem; color: hsl(var(--steel)); font-size: .9rem; }
+.check { display: flex; align-items: center; gap: .5rem; margin-top: .7rem; color: hsl(var(--steel)); font-size: .9rem; }
 ol.steps { list-style: none; padding: 0; margin: 0; }
 ol.steps li { display: grid; grid-template-columns: 1.4rem 7.5rem 1fr; gap: .5rem; padding: .45rem 0; border-bottom: 1px solid hsl(var(--hairline)); align-items: baseline; }
 ol.steps li:last-child { border-bottom: 0; }
@@ -85,44 +91,55 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
   <div id="badges"></div>
 </header>
 
+<div id="runbar">
+  <section class="card">
+    <div id="summary">
+      <h2 style="margin:0">Run</h2>
+      <span id="run-summary">none picked</span>
+      <button class="plain" id="run-change">Change</button>
+    </div>
+    <div id="picker">
+      <div class="cols">
+        <div>
+          <label for="path">Launch folder</label>
+          <div class="row">
+            <input type="text" class="path" id="path" spellcheck="false" placeholder="where the workflow was started">
+            <button class="plain" id="pick">Browse</button>
+            <button class="plain" id="open">Open</button>
+            <button class="plain" id="up" title="Parent folder">Up</button>
+          </div>
+          <div id="folders"></div>
+        </div>
+        <div>
+          <label for="engine">Engine</label>
+          <select id="engine"><option value="">Detect from the folder</option></select>
+          <label for="run">Run</label>
+          <select id="run" disabled></select>
+          <p class="note" id="found"></p>
+          <p style="margin:.4rem 0 0"><button class="plain" id="near" hidden></button>
+            <button class="plain" id="unread" hidden>Have an agent write an extractor for it</button></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
 <main id="tab-impact">
   <div>
     <section class="card">
-      <h2>1. Run</h2>
-      <label for="engine">Engine</label>
-      <select id="engine"><option value="">Detect from the folder</option></select>
-      <label for="path">Launch folder: where the workflow was started, not its work folder</label>
-      <div class="row">
-        <input type="text" class="path" id="path" spellcheck="false">
-        <button class="plain" id="pick">Browse</button>
-      </div>
-      <div class="row" style="margin-top:.5rem">
-        <button class="plain" id="open">Open typed path</button>
-        <button class="plain" id="up" title="Parent folder">Up</button>
-      </div>
-      <div id="folders"></div>
-      <p class="note" id="found"></p>
-      <p style="margin:.4rem 0 0"><button class="plain" id="near" hidden></button>
-        <button class="plain" id="unread" hidden>Have an agent write an extractor for this folder</button></p>
-      <label for="run">Run</label>
-      <select id="run" disabled></select>
-      <label for="adapter">Pipeline adapter: adds its own kinds, such as subjects from a launch sheet</label>
-      <select id="adapter"><option value="">None, the run's tools and files only</option></select>
-      <div id="adapter-flags"></div>
-      <p class="note">Without an adapter, only tools and files are offered. An incident about a subject is then held, not matched.</p>
-    </section>
-
-    <section class="card">
-      <h2>2. Incident</h2>
-      <label for="incident">What changed or went wrong, in plain words</label>
+      <h2>Incident</h2>
+      <label for="incident">What changed or went wrong</label>
       <textarea id="incident" placeholder="The duplicate marking step flags optical duplicates wrongly on patterned flowcells."></textarea>
-      <label for="work">Work folder, to check that outputs still exist (optional)</label>
+      <label for="adapter">Adapter</label>
+      <select id="adapter"><option value="">None: the run's tools and files only</option></select>
+      <div id="adapter-flags"></div>
+      <label for="work">Work folder (optional, settles the verdicts)</label>
       <input type="text" class="path" id="work" spellcheck="false">
       <label for="results">Results folder (optional)</label>
       <input type="text" class="path" id="results" spellcheck="false">
       <div class="check">
         <input type="checkbox" id="act" disabled>
-        <label for="act" style="margin:0">Act on the plan. Not available yet, so a run stops after evidence.</label>
+        <label for="act" style="margin:0">Act on the plan (not built yet)</label>
       </div>
       <p style="margin:1rem 0 0"><button class="go" id="go" disabled>Run</button></p>
       <p class="error" id="error" hidden></p>
@@ -136,19 +153,19 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
       <p class="note" id="spent"></p>
     </section>
     <section class="card" id="triage-card" hidden><h2>Triage</h2><dl class="kv" id="triage"></dl></section>
-    <section class="card" id="review-card" hidden><h2>The agent's recommendation</h2><dl class="kv" id="review"></dl></section>
+    <section class="card" id="review-card" hidden><h2>Recommendation</h2><dl class="kv" id="review"></dl></section>
     <section class="card" id="decide-card" hidden>
       <h2>Your decision</h2>
-      <p class="note" style="margin-top:0">This incident was held. Ask one of the triggers triage offered, or dismiss it. Your name goes into the record.</p>
-      <label for="actor">Your name or email</label>
+      <p class="note" style="margin-top:0">Held. Ask a trigger triage offered, or dismiss. Recorded under your name.</p>
+      <label for="actor">Your name</label>
       <input type="text" id="actor" autocomplete="off">
-      <label for="choice">Trigger to ask</label>
+      <label for="choice">Trigger</label>
       <select id="choice"></select>
       <label for="why">Reason (optional)</label>
       <input type="text" id="why" autocomplete="off">
       <p class="row" style="margin:1rem 0 0">
-        <button class="go" id="ask">Ask this trigger</button>
-        <button class="plain" id="dismiss">Dismiss the incident</button>
+        <button class="go" id="ask">Ask</button>
+        <button class="plain" id="dismiss">Dismiss</button>
       </p>
     </section>
     <section class="card" id="decided-card" hidden><h2>Decision</h2><dl class="kv" id="decided"></dl></section>
@@ -158,62 +175,59 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
   </div>
 </main>
 
-<main id="tab-drift" hidden><section class="card"><h2>Drift</h2><p>Where two runs of one workflow part ways. This tab is not built yet. The command works today: <code>clew drift</code>.</p></section></main>
-<main id="tab-reclaim" hidden><section class="card"><h2>Reclaim</h2><p>Which work folders are safe to delete. This tab is not built yet. The command works today: <code>clew reclaim</code>.</p></section></main>
+<main id="tab-drift" hidden><section class="card"><h2>Drift</h2><p>Not built yet. The command works: <code>clew drift</code>.</p></section></main>
+<main id="tab-reclaim" hidden><section class="card"><h2>Reclaim</h2><p>Not built yet. The command works: <code>clew reclaim</code>.</p></section></main>
 
 <main id="tab-providers" hidden>
   <div>
     <section class="card">
-      <h2>1. What to build</h2>
+      <h2>Build</h2>
       <select id="b-what" aria-label="What to build">
-        <option value="adapter">An adapter: what an incident names, in a run Clew reads</option>
-        <option value="extractor">An extractor: a run record Clew cannot read yet</option>
+        <option value="adapter">Adapter: what an id means in a pipeline Clew reads</option>
+        <option value="extractor">Extractor: a run record Clew cannot read</option>
       </select>
+      <p class="note" id="b-about"></p>
       <div id="b-for-adapter">
-        <p class="note" id="b-run"></p>
-        <label for="b-sheet">Launch sheet: the file that lists what the run was started for (optional)</label>
+        <label for="b-sheet">Launch sheet (optional)</label>
         <div class="row">
           <input type="text" class="path" id="b-sheet" spellcheck="false">
           <button class="plain" id="b-pick">Browse</button>
         </div>
-        <p class="note">The agent reads this file to find the ids, so its contents go to the model. Leave it empty if they must not.</p>
+        <p class="note">The agent reads it, so its contents go to the model.</p>
       </div>
       <div id="b-for-extractor" hidden>
-        <label for="b-record">Record folder: where the engine wrote the record of its runs</label>
+        <label for="b-record">Record folder</label>
         <div class="row">
           <input type="text" class="path" id="b-record" spellcheck="false">
           <button class="plain" id="b-pick-record">Browse</button>
         </div>
-        <p class="note">The agent reads the files in this folder to learn the format, so their contents go to the model. Pick the run's own folder, not one that holds other things.</p>
+        <p class="note">The agent reads it. Pick the run's own folder.</p>
       </div>
-    </section>
-
-    <section class="card">
-      <h2>2. The brief</h2>
-      <label for="b-name">Name: lowercase letters, digits, - or _</label>
-      <input type="text" id="b-name" autocomplete="off" spellcheck="false">
+      <label for="b-name">Name</label>
+      <input type="text" id="b-name" autocomplete="off" spellcheck="false" placeholder="lowercase, digits, - or _">
       <div id="b-adapter-brief">
-        <label for="b-kind">What one id is called, as one lowercase word, such as unit or batch</label>
-        <input type="text" id="b-kind" autocomplete="off" spellcheck="false">
+        <label for="b-kind">Kind: what one id is called</label>
+        <input type="text" id="b-kind" autocomplete="off" spellcheck="false" placeholder="unit, or several: unit, batch">
         <div class="check">
           <input type="checkbox" id="b-removable">
-          <label for="b-removable" style="margin:0">One can be withdrawn, and what only it fed is then removed</label>
+          <label for="b-removable" style="margin:0">May be withdrawn: outputs only it fed may be deleted</label>
         </div>
         <div class="check">
           <input type="checkbox" id="b-separable">
-          <label for="b-separable" style="margin:0">One id's share of a step's output stands alone and can be dropped in place</label>
+          <label for="b-separable" style="margin:0">Its share of a step's output can be dropped in place</label>
         </div>
       </div>
-      <label for="b-notes">Anything the agent should know (optional)</label>
-      <textarea id="b-notes" style="min-height:4.5rem"></textarea>
+      <label for="b-notes">Notes for the agent (optional)</label>
+      <textarea id="b-notes" style="min-height:4rem"></textarea>
       <p style="margin:1rem 0 0"><button class="go" id="b-go" disabled>Build</button></p>
       <p class="note" id="b-who"></p>
       <p class="error" id="b-error" hidden></p>
     </section>
 
     <section class="card">
-      <h2>Installed here</h2>
-      <p class="note mono" id="b-folder" style="margin-top:0"></p>
+      <h2>Installed</h2>
+      <p class="note" style="margin-top:0">Approved on this machine, for every install.</p>
+      <p class="note mono" id="b-folder"></p>
       <table id="b-local"></table>
     </section>
   </div>
@@ -225,22 +239,22 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
       <p class="note" id="b-spent"></p>
     </section>
     <section class="card" id="b-judge-card" hidden>
-      <h2>The judge</h2>
+      <h2>Conformance check</h2>
       <p class="note" id="b-judge-note" style="margin-top:0"></p>
       <dl class="kv" id="b-kinds"></dl>
       <table id="b-checks"></table>
-      <p style="margin:.8rem 0 0"><button class="plain" id="b-judge" hidden>Judge again</button></p>
+      <p style="margin:.8rem 0 0"><button class="plain" id="b-judge" hidden>Check again</button></p>
     </section>
     <section class="card" id="b-code-card" hidden>
-      <h2 id="b-code-title">The code, as the judge saw it</h2>
+      <h2 id="b-code-title">The code</h2>
       <p class="note mono" id="b-hash" style="margin-top:0"></p>
       <pre class="code" id="b-code"></pre>
       <details><summary>The agent's own tests</summary><pre class="code" id="b-tests"></pre></details>
     </section>
     <section class="card" id="b-approve-card" hidden>
       <h2>Your approval</h2>
-      <p class="note" style="margin-top:0">Nothing is installed until you approve it. Your name and the hash of this file go into a record beside it, and a later change to the file stops it loading.</p>
-      <label for="b-actor">Your name or email</label>
+      <p class="note" style="margin-top:0">Your name and the file's hash go into the record. A changed file stops loading.</p>
+      <label for="b-actor">Your name</label>
       <input type="text" id="b-actor" autocomplete="off">
       <p style="margin:1rem 0 0"><button class="go" id="b-install">Approve and install</button></p>
     </section>
@@ -283,6 +297,29 @@ function pairs(list, rows) {
 }
 
 let here = null, engines = [], adapters = [], polling = null, ready = false, current = null, built = null;
+let picking = true;
+
+const ABOUT = {
+  adapter: "Chosen by name when you ask. Needs one run of the pipeline, picked above, and its sheet. Independent of extractors.",
+  extractor: "Chosen by recognising the folder. Needs one record of the engine. Independent of adapters. Nothing you build replaces what Clew ships."};
+
+function picked() { return here && here.engine && $("run").value; }
+
+function ready_to_run() {
+  const chosen = picked();
+  $("run-summary").textContent = chosen ?
+    here.engine + " run " + $("run").value + ", " + here.runs.length + " in " + here.path : "none picked";
+  $("picker").hidden = !picking && chosen;
+  $("run-change").textContent = $("picker").hidden ? "Change" : "Done";
+  $("run-change").disabled = !chosen;
+  $("go").disabled = !(ready && chosen && $("incident").value.trim()) || polling !== null;
+  const extractor = $("b-what").value === "extractor";
+  $("b-about").textContent = ABOUT[$("b-what").value];
+  $("b-for-adapter").hidden = $("b-adapter-brief").hidden = extractor;
+  $("b-for-extractor").hidden = !extractor;
+  const briefed = extractor ? $("b-record").value.trim() : chosen && $("b-kind").value.trim();
+  $("b-go").disabled = !(ready && $("b-name").value.trim() && briefed) || polling !== null;
+}
 
 function adapter_fields() {
   const chosen = adapters.find((a) => a.name === $("adapter").value);
@@ -292,18 +329,6 @@ function adapter_fields() {
     input.spellcheck = false;
     return [label, input];
   }));
-}
-
-function ready_to_run() {
-  $("go").disabled = !(ready && $("run").value && $("incident").value.trim()) || polling !== null;
-  const extractor = $("b-what").value === "extractor";
-  $("b-for-adapter").hidden = $("b-adapter-brief").hidden = extractor;
-  $("b-for-extractor").hidden = !extractor;
-  const briefed = extractor ? $("b-record").value.trim() : $("run").value && $("b-kind").value.trim();
-  $("b-go").disabled = !(ready && $("b-name").value.trim() && briefed) || polling !== null;
-  $("b-run").textContent = here && $("run").value ?
-    "For the " + here.engine + " run " + $("run").value + " in " + here.path + ". Change it on the Impact tab." :
-    "Pick a run on the Impact tab first. The adapter is written for that run's record.";
 }
 
 async function open(path) {
@@ -327,16 +352,17 @@ async function open(path) {
   const wanted = $("engine").value;
   if (here.engine) {
     $("found").textContent = here.engine + " record, " + here.runs.length + " run" + (here.runs.length === 1 ? "" : "s") +
-      (wanted && wanted !== here.engine ? ". You chose " + wanted + ", and this folder is " + here.engine + "." : "");
+      (wanted && wanted !== here.engine ? ". You chose " + wanted + ", this folder is " + here.engine + "." : "");
     if (here.work_root && !$("work").value) $("work").value = here.work_root;
   } else {
-    $("found").textContent = "No run record in this folder." +
+    $("found").textContent = "No run record here." +
       (here.nearby ? " The " + here.nearby.engine + " record is in " + here.nearby.name + "." :
-       " Open the folder your workflow was launched from.");
+       " Open the folder the workflow was launched from.");
   }
   $("near").hidden = !here.nearby || !!here.engine;
   $("unread").hidden = !!here.engine || !!here.nearby;
   if (here.nearby) $("near").textContent = "Use " + here.nearby.name;
+  picking = !picked();
   ready_to_run();
 }
 
@@ -354,7 +380,7 @@ function progress(list, spent, job) {
 function listed(state) {
   engines = state.engines;
   $("engine").replaceChildren($("engine").firstElementChild, ...engines.map((e) => {
-    const o = el("option", e.folder ? e.name : e.name + " (folder picking not built yet)");
+    const o = el("option", e.folder ? e.name : e.name + " (by id only)");
     o.value = e.name; o.disabled = !e.folder; return o;
   }));
   adapters = state.adapters;
@@ -364,7 +390,7 @@ function listed(state) {
     o.selected = a.name === chosen; return o;
   }));
   $("b-folder").textContent = state.providers;
-  const head = el("tr"); head.append(el("th", "File"), el("th", "Adapter"), el("th", "State"));
+  const head = el("tr"); head.append(el("th", "File"), el("th", "Provider"), el("th", "State"));
   const rows = state.local.map((one) => {
     const row = el("tr");
     row.append(el("td", one.file), el("td", one.name || ""),
@@ -381,9 +407,9 @@ function show_build(job) {
   const v = job.verdict; $("b-judge-card").hidden = !v;
   const extractor = job.what === "extractor";
   $("b-judge-note").textContent = extractor ?
-    "Checks the agent never saw, run on this record. They show the graph is well formed and that Clew can pick the folder. Nobody gave the judge the run's true lineage: compare what it found with what you know of the run, and read the code." :
-    "Checks the agent never saw, run on this run and this sheet. They show Clew can use the adapter. They do not show its matching is right: read the code.";
-  $("b-code-title").textContent = "The " + job.what + ", as the judge saw it";
+    "The graph is well formed and the folder is recognised. Whether the lineage is true: compare the counts with the run you know, and read the code." :
+    "Clew can use it. Whether the matching is right: read the code.";
+  $("b-code-title").textContent = "The " + job.what;
   const counted = (counts) => Object.entries(counts || {}).map(([name, n]) => n + " " + name).join(", ");
   if (v) {
     const g = v.graph || {};
@@ -413,8 +439,8 @@ function show_build(job) {
   const a = job.approval; $("b-approved-card").hidden = !a;
   if (a) pairs($("b-approved"), [["Approved by", a.actor], ["At", a.approved_at], ["File hash", a.sha256],
     ["Written by", a.written_by],
-    ["Use it", extractor ? "Open the folder on the Impact tab. Clew now reads it as a " + a.name + " record." :
-      "Choose " + a.name + " under Pipeline adapter on the Impact tab, and give it the sheet."]]);
+    ["Use it", extractor ? "Open its folder in the run bar. Clew reads it as a " + a.name + " record." :
+      "Choose " + a.name + " under Adapter on the Impact tab, with its sheet."]]);
   $("b-log-card").hidden = job.log.length === 0;
   $("b-log").textContent = job.log.join("\\n");
   fail(job.state === "failed" ? (job.error || "the build failed") : "", "b-error");
@@ -471,7 +497,7 @@ function show(job) {
 
 async function settle(action) {
   fail("");
-  if (!$("actor").value.trim()) { fail("Write your name first. A decision is recorded under it."); return; }
+  if (!$("actor").value.trim()) { fail("Write your name first."); return; }
   try {
     const job = await api("/api/decide", {job: current, action, actor: $("actor").value,
       trigger: $("choice").value, reason: $("why").value});
@@ -499,8 +525,7 @@ $("b-go").addEventListener("click", async () => {
       {what: "extractor", record: $("b-record").value, name: $("b-name").value, notes: $("b-notes").value} :
       {path: here.path, run: $("run").value, name: $("b-name").value,
        kind: $("b-kind").value, removable: $("b-removable").checked, separable: $("b-separable").checked,
-       notes: $("b-notes").value,
-       sheet: $("b-sheet").value});
+       notes: $("b-notes").value, sheet: $("b-sheet").value});
     built = started.job;
     polling = setInterval(() => poll(started.job), 1000);
     ready_to_run();
@@ -509,7 +534,7 @@ $("b-go").addEventListener("click", async () => {
 });
 $("b-install").addEventListener("click", async () => {
   fail("", "b-error");
-  if (!$("b-actor").value.trim()) { fail("Write your name first. The approval is recorded under it.", "b-error"); return; }
+  if (!$("b-actor").value.trim()) { fail("Write your name first.", "b-error"); return; }
   try {
     show_build(await api("/api/install", {job: built, actor: $("b-actor").value}));
     listed(await api("/api/state"));
@@ -529,7 +554,7 @@ $("b-pick-record").addEventListener("click", async () => {
   try {
     const chosen = await api("/api/pick", {path: $("b-record").value || (here ? here.path : "")});
     if (chosen.path) { $("b-record").value = chosen.path; ready_to_run(); }
-    else if (!chosen.available) fail("This system has no folder dialog. Type the path of the folder.", "b-error");
+    else if (!chosen.available) fail("No folder dialog here. Type the path.", "b-error");
   } catch (bad) { fail(bad.message, "b-error"); }
   $("b-pick-record").disabled = false;
 });
@@ -546,7 +571,7 @@ $("b-pick").addEventListener("click", async () => {
   try {
     const chosen = await api("/api/pick", {path: here ? here.path : "", what: "file"});
     if (chosen.path) $("b-sheet").value = chosen.path;
-    else if (!chosen.available) fail("This system has no file dialog. Type the path of the sheet.", "b-error");
+    else if (!chosen.available) fail("No file dialog here. Type the path.", "b-error");
   } catch (bad) { fail(bad.message, "b-error"); }
   $("b-pick").disabled = false;
 });
@@ -576,12 +601,13 @@ $("pick").addEventListener("click", async () => {
   try {
     const chosen = await api("/api/pick", {path: here ? here.path : ""});
     if (chosen.path) open(chosen.path);
-    else if (!chosen.available) $("found").textContent = "This system has no folder dialog. Type the path, or click through the list.";
+    else if (!chosen.available) $("found").textContent = "No folder dialog here. Type the path, or click through the list.";
   } catch (bad) { $("found").textContent = bad.message; }
   $("pick").disabled = false;
 });
 $("path").addEventListener("keydown", (event) => { if (event.key === "Enter") open($("path").value); });
 $("up").addEventListener("click", () => here && here.parent && open(here.parent));
+$("run-change").addEventListener("click", () => { picking = $("picker").hidden; ready_to_run(); });
 $("incident").addEventListener("input", ready_to_run);
 $("run").addEventListener("change", ready_to_run);
 $("engine").addEventListener("change", () => here && open(here.path));
@@ -600,16 +626,16 @@ for (const tab of document.querySelectorAll("nav button")) tab.addEventListener(
     const state = await api("/api/state");
     $("badges").append(
       el("span", state.classifier === "jev" ? "Triage: Jev" : "Triage: name matching, no Jev key", "badge" + (state.classifier === "jev" ? " ok" : "")),
-      el("span", !state.mainsheet ? "Agent: Mainsheet not installed" : state.api_key ? "Agent: ready" : "Agent: no ANTHROPIC_API_KEY set",
+      el("span", !state.mainsheet ? "Agent: Mainsheet not installed" : state.api_key ? "Agent: ready" : "Agent: stored login, no API key",
          "badge" + (!state.mainsheet ? " bad" : state.api_key ? " ok" : "")));
     listed(state);
-    $("b-who").textContent = "Written by an agent on " + state.builder.model +
-      ". A build takes some minutes. The agent works in a folder of its own and reads only Clew's source and what you give it here.";
+    $("b-who").textContent = "An agent on " + state.builder.model + " writes it in a sandbox. A few minutes.";
     ready = state.mainsheet;
     if (!ready) {
-      const off = "Mainsheet is not installed in this environment, so the agent cannot run. Install clew-agent, or run this from the Mainsheet environment.";
+      const off = "Mainsheet is not installed: pip install \\"clew-lineage[agent]\\".";
       fail(off); fail(off, "b-error");
     }
+    ready_to_run();
     open(state.start);
   } catch (bad) {
     fail(bad.message);
