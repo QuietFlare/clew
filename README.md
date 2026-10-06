@@ -23,6 +23,17 @@ The examples are from genomics because that is where it was first used.
 The graph underneath is neutral: tasks that read files and write files,
 whatever the field.
 
+In the field's terms: Clew is data lineage and provenance turned into
+impact analysis and remediation planning, with policy as versioned data,
+an append-only hash-chained audit log, and offline-verifiable evidence
+bundles. Incident intake is a typed classification step, a model choosing
+from a fixed option set with a confidence, under deterministic decision
+rules and a human-in-the-loop decision on anything held. The agentic
+layer exposes the same steps as MCP tools, runs them under a governed
+agent runtime, and lets an agent generate providers that pass a
+code-based conformance check before a person approves them. A read-only
+MCP server serves the evidence to auditors with citations.
+
 A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
 ## Install
