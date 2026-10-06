@@ -8,12 +8,16 @@
 Clew turns the lineage your workflow engine already writes into decisions
 you can defend. When an input or container goes bad, it says what to do
 about each output it reached. When the disk fills up, it names the work
-directories that are safe to delete and shows why. You can seal any of
-these decisions as evidence that an auditor checks offline, with no
-access to your systems.
+directories that are safe to delete and shows why. When an incident
+report arrives as a sentence, it turns the sentence into a question the
+run can answer, or holds it for a person. You can seal any of these
+decisions as evidence that an auditor checks offline, with no access to
+your systems.
 
 It reads the record from Nextflow, Snakemake, Cromwell, Horus, DNAnexus
-and Latch, and changes nothing in your pipeline.
+and Latch, and changes nothing in your pipeline. No model touches a
+verdict: where a model is used, it proposes, versioned rules decide, and
+the record says which model was asked.
 
 The examples are from genomics because that is where it was first used.
 The graph underneath is neutral: tasks that read files and write files,
@@ -25,25 +29,68 @@ A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
 ```bash
 pip install clew-lineage
+clew --version
 clew demo
 ```
 
-Python 3.9 or later, no dependencies. The demo runs over a real
-nf-core/sarek run that ships with the package.
+Python 3.9 or later. The core has no dependencies. The demo runs three
+questions over a real nf-core/sarek run of 81 tasks that ships with the
+package, so you can see every kind of answer before touching your own
+runs. Running an agent needs [Mainsheet](https://github.com/QuietFlare/mainsheet)
+in the same environment. Nothing else does.
 
-## What it answers
+## The flow
 
-**Something upstream went bad.** A reference update, a broken container, an
-input that turned out wrong.
+Every use of Clew follows the same six steps. Each step is one command,
+reads what the step before wrote, and leaves a file the next step reads.
+Nothing is held in memory between them, so any step can be rerun or
+checked on its own.
 
-```bash
-clew impact --graph graph.json --container gatk4
+```
+engine record --> graph.json --> plan.json --> bundle/ --> auditor
+   extract         ask            seal         share
+                   triage, decide
 ```
 
-Every affected task gets a verdict, re-run, quarantine, delete or disclose,
-with the derivation chain as evidence. A verdict that depends on whether
-the artifact still exists needs `--work-root` and `--results`; without
-them it is withheld, not guessed. Nothing unknown is reported as clean.
+### 1. Extract: the engine's record becomes one graph
+
+Point Clew at where your workflow was launched. The engine's own record
+is read, and `graph.json` is written: every task, every file it read and
+wrote, and the content digests the engine recorded.
+
+| Engine | Command |
+|---|---|
+| Nextflow, including Seqera Platform | `clew extract nextflow --store .lineage --run <run> --json-out graph.json` |
+| Snakemake | `clew extract snakemake --workdir . --json-out graph.json` |
+| Cromwell and WDL, including Terra | `clew extract cromwell --metadata metadata.json --json-out graph.json` |
+| Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract horus --run-dir <run> --json-out graph.json` |
+| DNAnexus | `clew extract dnanexus --analysis <id> --json-out graph.json` |
+| Latch | `clew extract latch --execution <id> --json-out graph.json` |
+
+`clew extract` alone lists every engine installed. Two helpers belong to
+this step. `clew digest` reads each file of a run once and fills in
+digests an engine did not record, which is what makes drift and reclaim
+exact. `clew stitch --graph a=a.json --graph b=b.json --out chain.json`
+joins runs that consumed each other's outputs, by digest, so a question
+follows a change across launches and machines.
+
+`reclaim`, `drift`, `digest` and `impact` also take `--runs` pointing at
+the engine's record itself, and read the run they need without a file.
+
+### 2. Ask: what did a change reach, and what should happen
+
+**Something upstream went bad.** A reference update, a broken container,
+an input that turned out wrong.
+
+```bash
+clew impact --graph graph.json --container gatk4 --json plan.json
+```
+
+Every affected task gets a verdict, re-run, quarantine, delete or
+disclose, with the derivation chain as evidence and the policy version
+that produced it. A verdict that depends on whether an artifact still
+exists needs `--work-root` and `--results`. Without them it is withheld
+as UNDETERMINED, never guessed. Nothing unknown is reported as clean.
 
 **The disk is full and nothing is wrong.**
 
@@ -61,103 +108,186 @@ either root.
 clew drift --before a.json --after b.json
 ```
 
-Names the first task on each chain whose outputs differ and why: an input
-changed, a container changed, or nothing changed and the tool is not
-deterministic. Everything else is confirmed reproduced, digest for digest.
+Names the first task on each chain whose outputs differ and why: an
+input changed, a container changed, or nothing changed and the tool is
+not deterministic. Everything else is confirmed reproduced, digest for
+digest.
 
-**One run consumed another's output.**
-
-```bash
-clew stitch --graph a=a.json --graph b=b.json --out chain.json
-```
-
-Joins runs by content digest, so a question follows a change across
-launches, machines and engines.
-
-Add `--html` to `impact`, `reclaim` or `drift` for a one-page report.
+Add `--html report.html` to any of the three for a one-page report.
 
 ![An impact report: how much of the run a bad container reaches, and what to do about each task it touches](docs/impact.png)
 
-## When an incident report arrives
+### 3. Triage: an incident report becomes a question
 
-A tool advisory, a release note, a withdrawal. Clew turns the sentence
-into a trigger the run can answer, or holds it for a person.
-
-```bash
-clew triage --graph graph.json "the duplicate marking step flags optical duplicates wrongly"
-```
-
-The options are the run's own tools, inputs and labels, and the kinds a
-pipeline adapter declares. A classifier picks one with a confidence, and
-versioned settings decide: ask, hold or dismiss. With `TYPESAFE_API_KEY`
-set the classifier is TypeSafe's Jev, otherwise names are matched. A held
-incident takes a person's decision, under their name:
+Most changes arrive as a sentence, not a trigger: a tool advisory, a
+release note, a withdrawal. Triage turns the sentence into one of the
+triggers this run can answer, or holds it.
 
 ```bash
-clew decide --record out/triage.json --ask container:gatk4 --actor "qa lead"
+clew triage --graph graph.json --json triage.json "the duplicate marking step flags optical duplicates wrongly"
 ```
 
-`clew ui` does the same in a browser tab on this machine: pick a run,
-write the incident, and watch triage, impact and evidence appear as their
-files do. `clew serve` offers the same steps as tools over MCP to any
-agent, and `clew/agent/agent.yaml` is a ready agent for Mainsheet that
-runs them under a policy. Both need [Mainsheet](https://github.com/QuietFlare/mainsheet)
-only for the agent, never for the commands.
+The options offered are the run's own: every tool its containers name,
+every outside input, every label, and the kinds a pipeline adapter
+declares. A classifier picks one and says how sure it is. Versioned
+settings then decide: ask the trigger, hold the incident for a person,
+or dismiss it. Dismissing needs more confidence than asking, and is
+refused outright when the sentence names an id the run's record
+contains. With `TYPESAFE_API_KEY` set the classifier is TypeSafe's Jev;
+without it, names are matched. The record carries the backend, the model
+and the hash of the request, so the same question can be asked again.
 
-## Your runs
+A held incident waits for a person, who decides under their own name:
 
-One command per engine turns a run into a graph.
+```bash
+clew decide --record triage.json --ask container:gatk4 --actor "qa lead" --reason "the advisory names our version"
+```
 
-| Engine | Command |
+Exit codes say what happened: 0 asks, 1 holds, 3 dismisses. A pipeline
+plugin can do the asking itself with `--print-request` and `--answer`.
+
+### 4. Seal: the answer becomes evidence
+
+```bash
+clew evidence build --plan plan.json --out bundle/
+clew evidence verify bundle/
+```
+
+A bundle holds the plan, the policy it was computed under, the triage
+record and decision where there was one, and the hashes of every input.
+`verify` recomputes every verdict from the bundle alone, with no
+database, no credentials and no access to the run. `witness` checks a
+live log against what the bundle saw, and `sign` countersigns it with an
+SSH key.
+
+Facts that people assert, a withdrawal, a publication, a policy
+adoption, go into an append-only, hash-chained log on Postgres:
+
+```bash
+clew log append --type withdrawal --subject donor_003 --actor "qa lead"
+clew log verify
+```
+
+`clew rulebook` shows, diffs and registers the versioned policy table, so
+an old plan replays under the rules that produced it. `clew gate` reads
+the log before a run starts and blocks a run whose inputs it says are not
+usable, failing closed on anything unknown.
+
+### 5. Share: an auditor checks it without you
+
+```bash
+clew dashboard --bundles bundles/ --out clew.html
+clew mcp --bundles bundles/
+```
+
+The dashboard is one self-contained HTML page over every bundle. The MCP
+server answers an auditor's questions in their own words, from the
+bundles alone, read-only, with a citation on every answer and an
+instruction to the model never to conclude compliance.
+
+### 6. Automate: an agent runs the steps, a person keeps the decisions
+
+```bash
+clew ui
+```
+
+A page on this machine: pick a run folder, write the incident, and watch
+triage, impact and evidence appear as their files do. A held incident
+shows a decision card. The agent that runs the steps is defined in
+[clew/agent/agent.yaml](clew/agent/agent.yaml) for Mainsheet, which gates
+every tool call against a policy and signs a record of the run.
+
+```bash
+clew serve --dir /path/to/dir
+```
+
+The same seven steps as tools over MCP, for any agent that speaks it:
+inbox, triage, impact, seal, options, the incident text, and a
+recommendation on a held incident. No tool takes a trigger, which
+travels from triage to impact in the record on disk, and no tool decides
+a held incident. [skills/clew-incident](skills/clew-incident/SKILL.md)
+gives the flow to a person's own coding agent.
+
+## Command reference
+
+| Command | Does |
 |---|---|
-| Nextflow, including Seqera Platform | `clew extract nextflow --store .lineage --run <run> --json-out graph.json` |
-| Snakemake | `clew extract snakemake --workdir . --json-out graph.json` |
-| Cromwell and WDL, including Terra | `clew extract cromwell --metadata metadata.json --json-out graph.json` |
-| Horus, through [horus-lineage](https://github.com/QuietFlare/horus-lineage) | `clew extract horus --run-dir <run> --json-out graph.json` |
-| DNAnexus | `clew extract dnanexus --analysis <id> --json-out graph.json` |
-| Latch | `clew extract latch --execution <id> --json-out graph.json` |
+| `clew demo` | the shipped sample run: three triggers, one engine |
+| `clew extract <engine>` | build a graph from an engine's record |
+| `clew digest` | hash a run's files once, for graphs without content digests |
+| `clew stitch` | join run graphs where one run consumed another's outputs |
+| `clew impact` | what a removal, defect or update reaches, and what to do |
+| `clew reclaim` | which work directories are safe to delete, with proof |
+| `clew drift` | where two runs of the same workflow part ways, and why |
+| `clew triage` | turn an incident report into a trigger, or hold it for a person |
+| `clew decide` | record a person's decision on an incident that triage held |
+| `clew evidence` | build, verify, witness and sign evidence bundles |
+| `clew log` | the append-only event log: init, append, list, verify, head |
+| `clew rulebook` | the versioned remediation policy: show, export, check, diff, register |
+| `clew gate` | block a run whose inputs the log says are not usable |
+| `clew dashboard` | one self-contained HTML page over sealed bundles |
+| `clew mcp` | read-only MCP server over sealed bundles, for auditors |
+| `clew ui` | a local page: pick a run, give an incident, watch the agent work |
+| `clew serve` | Clew's working tools over MCP, for any agent |
+| `clew build` | have an agent write an adapter or an extractor, then check it |
+| `clew providers` | every adapter and extractor installed, or approve one a judge passed |
 
-`clew extract` lists every engine it knows, and `clew providers` shows
-every adapter and extractor installed with the package each came from.
-An engine or pipeline that is not there is one subclass away: see
-[providers](docs/providers.md). An agent can write that subclass:
+Every command answers `--help` with its flags.
+
+## Providers: your pipeline, your engine
+
+Clew knows nothing about any field. What a site knows about one pipeline,
+that an id in a launch sheet is a specimen and which tasks it entered,
+lives in an **adapter**. An engine Clew cannot read yet gets an
+**extractor**. Both are one Python class, found by name, with no change
+inside Clew. [docs/providers.md](docs/providers.md) is the guide.
+
+An agent can write one. It works in a sandbox, a conformance check it
+never sees runs on what it wrote, and nothing loads until a person has
+read the code and approved it under their name:
 
 ```bash
 clew build adapter --graph graph.json --name site-ligands --kind ligand --sheet ligands.smi
 clew providers --approve ~/.clew/ui/jobs/<build>/verdict.json --actor "your name"
 ```
 
-The agent works in a sandbox, a conformance check the agent never sees
-runs on what it wrote, and nothing loads until a person has read the
-code and approved it by name.
+The approval record pins the file's hash. A changed file stops loading
+until someone approves it again. [skills/clew-provider](skills/clew-provider/SKILL.md)
+gives the same brief to a person's own coding agent.
 
-Or skip the file: `reclaim`, `drift` and `digest` take `--runs` pointing
-at the engine's own record, a `.lineage` store or a horus-lineage root,
-and read the run they need. `impact` takes a graph file.
+## What is guaranteed
 
-Content digests make every answer exact. Horus records them, and Nextflow
-does with `cache 'deep'`. For any other run, `clew digest` reads each file
-once and fills them in. [Sources](docs/sources.md) has what each engine
-records and what that limits.
-
-## Every answer can be checked
-
-Clew is built for the day someone else has to verify what it said. Storage
-is checked, never assumed. Facts go in an append-only log. The rules are
-versioned data, so an old plan replays under the rules that produced it.
-An evidence bundle re-derives every verdict offline, with no database and
-no credentials. A gate can block a run before it starts.
+- **Storage is checked, never assumed.** A verdict that depends on a file
+  existing is withheld until the file is looked at.
+- **Rules are versioned data.** Every plan names its policy version and
+  hash, and an old plan replays under the rules that produced it.
+- **A model never writes a verdict.** It picks a trigger from a fixed
+  list, or recommends on a held incident. Settings and people decide,
+  and the record names the model asked.
+- **Facts are append-only.** The event log is hash-chained with two
+  clocks, and a bundle witnesses the log head it saw.
+- **Evidence verifies offline.** A bundle re-derives every verdict with
+  no database and no credentials.
+- **Agents are governed.** Under Mainsheet every tool call passes a
+  policy gate and is signed. Over MCP the tools stay safe by what they
+  take: an id, never a trigger or code.
+- **The engine stays neutral.** A test fails the build if the graph, the
+  ledger or the contracts mention a sample, a donor, a consent or an
+  engine.
 
 [Storage](docs/storage.md), [event log](docs/event-log.md),
 [policy](docs/policy.md), [evidence](docs/evidence.md), [gate](docs/gate.md),
 [auditor surfaces](docs/auditors.md), [architecture](docs/architecture.md),
-[providers](docs/providers.md) for adding your own pipeline or engine.
+[sources](docs/sources.md) for what each engine records and what that limits.
 
 ## Status
 
-Verified on real Nextflow, Snakemake, Cromwell and Horus runs. DNAnexus and
-Latch are built from the platform APIs and await their first live runs.
-[CHANGELOG.md](CHANGELOG.md) lists what changed in each release.
+Verified on real Nextflow, Snakemake, Cromwell and Horus runs. DNAnexus
+and Latch are built from the platform APIs and await their first live
+runs. Triage has one eval baseline, on the release notes of sixteen
+projects. The adapter builder has run live once. 894 tests run on Python
+3.9, 3.11 and 3.13 on every push. [CHANGELOG.md](CHANGELOG.md) lists what
+changed in each release.
 
 ## Contributing
 
