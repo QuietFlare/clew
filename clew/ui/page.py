@@ -199,6 +199,10 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
           <input type="checkbox" id="b-removable">
           <label for="b-removable" style="margin:0">One can be withdrawn, and what only it fed is then removed</label>
         </div>
+        <div class="check">
+          <input type="checkbox" id="b-separable">
+          <label for="b-separable" style="margin:0">One id's share of a step's output stands alone and can be dropped in place</label>
+        </div>
       </div>
       <label for="b-notes">Anything the agent should know (optional)</label>
       <textarea id="b-notes" style="min-height:4.5rem"></textarea>
@@ -225,6 +229,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
       <p class="note" id="b-judge-note" style="margin-top:0"></p>
       <dl class="kv" id="b-kinds"></dl>
       <table id="b-checks"></table>
+      <p style="margin:.8rem 0 0"><button class="plain" id="b-judge" hidden>Judge again</button></p>
     </section>
     <section class="card" id="b-code-card" hidden>
       <h2 id="b-code-title">The code, as the judge saw it</h2>
@@ -399,6 +404,7 @@ function show_build(job) {
       return row;
     }));
   }
+  $("b-judge").hidden = !job.can_judge;
   $("b-code-card").hidden = job.code === null;
   $("b-code").textContent = job.code || "";
   $("b-tests").textContent = job.tests || "The agent left no tests.";
@@ -492,7 +498,8 @@ $("b-go").addEventListener("click", async () => {
     const started = await api("/api/build", $("b-what").value === "extractor" ?
       {what: "extractor", record: $("b-record").value, name: $("b-name").value, notes: $("b-notes").value} :
       {path: here.path, run: $("run").value, name: $("b-name").value,
-       kind: $("b-kind").value, removable: $("b-removable").checked, notes: $("b-notes").value,
+       kind: $("b-kind").value, removable: $("b-removable").checked, separable: $("b-separable").checked,
+       notes: $("b-notes").value,
        sheet: $("b-sheet").value});
     built = started.job;
     polling = setInterval(() => poll(started.job), 1000);
@@ -507,6 +514,14 @@ $("b-install").addEventListener("click", async () => {
     show_build(await api("/api/install", {job: built, actor: $("b-actor").value}));
     listed(await api("/api/state"));
     if (here) open(here.path);
+  } catch (bad) { fail(bad.message, "b-error"); }
+});
+$("b-judge").addEventListener("click", async () => {
+  fail("", "b-error");
+  try {
+    show_build(await api("/api/judge", {job: built}));
+    polling = setInterval(() => poll(built), 1000);
+    ready_to_run();
   } catch (bad) { fail(bad.message, "b-error"); }
 });
 $("b-pick-record").addEventListener("click", async () => {

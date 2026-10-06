@@ -172,9 +172,9 @@ def seal(base, incident):
     inputs = ["--input", base / "graph.json", "--input", folder / "triage.json"]
     if (folder / "decision.json").is_file():
         inputs += ["--input", folder / "decision.json"]
-    code, out, err = run_clew("evidence", "build", "--out", bundle, "--plan", plan, *inputs)
+    code, out, err = run_clew("evidence", "seal", "--out", bundle, "--plan", plan, *inputs)
     if code != 0:
-        raise _failed("evidence build", code, out, err)
+        raise _failed("evidence seal", code, out, err)
     code, out, err = run_clew("evidence", "verify", bundle)
     return {"bundle": str(bundle), "verified": code == 0}
 

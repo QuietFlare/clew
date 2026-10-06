@@ -1,7 +1,7 @@
 """
 One build, from brief to verdict.
 
-    clew build adapter --graph graph.json --name NAME --kind WORD [--sheet FILE] [--removable]
+    clew build adapter --graph graph.json --name NAME --kind WORD[,WORD] [--sheet FILE] [--removable] [--separable]
     clew build extractor --record FOLDER --name NAME
 
 An agent writes the provider in a folder of its own, under Mainsheet. The
@@ -27,9 +27,10 @@ from pathlib import Path
 from clew.builder import adapter as adapters
 from clew.builder import extractor as extractors
 from clew.contracts import Adapter, Extractor, discover
-from clew.contracts.registry import LOCAL_VARIABLE, file_hash
+from clew.contracts.registry import file_hash, local_folder
 
 BRIEF = "agent.yaml"
+ASKED = "build.json"
 VERDICT = "verdict.json"
 ADAPTER, EXTRACTOR = "adapter", "extractor"
 WRITTEN = {ADAPTER: ("adapter.py", "test_adapter.py"),
@@ -74,6 +75,9 @@ def brief(folder, agent_home, what, asked, sheet=None, record=None):
                      key=lambda instance: instance.stat().st_mtime)
         return new[-1] / "work" if new else None
     (folder / BRIEF).write_text(json.dumps(definition, indent=2) + "\n")
+    # What was asked, so the check can run again later without the agent.
+    (folder / ASKED).write_text(json.dumps({"what": what, "asked": asked, "sheet": str(sheet) if sheet else None,
+                                            "record": str(record) if record else None}, indent=2) + "\n")
     return folder / BRIEF, made
 
 
@@ -101,6 +105,37 @@ def check(folder, what, name, sheet=None, record=None):
     return verdict
 
 
+def rejudge(folder):
+    """Run the conformance check again on what a build left, from what it was asked."""
+    folder = Path(folder)
+    try:
+        asked = json.loads((folder / ASKED).read_text())
+    except (OSError, ValueError):
+        raise Refused(f"{folder} is not a build folder: no {ASKED} in it")
+    if not (folder / "work" / WRITTEN[asked["what"]][0]).is_file():
+        raise Refused(f"the agent left no {asked['what']} in {folder / 'work'}")
+    return check(folder, asked["what"], asked["asked"]["name"],
+                 sheet=Path(asked["sheet"]) if asked["sheet"] else None,
+                 record=Path(asked["record"]) if asked["record"] else None)
+
+
+def printed(verdict, folder, what, providers):
+    """The checks, where the code is, and what to do next."""
+    for one in verdict["checks"]:
+        print(f"{'ok  ' if one['passed'] else 'FAIL'}  {one['name']}"
+              + (f"  ({one['detail']})" if one["detail"] else ""))
+    passed = sum(1 for one in verdict["checks"] if one["passed"])
+    print(f"\n{passed} of {len(verdict['checks'])} conformance checks passed")
+    print(f"the code: {Path(folder) / 'work' / WRITTEN[what][0]}")
+    if not verdict["passed"]:
+        print("nothing can be installed from this build. Fix the code and run "
+              f"`clew build judge {folder}`, or build again with a note on what failed.")
+        return 1
+    print("read it, then approve it under your own name:\n"
+          f"  clew providers --approve {Path(folder) / VERDICT} --actor \"your name\"")
+    return 0
+
+
 def mainsheet(definition, agent_home, say, env=None):
     """Run one Mainsheet agent on a definition, each line of its output handed to `say`. Returns its exit status."""
     if importlib.util.find_spec("mainsheet") is None:
@@ -126,6 +161,9 @@ def main(argv=None, launch=None):
         prog="clew build",
         description="Have an agent write a provider, then run the conformance check on it.")
     kinds = parser.add_subparsers(dest="what", required=True)
+    again = kinds.add_parser("judge", help="run the conformance check again on a finished build",
+                             description="Run the conformance check again on what a build left, without the agent.")
+    again.add_argument("folder", help="the build folder, printed when the build started")
     for what, about in ((ADAPTER, "what an incident names, in a run Clew reads"),
                         (EXTRACTOR, "a run record Clew cannot read yet")):
         one = kinds.add_parser(what, help=about, description=f"An {what}: {about}.")
@@ -135,19 +173,27 @@ def main(argv=None, launch=None):
                          help="where builds and the agent's records are kept (default ~/.clew/ui, as clew ui)")
         if what == ADAPTER:
             one.add_argument("--graph", required=True, help="the run's graph, from clew extract")
-            one.add_argument("--kind", required=True, help="what one id is called, as one lowercase word")
+            one.add_argument("--kind", required=True,
+                             help="what one id is called, one lowercase word, or several separated by commas")
             one.add_argument("--sheet", help="the launch sheet. The agent reads it, so its contents go to the model")
             one.add_argument("--removable", action="store_true",
                              help="one can be withdrawn, and what only it fed is then removed")
+            one.add_argument("--separable", action="store_true",
+                             help="one id's share of a step's output stands alone and can be dropped in place")
         else:
             one.add_argument("--record", required=True,
                              help="the folder the engine wrote its record in. The agent reads it")
     args = parser.parse_args(argv)
+    providers = local_folder()
+    if args.what == "judge":
+        try:
+            verdict = rejudge(args.folder)
+        except Refused as bad:
+            raise SystemExit(f"clew build: {bad}")
+        asked = json.loads((Path(args.folder) / ASKED).read_text())
+        return printed(verdict, args.folder, asked["what"], providers)
 
     home = Path(args.home).expanduser().resolve()
-    providers = Path(os.environ.get(LOCAL_VARIABLE) or home / "providers").expanduser()
-    # The conformance check must see what is already installed, to refuse a taken name.
-    os.environ[LOCAL_VARIABLE] = str(providers)
     sheet = record = None
     try:
         if args.what == ADAPTER:
@@ -158,8 +204,8 @@ def main(argv=None, launch=None):
                 raise Refused(f"{args.graph} is not a file")
             if args.sheet and not Path(args.sheet).is_file():
                 raise Refused(f"{args.sheet} is not a file")
-            asked = {"name": args.name, "kind": args.kind, "removable": args.removable,
-                     "notes": args.notes.strip()}
+            asked = {"name": args.name, "kind": ", ".join(adapters.kinds_of(args.kind)),
+                     "removable": args.removable, "separable": args.separable, "notes": args.notes.strip()}
         else:
             extractors.check_brief(args.name)
             if taken(args.name, Extractor, providers):
@@ -205,18 +251,7 @@ def main(argv=None, launch=None):
         return 2
 
     verdict = check(folder, args.what, args.name, sheet=sheet, record=record)
-    for one in verdict["checks"]:
-        print(f"{'ok  ' if one['passed'] else 'FAIL'}  {one['name']}"
-              + (f"  ({one['detail']})" if one["detail"] else ""))
-    passed = sum(1 for one in verdict["checks"] if one["passed"])
-    print(f"\n{passed} of {len(verdict['checks'])} conformance checks passed")
-    print(f"the code: {folder / 'work' / WRITTEN[args.what][0]}")
-    if not verdict["passed"]:
-        print("nothing can be installed from this build. Build again, with a note on what failed.")
-        return 1
-    print("read it, then approve it under your own name:\n"
-          f"  {LOCAL_VARIABLE}={providers} clew providers --approve {folder / VERDICT} --actor \"your name\"")
-    return 0
+    return printed(verdict, folder, args.what, providers)
 
 
 if __name__ == "__main__":

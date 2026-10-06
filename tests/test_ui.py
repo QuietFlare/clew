@@ -51,7 +51,8 @@ class Served(unittest.TestCase):
     launch = staticmethod(leaves())
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        if not hasattr(self, "tmp"):
+            self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.server, self.link = ui.serve(self.tmp.name, port=0, token="t0ken")
         self.server.app.launch = self.launch
@@ -363,11 +364,13 @@ class TestBuild(Served):
         # The judge is a process of its own: it finds this checkout by path,
         # and the provider folder is this test's, never the machine's.
         clean = {k: v for k, v in os.environ.items() if k not in (LOCAL_VARIABLE, TRIAL_VARIABLE)}
-        patched = mock.patch.dict(os.environ, dict(clean, PYTHONPATH=str(ROOT)), clear=True)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.providers = Path(self.tmp.name).resolve() / "providers"
+        patched = mock.patch.dict(os.environ, dict(clean, PYTHONPATH=str(ROOT),
+                                                   **{LOCAL_VARIABLE: str(self.providers)}), clear=True)
         patched.start()
         self.addCleanup(patched.stop)
         super().setUp()
-        self.providers = Path(self.tmp.name).resolve() / "providers"
 
     def build(self, **over):
         body = dict({"path": str(DOCKING), "run": "pantheon_vina", "name": "site-ligands",

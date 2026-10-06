@@ -42,7 +42,7 @@ from clew.builder import build
 from clew.builder import extractor as extractor_builder
 from clew.builder.build import ADAPTER, BRIEF, EXTRACTOR, NOISE, VERDICT, WRITTEN
 from clew.contracts import Adapter, Extractor, discover
-from clew.contracts.registry import LOCAL_VARIABLE, approval_of, file_hash
+from clew.contracts.registry import approval_of, file_hash, local_folder
 from clew.extract.runs import Runs
 from clew.ui.page import PAGE
 
@@ -353,7 +353,8 @@ def build_status(job, providers):
             "extract": job.extract, "turns": job.turns, "cost": job.cost, "log": job.log,
             "folder": str(job.folder), "what": job.what, "brief": job.brief, "verdict": verdict,
             "code": text_of(work / code), "tests": text_of(work / tests),
-            "approval": approval, "can_install": passed and approval is None and job.state != "running"}
+            "approval": approval, "can_install": passed and approval is None and job.state != "running",
+            "can_judge": wrote and approval is None and job.state != "running"}
 
 
 class App:
@@ -363,8 +364,8 @@ class App:
         self.home = Path(home).expanduser().resolve()
         self.token = token or secrets.token_urlsafe(24)
         self.launch = launch or run_agent
-        # Adapters a person approved live here, and load from here.
-        self.providers = Path(os.environ.get(LOCAL_VARIABLE) or self.home / "providers").expanduser()
+        # Providers a person approved live here, and every command loads from here.
+        self.providers = local_folder()
         self.jobs = {}
         self.lock = threading.Lock()
 
@@ -512,7 +513,7 @@ class App:
             return self.build_extractor(body)
         name, kind = (body.get("name") or "").strip(), (body.get("kind") or "").strip()
         try:
-            builder.check_brief(name, kind)
+            kind = ", ".join(builder.check_brief(name, kind))
         except builder.Refused as bad:
             raise Refused(str(bad))
         if name in adapters() or builder.installed_as(self.providers, name).exists():
@@ -530,7 +531,7 @@ class App:
             raise Refused(f"the notes are longer than {MOST_NOTES} characters")
         job = self.new_job(BUILD)
         job.brief = {"name": name, "kind": kind, "removable": bool(body.get("removable")),
-                     "notes": notes}
+                     "separable": bool(body.get("separable")), "notes": notes}
         threading.Thread(target=self.construct, args=(job, found, run, sheet or None),
                          daemon=True).start()
         return {"job": job.name}
@@ -584,6 +585,27 @@ class App:
                 job.state = "finished"
         except (SystemExit, Exception) as bad:      # a job must end in a state the page can show
             job.state, job.error = "failed", str(bad) or repr(bad)
+
+    def judge(self, body):
+        """The conformance check again, on what the agent left. No agent runs."""
+        job = self.jobs.get(body.get("job") or "")
+        if not job or job.kind != BUILD:
+            raise Refused("no such build", 404)
+        if job.state == "running":
+            raise Refused("the build is still going", 409)
+        with self.lock:
+            if any(other.state == "running" for other in self.jobs.values()):
+                raise Refused("a run is still going; wait for it to finish", 409)
+            job.state, job.error = "running", None
+
+        def again():
+            try:
+                build.rejudge(job.folder)
+                job.state = "finished"
+            except (build.Refused, SystemExit, Exception) as bad:
+                job.state, job.error = "failed", str(bad) or repr(bad)
+        threading.Thread(target=again, daemon=True).start()
+        return build_status(job, self.providers)
 
     def install(self, body):
         """A person's approval of a built provider: their name, and the hash of the file the judge saw."""
@@ -664,7 +686,8 @@ class Handler(BaseHTTPRequestHandler):
                   "/api/browse": lambda body: browse(body.get("path")),
                   "/api/pick": lambda body: pick(body.get("path"), body.get("what") == "file"),
                   "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
-                  "/api/build": app.build, "/api/install": app.install}
+                  "/api/build": app.build, "/api/install": app.install,
+                  "/api/judge": app.judge}
         route = routes.get(self.path)
         if not route:
             return self.send(404, {"error": "not found"})
@@ -702,10 +725,8 @@ def main(argv=None):
         server, link = serve(args.home, args.port)
     except OSError as bad:
         raise SystemExit(f"cannot listen on port {args.port}: {bad.strerror or bad}")
-    # Every command this server runs, and the server itself, loads approved adapters from here.
-    os.environ[LOCAL_VARIABLE] = str(server.app.providers)
     print(f"Clew UI: {link}\nruns are kept in {server.app.home}\n"
-          f"approved adapters are kept in {server.app.providers}\nCtrl-C stops it", flush=True)
+          f"approved providers are kept in {server.app.providers}\nCtrl-C stops it", flush=True)
     if not args.no_browser:
         webbrowser.open(link)
     try:

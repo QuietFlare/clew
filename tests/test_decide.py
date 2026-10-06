@@ -25,6 +25,25 @@ class TestDecide(unittest.TestCase):
         self.assertEqual(made["triage"]["confidence"], 0.49)
         self.assertEqual(made["decided_at"], "2026-10-03T16:00:00+00:00")
 
+    def test_asking_a_removal_asserts_the_withdrawal_as_a_fact(self):
+        record = dict(HELD, named_only=["unit"])
+        made = decide.decide(record, "qa.lead@example.org", ask="unit:U3", reason="confirmed",
+                             at="2026-10-03T16:00:00+00:00")
+        asserted = decide.fact(made, record)
+        self.assertEqual((asserted["event_type"], asserted["subject"], asserted["actor"],
+                          asserted["effective_from"]),
+                         ("Withdrawn", "U3", "qa.lead@example.org", "2026-10-03T16:00:00+00:00"))
+        self.assertEqual(asserted["body"]["trigger"], "unit:U3")
+        self.assertEqual(decide.fact(made, record, "ConsentWithdrawn")["event_type"], "ConsentWithdrawn")
+
+    def test_a_trace_or_a_dismissal_asserts_no_fact(self):
+        record = dict(HELD, named_only=["unit"])
+        traced = decide.decide(record, "qa", ask="container:toolkit")
+        self.assertIsNone(decide.fact(traced, record))
+        dismissed = decide.decide(record, "qa", dismiss=True)
+        self.assertIsNone(decide.fact(dismissed, record))
+        self.assertIsNone(decide.fact(decide.decide(HELD, "qa", ask="unit:U3"), HELD))
+
     def test_dismissing_carries_no_trigger(self):
         made = decide.decide(HELD, "qa", dismiss=True)
         self.assertEqual((made["decision"], made["trigger"]), ("dismiss", None))

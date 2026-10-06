@@ -10,8 +10,9 @@ from importlib import metadata
 from pathlib import Path
 
 # A folder of single-file providers a person approved, for sites that build
-# one without packaging it. Off unless this names the folder.
+# one without packaging it. This variable names it; unset, it is DEFAULT_FOLDER.
 LOCAL_VARIABLE = "CLEW_PROVIDER_DIR"
+DEFAULT_FOLDER = "~/.clew/providers"
 # Set only while a new provider is being judged, before anyone has approved it.
 TRIAL_VARIABLE = "CLEW_PROVIDER_TRIAL"
 
@@ -80,18 +81,36 @@ def local_module(source):
     return f"clew_local_{Path(source).stem}_{file_hash(source)[:12]}"
 
 
+def local_folder():
+    """Where approved provider files live: CLEW_PROVIDER_DIR, else ~/.clew/providers."""
+    return Path(os.environ.get(LOCAL_VARIABLE) or DEFAULT_FOLDER).expanduser()
+
+
+# What each local file registered, so a file refused, changed or removed
+# takes its providers down with it instead of answering from memory.
+_registered_by = {}
+
+
+def _forget(source):
+    for contract, name in _registered_by.pop(source, ()):
+        contract.registered.pop(name, None)
+
+
 def load_local():
     """
     Import the provider files in the local folder. A file loads only when
     its approval record names a person and the hash of the file as they
     approved it. Returns [(file, problem or None)], so a refusal can be shown.
     """
-    folder = os.environ.get(LOCAL_VARIABLE)
-    if not folder or not Path(folder).is_dir():
-        return []
+    folder = local_folder()
+    sources = sorted(folder.glob("*.py")) if folder.is_dir() else []
+    for gone in [known for known in _registered_by if known not in sources]:
+        _forget(gone)
     seen = []
-    for source in sorted(Path(folder).glob("*.py")):
+    for source in sources:
         problem = None if os.environ.get(TRIAL_VARIABLE) else approval_of(source)[1]
+        if problem is not None:
+            _forget(source)
         if problem is None:
             module = local_module(source)
             if module not in sys.modules:
@@ -103,6 +122,11 @@ def load_local():
                 except Exception as bad:  # one broken file must not take the rest down
                     sys.modules.pop(module, None)
                     problem = f"failed to import: {bad}"
+                else:
+                    _registered_by[source] = [
+                        (contract, name) for contract in Provider.__subclasses__()
+                        for name, provider in contract.registered.items()
+                        if type(provider).__module__ == module]
         seen.append((source, problem))
     return seen
 

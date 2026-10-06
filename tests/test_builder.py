@@ -198,6 +198,21 @@ class TestInstall(Built):
         record.write_text(json.dumps(dict(json.loads(record.read_text()), actor="")))
         self.assertIn("REFUSED: its approval names nobody", self.listed())
 
+    def test_a_file_refused_after_a_change_stops_answering_in_a_running_process(self):
+        self.install()
+        script = f"""
+import json, os
+from pathlib import Path
+from clew.contracts import Adapter, discover
+target = Path({str(self.providers / "site_ligands.py")!r})
+print("site-ligands" in discover(Adapter))
+target.write_text(target.read_text() + "\\n# later\\n")
+print("site-ligands" in discover(Adapter))
+"""
+        env = dict(os.environ, **{LOCAL_VARIABLE: str(self.providers)})
+        ran = subprocess.run([sys.executable, "-c", script], env=env, capture_output=True, text=True, timeout=120)
+        self.assertEqual(ran.stdout.split(), ["True", "False"], ran.stderr)
+
     def test_only_a_trial_loads_a_file_nobody_approved(self):
         self.providers.mkdir()
         (self.providers / "site_ligands.py").write_text(ADAPTER)
@@ -257,17 +272,19 @@ class TestApprove(Built):
         self.assertNotEqual(ran.returncode, 0)
         self.assertIn("did not pass", ran.stderr)
 
-    def test_the_folder_must_be_named(self):
+    def test_without_the_variable_the_default_folder_is_used(self):
         env = {k: v for k, v in os.environ.items() if k != LOCAL_VARIABLE}
+        env["HOME"] = self.tmp.name
         ran = subprocess.run([sys.executable, "-m", "clew", "providers", "--approve", str(self.verdict),
                               "--actor", "qa"], env=env, capture_output=True, text=True, timeout=120)
-        self.assertNotEqual(ran.returncode, 0)
-        self.assertIn(LOCAL_VARIABLE, ran.stderr)
+        self.assertEqual(ran.returncode, 0, ran.stderr)
+        self.assertTrue((Path(self.tmp.name) / ".clew" / "providers" / "site_ligands.py").is_file())
 
 
 class TestBrief(unittest.TestCase):
     def test_a_name_and_a_kind_are_checked_before_anything_runs(self):
-        builder.check_brief("site-ligands", "ligand")
+        self.assertEqual(builder.check_brief("site-ligands", "ligand"), ["ligand"])
+        self.assertEqual(builder.check_brief("site", "ligand, batch,lane, ligand"), ["ligand", "batch", "lane"])
         for name, kind in (("", "ligand"), ("Site", "ligand"), ("a", "ligand"), ("x" * 33, "ligand"),
                            ("../up", "ligand"), ("site", ""), ("site", "two words"), ("site", "a-b")):
             with self.assertRaises(builder.Refused, msg=(name, kind)):
@@ -290,6 +307,11 @@ class TestBrief(unittest.TestCase):
         self.assertIn("TRACE", bare)
         self.assertIn("no launch sheet", bare)
         self.assertNotIn("--sheet", bare)
+        self.assertNotIn("SEPARABLE", bare)
+        several = self.brief(kind="patient, batch", separable=True)["task"]
+        self.assertIn('each of the kinds "patient", "batch"', several)
+        self.assertIn("2 things they call patient, batch", several)
+        self.assertIn("returning SEPARABLE", several)
 
     def test_the_definition_is_one_mainsheet_accepts_and_its_gate_keeps_the_agent_in_its_folders(self):
         try:
@@ -326,6 +348,15 @@ class TestBrief(unittest.TestCase):
         self.assertFalse(allowed("Write", file_path="/home/mainsheet/instances/clew-0a1b2c3d/work/x"))
         self.assertFalse(allowed("Bash", command="cat /home/providers/x.approval.json"))
         self.assertFalse(allowed("Bash", command="cat ../../../trail/key"))
+        # A command may name no absolute path outside what the agent was given and the system.
+        self.assertTrue(allowed("Bash", command=f"cd {work} && /venv/bin/python -m unittest -v"))
+        self.assertTrue(allowed("Bash", command="ls /home/jobs/j1/sheet 2>/dev/null | head"))
+        self.assertTrue(allowed("Bash", command=f"grep -rn Trigger {builder.SOURCE}/contracts/"))
+        self.assertTrue(allowed("Bash", command="cat /etc/hosts; ls ./here there/x https://x.y/z"))
+        self.assertFalse(allowed("Bash", command="ls /home/jobs/j2"))
+        self.assertFalse(allowed("Bash", command="ls -la \"/Users/someone/Documents\" | head"))
+        self.assertFalse(allowed("Bash", command="cat /home/mainsheet/trail/receipts.jsonl"))
+        self.assertFalse(allowed("Bash", command="ls /"))
         self.assertFalse(allowed("Bash", command="pip install something"))
 
 

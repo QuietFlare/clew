@@ -52,15 +52,17 @@ class Built(unittest.TestCase):
         self.graph = Path(self.tmp.name) / "graph.json"
         self.graph.write_text(json.dumps(horus.extract(DOCKING)))
         clean = {k: v for k, v in os.environ.items() if k not in (LOCAL_VARIABLE, TRIAL_VARIABLE)}
-        patched = mock.patch.dict(os.environ, dict(clean, PYTHONPATH=str(ROOT)), clear=True)
+        patched = mock.patch.dict(os.environ, dict(clean, PYTHONPATH=str(ROOT),
+                                                   **{LOCAL_VARIABLE: str(self.home / "providers")}), clear=True)
         patched.start()
         self.addCleanup(patched.stop)
 
     def run_build(self, *argv, launch=None):
         out, err = io.StringIO(), io.StringIO()
+        home = [] if argv[0] == "judge" else ["--home", str(self.home)]
         with redirect_stdout(out), redirect_stderr(err):
             try:
-                code = build.main([*argv, "--home", str(self.home)], launch=launch or writes())
+                code = build.main([*argv, *home], launch=launch or writes())
             except SystemExit as stopped:
                 code = stopped.code
         return code, out.getvalue(), err.getvalue()
@@ -97,14 +99,33 @@ class TestBuildAdapter(Built):
 
     def test_the_agent_is_briefed_from_the_build_folder(self):
         seen = []
-        self.adapter("--notes", "ids are in column two", launch=writes(seen=seen))
+        self.adapter("--notes", "ids are in column two", "--separable", launch=writes(seen=seen))
         brief = json.loads(seen[0].read_text())
+        self.assertIn("returning SEPARABLE", brief["task"])
         self.assertEqual(seen[0], self.job() / "agent.yaml")
         self.assertEqual(brief["name"], "adapter-builder")
         for said in (str(self.job() / "graph.json"), str(self.job() / "sheet" / "ligands.smi"),
                      "ids are in column two", "REMOVE"):
             self.assertIn(said, brief["task"])
         self.assertNotIn(str(DOCKING), json.dumps(brief))
+
+    def test_several_kinds_go_into_one_brief_and_the_build_record(self):
+        seen = []
+        code, out, err = self.run_build("adapter", "--graph", str(self.graph), "--name", "site-two",
+                                        "--kind", "ligand,batch", launch=writes(seen=seen))
+        self.assertIn('each of the kinds "ligand", "batch"', json.loads(seen[0].read_text())["task"])
+        self.assertEqual(json.loads((self.job() / "build.json").read_text())["asked"]["kind"], "ligand, batch")
+
+    def test_judge_runs_the_check_again_on_a_finished_build(self):
+        self.adapter(launch=writes(ADAPTER.replace("if value is not None and value not in ids:", "if False:")))
+        self.assertFalse(json.loads((self.job() / "verdict.json").read_text())["passed"])
+        (self.job() / "work" / "adapter.py").write_text(ADAPTER)
+        code, out, err = self.run_build("judge", str(self.job()))
+        self.assertEqual(code, 0, out + err)
+        self.assertIn("16 of 16 conformance checks passed", out)
+        self.assertTrue(json.loads((self.job() / "verdict.json").read_text())["passed"])
+        code, out, err = self.run_build("judge", self.tmp.name)
+        self.assertIn("not a build folder", str(code))
 
     def test_a_failed_check_exits_one_and_offers_no_approval(self):
         broken = ADAPTER.replace("if value is not None and value not in ids:", "if False:")

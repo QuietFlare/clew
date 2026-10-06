@@ -414,7 +414,7 @@ def main(argv=None):
         description="Build and check Clew evidence bundles.")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    build = sub.add_parser("build", help="seal a plan into a bundle")
+    build = sub.add_parser("seal", aliases=["build"], help="seal a plan into a bundle")
     build.add_argument("--out", metavar="DIR",
                        help="bundle directory; default <trigger>-<date>")
     build.add_argument("--plan", required=True,

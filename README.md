@@ -162,7 +162,7 @@ plugin can do the asking itself with `--print-request` and `--answer`.
 ### 4. Seal: the answer becomes evidence
 
 ```bash
-clew evidence build --plan plan.json --out bundle/
+clew evidence seal --plan plan.json --out bundle/
 clew evidence verify bundle/
 ```
 

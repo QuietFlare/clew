@@ -11,7 +11,9 @@ triggers triage offered, or dismisses the incident. Nothing else can be
 asked: a trigger that was never offered was never checked against the run.
 
 The decision is written beside the record as decision.json, and with
---dsn it is logged as IncidentDecided under the person's name.
+--dsn it is logged as IncidentDecided under the person's name, and asking a
+removal also logs the fact itself, Withdrawn on that subject, so the gate
+reads it with nobody typing it in.
 """
 
 import argparse
@@ -23,6 +25,7 @@ from pathlib import Path
 from clew.ledger import eventlog
 
 DECIDED = "IncidentDecided"
+WITHDRAWN = "Withdrawn"
 ASK, DISMISS = "ask", "dismiss"
 
 
@@ -60,6 +63,23 @@ def decided(decision):
             "body": {key: value for key, value in decision.items() if key != "actor"}}
 
 
+def fact(decision, record, event_type=WITHDRAWN):
+    """
+    The fact a decision asserts, or None. Asking a removal says the subject
+    is withdrawn, under the person's name, from the moment they decided. A
+    trace or a dismissal asserts nothing about the run's inputs.
+    """
+    if decision["decision"] != ASK:
+        return None
+    kind, _, value = decision["trigger"].partition(":")
+    if kind not in (record.get("named_only") or []):
+        return None
+    return {"event_type": event_type, "subject": value, "actor": decision["actor"],
+            "effective_from": decision["decided_at"],
+            "body": {"incident": decision["incident"], "trigger": decision["trigger"],
+                     "reason": decision["reason"]}}
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="clew decide", description="Record a person's decision on a held incident.")
@@ -71,7 +91,9 @@ def main(argv=None):
     parser.add_argument("--reason", default="", help="why, in a sentence")
     parser.add_argument("--json", dest="json_out", metavar="PATH",
                         help="where to write the decision; default: decision.json beside the record")
-    parser.add_argument("--dsn", help="log the decision to the event log")
+    parser.add_argument("--dsn", help="log the decision, and the fact it asserts, to the event log")
+    parser.add_argument("--fact", default=WITHDRAWN, metavar="TYPE",
+                        help=f"the fact type a removal asserts in the log; default {WITHDRAWN}")
     args = parser.parse_args(argv)
 
     source = Path(args.record)
@@ -90,11 +112,18 @@ def main(argv=None):
         except ImportError:
             raise SystemExit("logging needs psycopg: pip install 'clew-lineage[log]'")
         eventlog.append(conn, **decided(decision))
+        asserted = fact(decision, record, args.fact)
+        if asserted:
+            eventlog.append(conn, **asserted)
     target.write_text(json.dumps(decision, indent=2) + "\n")
 
     print(f"incident   {decision['incident'][:12]}")
     print(f"decided  {decision['decision']}" + (f" {decision['trigger']}" if decision["trigger"] else ""))
     print(f"by       {decision['actor']}" + (f": {decision['reason']}" if decision["reason"] else ""))
+    asserted = fact(decision, record, args.fact)
+    if asserted:
+        print(f"fact     {asserted['event_type']} {asserted['subject']}"
+              + ("" if args.dsn else "  (not logged: no --dsn)"))
     print(f"wrote {target}")
     return 0
 

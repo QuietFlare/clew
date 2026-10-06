@@ -6,24 +6,22 @@ Every adapter and extractor Clew can see, and the package each came from.
 The check to run when your own package does not show up.
 
 With --approve, a person installs a provider file a judge passed into the
-folder CLEW_PROVIDER_DIR names, under their own name. The record beside
-the file carries the file's hash, so a later change stops it loading.
+local folder, ~/.clew/providers unless CLEW_PROVIDER_DIR names another,
+under their own name. The record beside the file carries the file's hash,
+so a later change stops it loading.
 """
 
 import argparse
-import os
 
 from clew.contracts import Adapter, Extractor
 from clew.contracts.registry import (LOCAL_VARIABLE, approval_of, entry_points, load_local,
-                                     local_module)
+                                     local_folder, local_module)
 from clew.contracts.trigger import ENGINE_KINDS
 
 
 def approve(verdict, actor):
     from clew.builder import adapter as builder
-    folder = os.environ.get(LOCAL_VARIABLE)
-    if not folder:
-        raise SystemExit(f"set {LOCAL_VARIABLE} to the folder approved providers are kept in")
+    folder = local_folder()
     try:
         record = builder.approve(verdict, folder, actor)
     except builder.Refused as bad:
@@ -63,7 +61,7 @@ def main(argv=None):
         print()
     local = load_local()
     if local:
-        print(f"local provider files ({LOCAL_VARIABLE})")
+        print(f"local provider files in {local_folder()}")
         for source, problem in local:
             approval = approval_of(source)[0] or {}
             state = f"REFUSED: {problem}" if problem else \
