@@ -1,0 +1,19 @@
+# Keep docs/clew.png in step with docs/clew.excalidraw.
+#
+# Rendering and the commit back to the branch live in the shared workflow;
+# only the trigger is here. A pull request from a fork cannot be pushed to,
+# so there the job fails and attaches the rendered PNG as an artifact.
+
+name: diagrams
+
+on:
+  pull_request:
+    paths: ["docs/*.excalidraw"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    uses: QuietFlare/ci-workflows/.github/workflows/excalidraw-render.yml@v1
