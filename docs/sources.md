@@ -14,8 +14,8 @@ That draws a line through the sources.
 
 | Tier | Sources | What the record supports |
 |---|---|---|
-| Digests on every output | Nextflow lineage store with `cache 'deep'`, Horus through horus-lineage | Impact, reclaim and stitch, straight from the record |
-| Digests on inputs only | Snakemake, Nextflow lineage store in standard mode | Impact. Reclaim and stitch after `clew digest` |
+| Digests on every output | Nextflow lineage store recorded with `NXF_CACHE_MODE=DEEP` on 26.09.0-edge or later, Horus through horus-lineage | Impact, reclaim and stitch, straight from the record |
+| Digests on inputs only | Snakemake, Nextflow lineage store in standard mode or from an older Nextflow | Impact. Reclaim and stitch after `clew digest` |
 | No digests | Cromwell, DNAnexus, Latch, RO-Crate, work symlinks | Impact. Reclaim and stitch after `clew digest` |
 
 Digests travel in the graph as `digest` fields, `<algorithm>:<value>`, on
@@ -74,16 +74,31 @@ describe:
 lineage {
     enabled = true
 }
-process.cache = 'deep'
 ```
 
-Nextflow then writes every task, output file and link into a `.lineage`
-store with content-addressed `lid://` identifiers. The second line makes
-the checksums it records content hashes rather than path and time, which
-is what puts a store in the top tier above. Without it the store still
-extracts and impact still works, but reclaim and stitch need `clew digest`
-to run first. Clew has no opinion on where either setting lives. It reads
-the store the engine writes.
+```bash
+export NXF_CACHE_MODE=DEEP
+```
+
+Nextflow then writes every task, output file and published copy into a
+`.lineage` store with content-addressed `lid://` identifiers. The
+environment variable makes the checksums it records content hashes rather
+than path and time, which is what puts a store in the top tier above. It
+is read once when Nextflow starts, in upper case, and no config setting
+replaces it. Without it the store still extracts and impact still works,
+but reclaim and stitch need `clew digest` to run first.
+
+Only Nextflow 26.09.0-edge and later honour the variable in the store.
+Earlier versions wrote a standard-mode value under whatever label the
+variable gave (nextflow-io/nextflow#7579), so Clew reads the Nextflow
+version from the run record and believes a content label only from the
+fixed versions. A store an older Nextflow wrote says so in its coverage
+and needs `clew digest` like any other.
+
+The store also records each copy `publishDir` made, with the copy's own
+checksum. Clew reads those into the graph's published files, so on a
+trusted store `clew reclaim` proves a work directory redundant with no
+digest pass at all.
 
 ```bash
 clew extract nextflow --store /path/to/.lineage --list-runs
@@ -331,7 +346,7 @@ they carry, and evidence is what verdicts are made of.
 | external inputs | yes | yes | yes | yes | yes | yes |
 | script and container image | yes | yes | yes | yes | no | yes |
 | output sizes | yes | yes | no | no | no | yes |
-| content digests | every output with `cache 'deep'`, else external inputs only | every artifact | no | every consumed input | no | no |
+| content digests | every output and published copy with `NXF_CACHE_MODE=DEEP` on 26.09.0-edge or later, else external inputs only | every artifact | no | every consumed input | no | no |
 | storage checkable | `--work-root` at `work/` and `--results` | `--work-root` at the run directory and `--results` | `--work-root` at the workflow root, `cromwell-executions/<workflow>/<id>`; each call's `execution/` directory is checked; no output sizes, so the published tree cannot be | no; jobs share one directory, so storage stays unverified | published copies only | `--work-root` at `work/` and `--results` |
 | best verdict for a shared, surviving artifact | REGENERATE | REGENERATE | REGENERATE | REGENERATE | QUARANTINE | REGENERATE |
 

@@ -39,6 +39,26 @@ def write_record(path, record):
     (path / ".data.json").write_text(json.dumps(record))
 
 
+def workflow_run(store, run_hash, nextflow_version):
+    """The run's own record, which names the Nextflow that wrote the store, and its history line."""
+    (store / ".history" / run_hash).write_text(
+        f"2026-08-01 10:00:00 CEST\ta_run\t{CHAIN}\tlid://{run_hash}\n")
+    write_record(store / run_hash, {
+        "version": "lineage/v1beta1", "kind": "WorkflowRun",
+        "spec": {"sessionId": CHAIN, "name": "a_run",
+                 "metadata": {"nextflow": {"version": nextflow_version}}}})
+
+
+def published_copy(store, run_hash, rel, mode, value, size):
+    """What publishDir copied: a FileOutput nested under the run's entry."""
+    write_record(store / run_hash / rel, {
+        "version": "lineage/v1beta1", "kind": "FileOutput",
+        "spec": {"path": f"/results/{rel}", "size": size,
+                 "checksum": {"value": value, "algorithm": "nextflow", "mode": mode},
+                 "source": f"lid://{PRODUCER}/{Path(rel).name}",
+                 "workflowRun": f"lid://{run_hash}"}})
+
+
 def task_run(session, workflow_run, name, **extra):
     spec = {
         "sessionId": session, "workflowRun": f"lid://{workflow_run}",
@@ -300,15 +320,79 @@ class Coverage(unittest.TestCase):
         graph = ls.extract(self.store, CHAIN)
         self.assertTrue(any("standard" in n for n in graph["coverage"]))
 
-    def test_a_content_checksum_is_not_flagged(self):
+    def output(self, mode, value="d1"):
         write_record(self.store / PRODUCER / "out.bam", {
             "version": "lineage/v1beta1", "kind": "FileOutput",
             "spec": {"path": f"/work/{PRODUCER[:2]}/{PRODUCER[2:]}/out.bam",
-                     "checksum": {"value": "d1", "algorithm": "nextflow",
-                                  "mode": "sha256"}, "size": 1}})
+                     "checksum": {"value": value, "algorithm": "nextflow",
+                                  "mode": mode}, "size": 1}})
+
+    def digest(self):
         graph = ls.extract(self.store, CHAIN)
-        self.assertFalse(any("cannot identify a copy" in n
-                             for n in graph["coverage"]))
+        return graph["output_details"][ls.abbreviate(PRODUCER)][0].get("digest"), graph
+
+    def test_a_content_checksum_from_a_fixed_nextflow_is_a_digest(self):
+        """
+        Labelled in the engine's own name, never as a SHA-256: the value is
+        Nextflow's 128-bit hash over the content, whichever mode made it.
+        """
+        workflow_run(self.store, RUN_A, "26.09.2-edge")
+        self.output("sha256")
+        digest, graph = self.digest()
+        self.assertEqual(digest, "nextflow-sha256:d1")
+        self.assertFalse(any("labelled" in n for n in graph["coverage"]))
+
+    def test_a_content_label_from_an_older_nextflow_is_not_a_digest(self):
+        """
+        Before 26.09.0-edge the store wrote a standard-mode value under
+        whatever label NXF_CACHE_MODE gave (nextflow-io/nextflow#7579). The
+        label is not evidence, and the note names the version that wrote it.
+        """
+        workflow_run(self.store, RUN_A, "26.04.7")
+        self.output("deep")
+        digest, graph = self.digest()
+        self.assertIsNone(digest)
+        note = next(n for n in graph["coverage"] if "labelled 'deep'" in n)
+        self.assertIn("26.04.7", note)
+        self.assertIn("7579", note)
+        self.assertIn("NXF_CACHE_MODE=DEEP", note)
+
+    def test_a_content_label_with_no_run_record_is_not_a_digest(self):
+        self.output("deep")
+        digest, graph = self.digest()
+        self.assertIsNone(digest)
+        self.assertTrue(any("names no version" in n for n in graph["coverage"]))
+
+    def test_the_fix_is_believed_from_its_first_release(self):
+        self.assertTrue(ls.labels_truthful("26.09.0-edge"))
+        self.assertTrue(ls.labels_truthful("26.10.0"))
+        self.assertFalse(ls.labels_truthful("26.04.7"))
+        self.assertFalse(ls.labels_truthful("25.10.8"))
+        self.assertFalse(ls.labels_truthful(""))
+        self.assertFalse(ls.labels_truthful("edge"))
+
+    def test_published_copies_are_read_from_the_run_record(self):
+        """
+        publishDir's copies are FileOutput records under the run's entry,
+        keyed by their path under the output folder, as clew digest
+        --results keys them. With a trusted checksum a store alone can
+        prove a work copy redundant.
+        """
+        workflow_run(self.store, RUN_A, "26.09.2-edge")
+        published_copy(self.store, RUN_A, "out/report.html", "deep", "d9", size=7)
+        graph = ls.extract(self.store, CHAIN)
+        self.assertEqual(graph["published"],
+                         {"out/report.html": {"size": 7, "digest": "nextflow-deep:d9"}})
+
+    def test_a_published_copy_from_an_older_nextflow_keeps_its_size_only(self):
+        workflow_run(self.store, RUN_A, "26.04.7")
+        published_copy(self.store, RUN_A, "out/report.html", "deep", "d9", size=7)
+        graph = ls.extract(self.store, CHAIN)
+        self.assertEqual(graph["published"], {"out/report.html": {"size": 7}})
+
+    def test_a_store_with_no_published_copies_has_no_published_map(self):
+        workflow_run(self.store, RUN_A, "26.09.2-edge")
+        self.assertNotIn("published", ls.extract(self.store, CHAIN))
 
     def test_an_unread_record_kind_is_reported(self):
         """

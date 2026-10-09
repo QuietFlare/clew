@@ -40,6 +40,44 @@ path and metadata instead, so they change when a file is copied and cannot
 identify a published copy of an artifact.
 """
 
+TRUSTED_FROM = (26, 9, 0)
+"""
+The first Nextflow whose store computed a checksum in the mode it labelled.
+Before 26.09.0-edge the value was a standard-mode hash whatever
+NXF_CACHE_MODE said (nextflow-io/nextflow#7579, fixed in #7582), so a
+'deep' or 'sha256' label from an older run is not evidence of a content
+hash, and the store does not repair itself on upgrade.
+"""
+
+RECORD_THE_NEXT_RUN = ("record the next run on Nextflow 26.09.0-edge or later with "
+                       "NXF_CACHE_MODE=DEEP in the environment before it starts; "
+                       "the config file cannot set it")
+
+
+def version_tuple(text):
+    """(26, 9, 2) from '26.09.2-edge'; None when the text is not a version."""
+    head = (text or "").split("-", 1)[0]
+    parts = head.split(".")
+    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+        return None
+    return tuple(int(p) for p in parts)
+
+
+def run_versions(store):
+    """{run hash: Nextflow version that wrote it}, from every WorkflowRun record."""
+    found = {}
+    for name, record in iter_store_entries(store):
+        if record.get("kind") == "WorkflowRun":
+            metadata = (record.get("spec") or {}).get("metadata") or {}
+            found[name] = (metadata.get("nextflow") or {}).get("version", "")
+    return found
+
+
+def labels_truthful(version):
+    """Whether a content-mode label from this Nextflow version was computed in that mode."""
+    parsed = version_tuple(version)
+    return parsed is not None and parsed >= TRUSTED_FROM
+
 
 def abbreviate(full_hash):
     """Full 32-char store hash -> the 'XX/YYYYYY' form work/ folders use."""
@@ -178,20 +216,22 @@ def superseded_tasks(selected, run_order):
     return stale
 
 
-def digest_of(checksum):
+def digest_of(checksum, truthful=True):
     """
     The store's checksum as a Clew digest, or None when it hashes path and
-    time rather than content. 'sha256:<hex>' when the mode is sha256, else
-    'nextflow-deep:<hex>', which compares only with the same mode.
+    time rather than content, or when `truthful` says the label cannot be
+    believed. 'nextflow-deep:<hex>' or 'nextflow-sha256:<hex>': both are
+    Nextflow's own 128-bit hash over the content, never a SHA-256 of the
+    file, so each compares only with the same mode from the same engine.
     """
     checksum = checksum or {}
     mode, value = checksum.get("mode", ""), checksum.get("value", "")
-    if not value or mode not in CONTENT_MODES:
+    if not value or mode not in CONTENT_MODES or not truthful:
         return None
-    return f"{'sha256' if mode == 'sha256' else 'nextflow-deep'}:{value}"
+    return f"nextflow-{mode}:{value}"
 
 
-def task_edges(task_hash, spec):
+def task_edges(task_hash, spec, truthful=True):
     """
     Turn one TaskRun's input list into edges, in the same backwards
     direction the symlink extractor records (consumer <- producer).
@@ -227,11 +267,39 @@ def task_edges(task_hash, spec):
                     "filename": Path(path).name,
                     "target": f"{path}#{checksum}" if checksum else path,
                 }
-                digest = digest_of(value.get("checksum"))
+                digest = digest_of(value.get("checksum"), truthful)
                 if digest:
                     edge["digest"] = digest
                 edges.append(edge)
     return edges
+
+
+def published_outputs(store, run_hashes, versions):
+    """
+    {path under the output folder: {size, digest}} from the FileOutput
+    records nested under each run's entry: one per file publishDir copied,
+    with the copy's own checksum. Keyed as `clew digest --results` keys
+    them, so a graph from the store alone can prove a work copy redundant.
+    """
+    published = {}
+    for run_hash in run_hashes:
+        run_dir = Path(store) / run_hash
+        if not run_dir.is_dir():
+            continue
+        truthful = labels_truthful(versions.get(run_hash, ""))
+        for data_json in sorted(run_dir.rglob(".data.json")):
+            if data_json.parent == run_dir:
+                continue  # the WorkflowRun record itself
+            record = read_record(data_json)
+            if not record or record.get("kind") != "FileOutput":
+                continue
+            spec = record["spec"]
+            entry = {"size": spec.get("size")}
+            digest = digest_of(spec.get("checksum"), truthful)
+            if digest:
+                entry["digest"] = digest
+            published[str(data_json.parent.relative_to(run_dir))] = entry
+    return published
 
 
 def task_outputs(store, task_hash):
@@ -263,7 +331,7 @@ def plural(count, noun):
     return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
-def coverage_notes(stale, kinds, modes, dangling):
+def coverage_notes(stale, kinds, modes, dangling, mislabelled=()):
     """
     What this graph could not see, in the reader's own words.
 
@@ -286,8 +354,16 @@ def coverage_notes(stale, kinds, modes, dangling):
             f"Checksums use Nextflow {', '.join(repr(m) for m in weak)} "
             "mode, which hashes path and metadata rather than content, so "
             "no output carries a content digest. Run clew digest on this "
-            "graph before reclaim, drift or stitch, or record the next run "
-            "with cache 'deep'.")
+            f"graph before reclaim, drift or stitch, or {RECORD_THE_NEXT_RUN}.")
+    for version, mode in sorted(mislabelled):
+        wrote = (f"Nextflow {version}" if version
+                 else "a Nextflow whose run record names no version")
+        notes.append(
+            f"Checksums are labelled {mode!r} but {wrote} wrote them, and "
+            "before 26.09.0-edge the value was computed in standard mode "
+            "whatever the label (nextflow-io/nextflow#7579), so no output "
+            "carries a content digest. Run clew digest on this graph, or "
+            f"{RECORD_THE_NEXT_RUN}.")
     unknown = sorted(k for k in kinds if k and k not in KNOWN_KINDS)
     if unknown:
         notes.append(
@@ -323,11 +399,18 @@ def extract(store, session_id):
     check_version(versions)
     run_order = [r["run_hash"] for r in chain_of(load_history(store), session_id)]
     stale = superseded_tasks(selected, run_order)
+    # A content-mode label is believed only from the Nextflow that fixed
+    # the labelling, per run, since one chain can span an upgrade.
+    nextflow_of = run_versions(store)
+    mislabelled = set()
 
     tasks, edges, outputs, output_details = {}, [], {}, {}
     for full_hash, spec in selected:
         abbrev = abbreviate(full_hash)
         task_files, workdir = task_outputs(store, full_hash)
+        run_hash = (spec.get("workflowRun") or "").removeprefix(LID_PREFIX)
+        wrote = nextflow_of.get(run_hash, "")
+        truthful = labels_truthful(wrote)
 
         name = spec.get("name", "")
         # The store has no separate process field; the name is the process
@@ -353,25 +436,32 @@ def extract(store, session_id):
             task["superseded"] = True
         tasks[abbrev] = task
 
-        edges.extend(task_edges(full_hash, spec))
+        edges.extend(task_edges(full_hash, spec, truthful))
         outputs[abbrev] = sorted(task_files)
         output_details[abbrev] = []
         for rel in sorted(task_files):
             detail = {"file": rel, "size": task_files[rel].get("size")}
-            digest = digest_of(task_files[rel].get("checksum"))
+            digest = digest_of(task_files[rel].get("checksum"), truthful)
             if digest:
                 detail["digest"] = digest
             output_details[abbrev].append(detail)
         for spec_out in task_files.values():
-            modes.add((spec_out.get("checksum") or {}).get("mode", ""))
+            mode = (spec_out.get("checksum") or {}).get("mode", "")
+            modes.add(mode)
+            if mode in CONTENT_MODES and not truthful:
+                mislabelled.add((wrote, mode))
 
     known = set(tasks)
     dangling = sum(1 for e in edges
                    if e["producer"] not in known and e["producer"] != "EXTERNAL")
 
-    return {"tasks": tasks, "edges": edges, "outputs": outputs,
-            "output_details": output_details,
-            "coverage": coverage_notes(stale, kinds, modes, dangling)}
+    graph = {"tasks": tasks, "edges": edges, "outputs": outputs,
+             "output_details": output_details,
+             "coverage": coverage_notes(stale, kinds, modes, dangling, mislabelled)}
+    published = published_outputs(store, run_order, nextflow_of)
+    if published:
+        graph["published"] = published
+    return graph
 
 
 class NextflowStore(Extractor):

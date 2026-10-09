@@ -6,6 +6,29 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The Nextflow lineage extractor reads the copies `publishDir` made, with
+  their checksums, into the graph's published files. On a store recorded
+  with `NXF_CACHE_MODE=DEEP`, `clew reclaim` proves a work directory
+  redundant from the record alone, with no `clew digest` pass.
+
+### Fixed
+
+- A content-mode checksum label in a Nextflow lineage store is believed
+  only when the run record names Nextflow 26.09.0-edge or later. Earlier
+  versions wrote a standard-mode value under whatever label
+  `NXF_CACHE_MODE` gave (nextflow-io/nextflow#7579), and the extractor
+  took the label at its word. The coverage note names the version that
+  wrote the store and what to do.
+- The store's `sha256` mode is Nextflow's own 128-bit hash over the
+  content, not a SHA-256 of the file. Its digests are now labelled
+  `nextflow-sha256:` beside `nextflow-deep:`, so they never read as
+  comparable with a `clew digest` value.
+- The sources doc said `process.cache = 'deep'` makes the store record
+  content checksums. It does not; the environment variable does, on the
+  fixed versions.
+
 ## [0.6.1] - 2026-10-07
 
 ### Added
