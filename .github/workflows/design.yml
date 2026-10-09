@@ -1,0 +1,27 @@
+# Review every pull request against the agreed design in docs/: the
+# diagram, rules.md and map.yml. The lint and the module mapping need no
+# secret. The review itself needs the Claude GitHub App on this repo and
+# an ANTHROPIC_API_KEY secret; until then it is skipped with a warning.
+#
+# Canary pin: the spec-contract branch of ci-workflows. Move to @v1 once
+# it is released.
+
+name: design
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  design:
+    uses: QuietFlare/ci-workflows/.github/workflows/design-review.yml@spec-contract
+    with:
+      spec-dir: docs
+      tools-ref: spec-contract
+    secrets:
+      anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
