@@ -28,12 +28,12 @@ RUN apt-get update \
  && useradd --create-home --shell /bin/bash vscode \
  && echo "vscode ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/vscode
 
-# Nextflow, with its dependencies fetched now, not on first use.
-RUN curl -s https://get.nextflow.io | bash \
- && mv nextflow /usr/local/bin/nextflow \
+# The Nextflow launcher. Its libraries are fetched further down, as the
+# user who will run it, into NXF_HOME.
+RUN curl -fsSL -o /usr/local/bin/nextflow \
+      "https://github.com/nextflow-io/nextflow/releases/download/v${NXF_VER}/nextflow" \
  && chmod 755 /usr/local/bin/nextflow \
- && nextflow -version \
- && chown -R vscode:vscode /opt/nextflow
+ && mkdir -p /opt/nextflow && chown vscode:vscode /opt/nextflow
 
 # The two recorded nf-core/demo runs. setup.sh links them into the checkout.
 ADD https://github.com/QuietFlare/clew/releases/download/v0.6.1/clew-demo-runs.tgz /tmp/demo-runs.tgz
@@ -45,3 +45,6 @@ RUN mkdir -p /opt/clew && tar -xzf /tmp/demo-runs.tgz -C /opt/clew && rm /tmp/de
 RUN pip install --no-cache-dir "mainsheet>=0.1"
 
 USER vscode
+# Nextflow fetches its framework and plugins on first use. Do that now, as
+# the user who will run it, and fail the build if it did not land in NXF_HOME.
+RUN nextflow info && ls /opt/nextflow/framework/${NXF_VER}/*.jar
