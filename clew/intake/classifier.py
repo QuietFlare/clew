@@ -46,10 +46,13 @@ class Refused(ValueError):
 
 def jev(request, key, endpoint=ENDPOINT, timeout=30, attempts=3):
     """The service's reply to one request, as parsed JSON."""
+    # Named, because an edge in front of a proxy may turn away Python's
+    # default user agent as a bot before the request reaches anything.
     call = urllib.request.Request(
         endpoint, data=json.dumps(request).encode("utf-8"),
         headers={"Authorization": f"Bearer {key}",
-                 "Content-Type": "application/json"})
+                 "Content-Type": "application/json",
+                 "User-Agent": "clew-lineage"})
     failure = None
     for attempt in range(attempts):
         if attempt:

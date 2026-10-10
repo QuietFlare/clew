@@ -317,6 +317,18 @@ class TestEndpoint(unittest.TestCase):
         with mock.patch.dict(os.environ, {classifier.ENDPOINT_VARIABLE: "https://proxy.example/typesafe/v1/systemone"}):
             self.assertEqual(classifier.endpoint(), "https://proxy.example/typesafe/v1/systemone")
 
+    def test_the_request_names_its_client(self):
+        # Cloudflare in front of a proxy turns away Python's default user agent.
+        from unittest import mock
+        seen = {}
+
+        def opened(call, timeout):
+            seen.update(call.headers)
+            return io.BytesIO(b'{"model": "m", "answers": {}}')
+        with mock.patch.object(classifier.urllib.request, "urlopen", opened):
+            classifier.jev({"q": 1}, "k", "https://proxy.example/x")
+        self.assertEqual(seen.get("User-agent"), "clew-lineage")
+
 
 class TestAnswersFromElsewhere(unittest.TestCase):
     CRITERIA = {"toolkit": "", "none": ""}

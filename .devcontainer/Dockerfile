@@ -23,6 +23,7 @@ ENV NXF_HOME=/opt/nextflow
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       git sudo curl ca-certificates procps libstdc++6 openjdk-21-jre-headless \
+      bubblewrap socat \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --create-home --shell /bin/bash vscode \
  && echo "vscode ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/vscode
