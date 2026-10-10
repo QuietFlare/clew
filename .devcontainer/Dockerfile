@@ -4,7 +4,8 @@
 # the demo runs on every first open.
 #
 # Docker CE comes from the docker-in-docker feature, applied on top of this
-# file by the build (see image/devcontainer.json). Java is installed here
+# file by the build (see .github/devcontainer-image/devcontainer.json,
+# kept out of this folder so Codespaces does not offer it as a configuration). Java is installed here
 # because Nextflow needs it to finish its own install.
 
 FROM mcr.microsoft.com/devcontainers/python:3.12

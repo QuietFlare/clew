@@ -3,7 +3,7 @@
 # prebuilds; this is the same thing done by hand.
 #
 # The build applies .devcontainer/Dockerfile plus the docker-in-docker
-# feature, as .devcontainer/image/devcontainer.json says, and pushes the
+# feature, as .github/devcontainer-image/devcontainer.json says, and pushes the
 # result to ghcr.io/quietflare/clew-devcontainer:latest, which
 # .devcontainer/devcontainer.json pulls. The package must be public once,
 # in its settings on github.com, for Codespaces to pull it without a token.
@@ -15,6 +15,7 @@ on:
     branches: [main]
     paths:
       - .devcontainer/**
+      - .github/devcontainer-image/**
       - .github/workflows/devcontainer-image.yml
   workflow_dispatch:
 
@@ -40,7 +41,7 @@ jobs:
 
       - uses: devcontainers/ci@v0.3
         with:
-          configFile: .devcontainer/image/devcontainer.json
+          configFile: .github/devcontainer-image/devcontainer.json
           imageName: ghcr.io/quietflare/clew-devcontainer
           imageTag: latest
           platform: linux/amd64
