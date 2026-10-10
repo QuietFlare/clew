@@ -107,8 +107,9 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
             <button class="plain" id="pick" title="Pick a .zip or .tgz of the .lineage folder, or of the folder the workflow was launched from">Browse</button>
             <button class="plain" id="open">Open</button>
             <button class="plain" id="up" title="Parent folder">Up</button>
-            <input type="file" id="record-files" accept=".zip,.tgz,.tar,.tar.gz,application/zip,application/gzip,application/x-tar" hidden>
+            <input type="file" id="record-files" accept=".zip,.tgz,.tar,.gz" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
           </div>
+          <p id="busy" hidden style="margin:.4rem 0 0;font-weight:600"></p>
           <div id="folders"></div>
         </div>
         <div>
@@ -337,14 +338,14 @@ function adapter_fields() {
 // start a second unpack of the same archive.
 function hold(message) {
   const buttons = ["pick", "open", "up"].map($);
-  if (message) $("found").textContent = message;
+  if (message) { $("busy").textContent = message; $("busy").hidden = false; }
   buttons.forEach((b) => { b.disabled = true; });
-  return () => buttons.forEach((b) => { b.disabled = false; });
+  return () => { buttons.forEach((b) => { b.disabled = false; }); $("busy").hidden = true; };
 }
 
 async function open(path) {
   const archive = /\.(zip|tgz|tar|tar\.gz)$/i.test(path || "");
-  const release = hold(archive ? "Unpacking " + path.split("/").pop() + ". A store of ten thousand records takes a moment." : null);
+  const release = hold(archive ? "Unpacking " + path.split("/").pop() + "\u2026 this takes a moment" : null);
   try {
     here = await api("/api/browse", {path});
   } catch (bad) { $("found").textContent = bad.message; release(); return; }
@@ -626,7 +627,7 @@ const ARCHIVE = /\.(zip|tgz|tar|tar\.gz)$/i;
 async function sendArchive(blob, name) {
   const form = new FormData();
   form.append("archive", blob, name);
-  const release = hold("Uploading and unpacking " + name + ", " + Math.round(blob.size / 1048576) + " MB. This takes a moment.");
+  const release = hold("Uploading and unpacking " + name + ", " + Math.round(blob.size / 1048576) + " MB\u2026 this takes a moment");
   try {
     const reply = await fetch("/api/upload", {method: "POST", body: form, headers: {"X-Clew-Token": token}});
     const data = await reply.json().catch(() => ({error: "the server sent no answer"}));
@@ -639,10 +640,12 @@ async function sendArchive(blob, name) {
 
 $("record-files").addEventListener("change", async () => {
   const file = $("record-files").files[0];
-  $("record-files").value = "";
   if (!file) return;
-  if (!ARCHIVE.test(file.name)) { $("found").textContent = "Pick a .zip or .tgz of the .lineage folder."; return; }
-  await sendArchive(file, file.name);
+  if (ARCHIVE.test(file.name)) await sendArchive(file, file.name);
+  else $("found").textContent = "Pick a .zip or .tgz of the .lineage folder.";
+  // Cleared only now: Safari makes the picked file unreadable the moment the
+  // input is cleared, so clearing it first would fail the upload.
+  $("record-files").value = "";
 });
 
 // The same archive, dropped on the run card instead of chosen.

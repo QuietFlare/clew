@@ -483,7 +483,9 @@ class App:
         notes = []
         try:
             graph = found.load()
-            notes = [note for note in graph.get("coverage", []) if "hecksum" in note]
+            if any("hecksum" in note for note in graph.get("coverage", [])):
+                notes = ["Recorded without content checksums. Impact and triage work; drift and "
+                         "reclaim need clew digest first, or a run recorded with NXF_CACHE_MODE=DEEP."]
         except (SystemExit, OSError, ValueError, KeyError):
             pass
         return {"path": str(root), "files": written, "engine": found.kind,
