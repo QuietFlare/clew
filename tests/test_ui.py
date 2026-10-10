@@ -49,12 +49,13 @@ def leaves(outcome="ask", plan=True, review=None):
 
 class Served(unittest.TestCase):
     launch = staticmethod(leaves())
+    hosts = ()
 
     def setUp(self):
         if not hasattr(self, "tmp"):
             self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.server, self.link = ui.serve(self.tmp.name, port=0, token="t0ken")
+        self.server, self.link = ui.serve(self.tmp.name, port=0, token="t0ken", hosts=self.hosts)
         self.server.app.launch = self.launch
         self.port = self.server.server_address[1]
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -105,6 +106,41 @@ class TestWhoMayCall(Served):
 
     def test_the_link_carries_the_token(self):
         self.assertTrue(self.link.endswith("/?t=t0ken"))
+
+    def test_a_forwarded_host_is_refused_unless_asked_for(self):
+        self.assertEqual(self.call("/api/state", host="me-8770.app.github.dev")[0], 403)
+
+
+class TestForwarded(Served):
+    """
+    A Codespace reaches the server through one forwarded name. Only that
+    name is added, the token still guards every request, and nothing else
+    about who may call changes.
+    """
+    hosts = ("me-8770.app.github.dev",)
+
+    def test_the_forwarded_host_is_answered_with_or_without_its_port(self):
+        self.assertEqual(self.call("/api/state", host="me-8770.app.github.dev")[0], 200)
+        self.assertEqual(self.call("/api/state", host="me-8770.app.github.dev:443")[0], 200)
+
+    def test_the_forwarded_host_still_needs_the_token(self):
+        self.assertEqual(self.call("/api/state", host="me-8770.app.github.dev", token="")[0], 403)
+
+    def test_another_host_is_still_refused(self):
+        self.assertEqual(self.call("/api/state", host="evil.example:80")[0], 403)
+        self.assertEqual(self.call("/api/state", host="me-8771.app.github.dev")[0], 403)
+
+    def test_the_host_is_read_from_what_a_codespace_sets(self):
+        env = {"CODESPACE_NAME": "me", "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN": "app.github.dev"}
+        self.assertEqual(ui.forwarded_host(8770, env), "me-8770.app.github.dev")
+        self.assertIsNone(ui.forwarded_host(8770, {}))
+
+    def test_the_flag_refuses_to_run_outside_a_codespace(self):
+        import os
+        from unittest import mock
+        with mock.patch.dict(os.environ, {}, clear=True), self.assertRaises(SystemExit) as refused:
+            ui.main(["--forwarded", "--no-browser", "--port", "8770", "--home", self.tmp.name])
+        self.assertIn("CODESPACE_NAME", str(refused.exception))
 
 
 class TestFolders(Served):

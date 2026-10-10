@@ -31,3 +31,6 @@ hackathon/
 
 # release notes fetched by the evals
 evals/.cache/
+
+# the recorded runs the Codespace fetches, see docs/try.md
+examples/demo-run/

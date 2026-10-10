@@ -319,6 +319,7 @@ gives the same brief to a person's own coding agent.
 [policy](docs/policy.md), [evidence](docs/evidence.md), [gate](docs/gate.md),
 [auditor surfaces](docs/auditors.md), [architecture](docs/architecture.md),
 [sources](docs/sources.md) for what each engine records and what that limits.
+[Try it](docs/try.md) on two recorded runs, in a Codespace or on your own machine.
 
 ## Status
 

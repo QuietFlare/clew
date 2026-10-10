@@ -1,0 +1,20 @@
+{
+  "name": "Clew",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": { "version": "21" },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "containerEnv": {
+    "NXF_VER": "26.09.2-edge",
+    "NXF_CACHE_MODE": "DEEP"
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "forwardPorts": [8770],
+  "portsAttributes": {
+    "8770": { "label": "Clew UI", "onAutoForward": "notify" }
+  },
+  "customizations": {
+    "vscode": { "extensions": ["ms-python.python"] }
+  }
+}

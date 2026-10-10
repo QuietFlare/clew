@@ -675,9 +675,14 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def local(self):
-        """Only a request addressed to this machine by name: a rebound hostname is refused."""
+        """
+        Only a request addressed to this machine by name, or through the one
+        forwarded host the server was started for: a rebound hostname is refused.
+        """
         port = self.server.server_address[1]
-        return self.headers.get("Host") in (f"127.0.0.1:{port}", f"localhost:{port}")
+        host = self.headers.get("Host") or ""
+        return (host in (f"127.0.0.1:{port}", f"localhost:{port}")
+                or host.removesuffix(":443") in self.server.hosts)
 
     def do_GET(self):
         if not self.local():
@@ -714,10 +719,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send(400, {"error": "the request is not JSON"})
 
 
-def serve(home, port=0, token=None):
-    """A server bound to this machine. Returns it unstarted, with its link."""
+def forwarded_host(port, env=os.environ):
+    """The host a Codespace forwards this port through, from the variables GitHub sets, or None."""
+    name, domain = env.get("CODESPACE_NAME"), env.get("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN")
+    return f"{name}-{port}.{domain}" if name and domain else None
+
+
+def serve(home, port=0, token=None, hosts=()):
+    """
+    A server bound to this machine. Returns it unstarted, with its link.
+    `hosts` are the forwarded names it also answers to, none by default.
+    """
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.app = App(home, token)
+    server.hosts = frozenset(hosts)
     return server, f"http://127.0.0.1:{server.server_address[1]}/?t={server.app.token}"
 
 
@@ -728,12 +743,26 @@ def main(argv=None):
     parser.add_argument("--home", default="~/.clew/ui",
                         help="where runs and the agent's records are kept (default ~/.clew/ui)")
     parser.add_argument("--no-browser", action="store_true", help="print the link and do not open it")
+    parser.add_argument("--forwarded", action="store_true",
+                        help="also answer through the host a GitHub Codespace forwards the port to; "
+                             "the token still guards every request")
     args = parser.parse_args(argv)
 
+    hosts = []
+    if args.forwarded:
+        if not args.port:
+            raise SystemExit("--forwarded needs a fixed --port: the forwarded host carries it")
+        host = forwarded_host(args.port)
+        if not host:
+            raise SystemExit("--forwarded needs CODESPACE_NAME and "
+                             "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN, which a Codespace sets")
+        hosts.append(host)
     try:
-        server, link = serve(args.home, args.port)
+        server, link = serve(args.home, args.port, hosts=hosts)
     except OSError as bad:
         raise SystemExit(f"cannot listen on port {args.port}: {bad.strerror or bad}")
+    if hosts:
+        link = f"https://{hosts[0]}/?t={server.app.token}"
     print(f"Clew UI: {link}\nruns are kept in {server.app.home}\n"
           f"approved providers are kept in {server.app.providers}\nCtrl-C stops it", flush=True)
     if not args.no_browser:
