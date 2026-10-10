@@ -43,9 +43,8 @@ pip install clew-lineage
 clew demo
 ```
 
-`clew demo` answers three questions over an nf-core/sarek run of 81 tasks
-that ships with the package. To go further, fetch the same two runs the
-Codespace has, as [docs/try.md](docs/try.md) shows at the top.
+`clew demo` runs three questions over a sample run that ships with the
+package. [docs/try.md](docs/try.md) takes it from there.
 
 ## The flow
 
