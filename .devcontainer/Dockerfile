@@ -43,6 +43,11 @@ RUN mkdir -p /opt/clew && tar -xzf /tmp/demo-runs.tgz -C /opt/clew && rm /tmp/de
 # the checkout at open time has nothing left to download.
 RUN pip install --no-cache-dir "mainsheet>=0.1"
 
+# pip as the vscode user then installs into the system location, so `clew`
+# lands in /usr/local/bin, on every shell's PATH. A login shell resets PATH
+# from /etc/profile, which would lose a ~/.local/bin install.
+RUN chown -R vscode:vscode /usr/local/lib/python3.12/site-packages /usr/local/bin
+
 USER vscode
 WORKDIR /home/vscode
 # Prove it runs as the user who will run it, with nothing left to download.
