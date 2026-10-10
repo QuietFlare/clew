@@ -77,6 +77,9 @@ class Extractor(Provider):
         if args.json_out:
             Path(args.json_out).write_text(json.dumps(graph, indent=2))
             print(f"\nwrote {args.json_out}")
+            print(f"Next: clew impact --graph {args.json_out} --trigger container:<tool> --json plan.json")
+        else:
+            print("\nAdd --json-out graph.json to keep the graph; every question reads it.")
         return 0
 
     @classmethod

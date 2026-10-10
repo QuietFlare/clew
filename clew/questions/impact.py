@@ -607,6 +607,7 @@ def write_outputs(json_out, html_out, adapter, graph, subject, entry_nodes,
     Render the plan in whichever formats were asked for, building it once.
     """
     if not json_out and not html_out:
+        print("\nAdd --json plan.json to keep this plan; the next step seals it as evidence.")
         return
     built = plan_to_dict(adapter, graph, subject, entry_nodes, plan,
                          results_index, active_policy, notes)
@@ -625,6 +626,7 @@ def write_json(json_out, built):
     else:
         Path(json_out).write_text(payload)
         print(f"\nwrote {json_out}")
+        print(f"Next: clew evidence seal --plan {json_out} --out bundle/")
 
 
 def print_caveats(have_assertions, active_policy=None, undetermined=0, asserted=0):

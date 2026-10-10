@@ -25,17 +25,20 @@ A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 ## Try it in five minutes
 
 **In a Codespace.** Clew, Nextflow and two recorded nf-core/demo runs
-install while it opens; wait until the terminal prints "Clew is
-installed", about two minutes. Then type:
+are in place when the terminal prints "Clew is installed". Say the seqtk
+container turned out to have a defect, and ask what it reached:
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/QuietFlare/clew)
 
 ```bash
-clew extract nextflow --store examples/demo-run/.lineage --list-runs
+clew impact --runs examples/demo-run/.lineage --run trimmed --trigger container:seqtk \
+    --work-root examples/demo-run/work --results examples/demo-run/results-trimmed
 ```
 
-Then follow [docs/try.md](docs/try.md): impact, drift and reclaim on those
-two runs, and the page.
+Three tasks get a verdict, five are untouched, and the policy version
+that decided is printed at the top. [docs/try.md](docs/try.md) carries on
+from there: drift between the two runs, reclaim, sealing the answer as
+evidence, and the page.
 
 **On your own machine.** Python 3.9 or later, no dependencies:
 

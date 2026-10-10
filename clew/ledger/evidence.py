@@ -263,6 +263,7 @@ def cmd_build(args):
         print(f"\nsealed into the log as seq {entry['seq']}")
         print("A later truncation past this point now contradicts a bundle")
         print("that has already left the building.")
+    print(f"\nNext: clew evidence verify {args.out}")
     return 0
 
 
@@ -349,6 +350,7 @@ def cmd_verify(args):
     print("All checks passed. This proves the computation, not the premises:")
     print("Clew says nothing about whether the facts fed in were true or the")
     print("policy was the right one. Those belong to whoever can defend them.")
+    print(f"\nNext: clew dashboard --bundles {Path(args.bundle).parent} --out clew.html")
     return 0
 
 

@@ -503,6 +503,8 @@ class NextflowStore(Extractor):
         if args.list_runs:
             for r in runs:
                 print(f"{r['timestamp']}  {r['name']:<22} {r['run_hash']}")
+            if runs:
+                print(f"\nNext: clew extract nextflow --store {args.store} --run {runs[-1]['name']} --json-out graph.json")
             return None
         self.run_record = pick_run(runs, args.run)
         self.chain = chain_of(runs, self.run_record["session_id"])
