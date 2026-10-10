@@ -1,7 +1,7 @@
 # Rules
 
 The non-negotiables a diagram cannot show. Each is a decision in
-[adr/](adr/) or a boundary in [architecture.md](architecture.md); this
+[docs/adr/](../docs/adr/) or a boundary in [docs/architecture.md](../docs/architecture.md); this
 page is the short form the design reviewer holds every pull request to.
 A change to one is a new ADR that supersedes the old, then the code.
 

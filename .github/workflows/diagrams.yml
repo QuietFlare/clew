@@ -1,4 +1,4 @@
-# Keep docs/clew.png in step with docs/clew.excalidraw.
+# Keep docs/clew.png and spec/clew.png in step with their .excalidraw sources.
 #
 # Rendering and the commit back to the branch live in the shared workflow;
 # only the trigger is here. A pull request from a fork cannot be pushed to,
@@ -8,12 +8,18 @@ name: diagrams
 
 on:
   pull_request:
-    paths: ["docs/*.excalidraw"]
+    paths: ["docs/*.excalidraw", "spec/*.excalidraw"]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  render:
+  render-docs:
     uses: QuietFlare/ci-workflows/.github/workflows/excalidraw-render.yml@v1
+
+  render-spec:
+    needs: render-docs
+    uses: QuietFlare/ci-workflows/.github/workflows/excalidraw-render.yml@v1
+    with:
+      sources: 'spec/*.excalidraw'
