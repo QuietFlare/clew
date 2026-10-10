@@ -104,10 +104,9 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
           <label for="path">Launch folder</label>
           <div class="row">
             <input type="text" class="path" id="path" spellcheck="false" placeholder="where the workflow was started">
-            <button class="plain" id="pick">Browse</button>
+            <button class="plain" id="pick" title="Pick the .lineage folder, or the folder the workflow was launched from">Browse</button>
             <button class="plain" id="open">Open</button>
             <button class="plain" id="up" title="Parent folder">Up</button>
-            <button class="plain" id="add-record" title="Upload a launch folder or a .lineage folder from your machine">Add a record</button>
             <input type="file" id="record-files" webkitdirectory multiple hidden>
           </div>
           <div id="folders"></div>
@@ -381,8 +380,8 @@ function progress(list, spent, job) {
 }
 
 function listed(state) {
-  // No folder dialog on this machine, a Codespace for one: the list is the way to pick.
-  $("pick").hidden = $("b-pick").hidden = $("b-pick-record").hidden = !state.dialog;
+  // The builder's pickers point at files on this machine through its dialog; none here, none shown.
+  $("b-pick").hidden = $("b-pick-record").hidden = !state.dialog;
   engines = state.engines;
   $("engine").replaceChildren($("engine").firstElementChild, ...engines.map((e) => {
     const o = el("option", e.folder ? e.name : e.name + " (by id only)");
@@ -601,21 +600,15 @@ $("open").addEventListener("click", () => open($("path").value));
 $("ask").addEventListener("click", () => settle("ask"));
 $("dismiss").addEventListener("click", () => settle("dismiss"));
 $("near").addEventListener("click", () => here && here.nearby && open(here.nearby.path));
-$("pick").addEventListener("click", async () => {
-  $("pick").disabled = true;
-  try {
-    const chosen = await api("/api/pick", {path: here ? here.path : ""});
-    if (chosen.path) open(chosen.path);
-    else if (!chosen.available) $("found").textContent = "No folder dialog here. Type the path, or click through the list.";
-  } catch (bad) { $("found").textContent = bad.message; }
-  $("pick").disabled = false;
-});
+// Browse picks a folder on the person's machine through the browser's own chooser and
+// uploads the record, the same on a laptop and in a Codespace. What is already on this
+// machine is reached through the list and the path box, with no copy.
+$("pick").addEventListener("click", () => $("record-files").click());
 $("path").addEventListener("keydown", (event) => { if (event.key === "Enter") open($("path").value); });
 
 // A folder from the person's own machine, through the browser's folder chooser. Only the
 // record travels: the .lineage tree when there is one, otherwise everything but the bulk.
 const BULK = /^(work|results[^/]*|logs|\.nextflow|\.snakemake|cromwell-executions|__pycache__)$/;
-$("add-record").addEventListener("click", () => $("record-files").click());
 $("record-files").addEventListener("change", async () => {
   const all = [...$("record-files").files];
   const segments = (f) => f.webkitRelativePath.split("/");
@@ -632,14 +625,14 @@ $("record-files").addEventListener("change", async () => {
   const form = new FormData();
   keep.forEach((f) => form.append("file", f, f.webkitRelativePath));
   $("found").textContent = "Uploading " + keep.length + " files, " + mb + " MB";
-  $("add-record").disabled = true;
+  $("pick").disabled = true;
   try {
     const reply = await fetch("/api/upload", {method: "POST", body: form, headers: {"X-Clew-Token": token}});
     const data = await reply.json().catch(() => ({error: "the server sent no answer"}));
     if (!reply.ok) throw new Error(data.error || ("error " + reply.status));
     await open(data.path);
   } catch (bad) { $("found").textContent = bad.message; }
-  $("add-record").disabled = false;
+  $("pick").disabled = false;
   $("record-files").value = "";
 });
 $("up").addEventListener("click", () => here && here.parent && open(here.parent));
