@@ -104,9 +104,18 @@ as "the seqtk container has a defect", and press Run. Triage, the plan
 and the seal appear as their files appear.
 
 Triage with a typed classifier needs `TYPESAFE_API_KEY`, and the agent
-that runs the steps needs `ANTHROPIC_API_KEY`. In a Codespace, set them as
-Codespace secrets before opening it. Without them, triage matches by name
-and the agent tabs say what is missing. Every command above needs neither.
+that runs the steps needs `ANTHROPIC_API_KEY`. Every command above needs
+neither.
+
+In a Codespace, both work without keys for a few runs: the calls go
+through a proxy QuietFlare runs, which tells the two services apart by
+your Codespace's own GitHub token and stops at a small allowance per
+GitHub login. The page's badges say "via proxy" when that is the case.
+Your incident text passes through that proxy on its way to the model;
+it keeps who, when, and the token counts, never the text. To use your
+own keys instead, set them as Codespace secrets before opening it, and
+the proxy is never touched. If the allowance runs out, ask Seema for
+more or set your own key.
 
 ## Bring your own run
 

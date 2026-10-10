@@ -492,7 +492,7 @@ def main(argv=None):
             if not key:
                 raise SystemExit(f"--backend jev needs {classifier.KEY_VARIABLE}")
             backend = "jev"
-            answer = classifier.checked(classifier.jev(asked, key),
+            answer = classifier.checked(classifier.jev(asked, key, classifier.endpoint()),
                                         criteria, settings["model"])
         else:
             backend = "name"

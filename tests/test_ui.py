@@ -107,6 +107,19 @@ class TestWhoMayCall(Served):
     def test_the_link_carries_the_token(self):
         self.assertTrue(self.link.endswith("/?t=t0ken"))
 
+    def test_state_says_when_the_agent_and_triage_go_through_a_gateway(self):
+        import os
+        from unittest import mock
+        gateway = {"ANTHROPIC_BASE_URL": "https://proxy.example", "ANTHROPIC_AUTH_TOKEN": "t",
+                   "TYPESAFE_API_KEY": "t", "CLEW_JEV_ENDPOINT": "https://proxy.example/typesafe/v1/systemone"}
+        with mock.patch.dict(os.environ, gateway):
+            state = self.call("/api/state")[1]
+        self.assertEqual((state["api_key"], state["proxy"], state["jev_proxy"]), (True, "proxy.example", True))
+        with mock.patch.dict(os.environ, {"ANTHROPIC_BASE_URL": "https://proxy.example"}, clear=True):
+            state = self.call("/api/state")[1]
+        # A base URL alone is not a credential, so the agent is not through a gateway.
+        self.assertEqual((state["api_key"], state["proxy"], state["jev_proxy"]), (False, None, False))
+
     def test_a_forwarded_host_is_refused_unless_asked_for(self):
         self.assertEqual(self.call("/api/state", host="me-8770.app.github.dev")[0], 403)
 

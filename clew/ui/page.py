@@ -675,8 +675,8 @@ for (const tab of document.querySelectorAll("nav button")) tab.addEventListener(
   try {
     const state = await api("/api/state");
     $("badges").append(
-      el("span", state.classifier === "jev" ? "Triage: Jev" : "Triage: name matching, no Jev key", "badge" + (state.classifier === "jev" ? " ok" : "")),
-      el("span", !state.mainsheet ? "Agent: Mainsheet not installed" : state.api_key ? "Agent: ready" : "Agent: stored login, no API key",
+      el("span", state.classifier === "jev" ? "Triage: Jev" + (state.jev_proxy ? " via proxy" : "") : "Triage: name matching, no Jev key", "badge" + (state.classifier === "jev" ? " ok" : "")),
+      el("span", !state.mainsheet ? "Agent: Mainsheet not installed" : state.proxy ? "Agent: via " + state.proxy : state.api_key ? "Agent: ready" : "Agent: stored login, no API key",
          "badge" + (!state.mainsheet ? " bad" : state.api_key ? " ok" : "")));
     listed(state);
     $("b-who").textContent = "An agent on " + state.builder.model + " writes it in a sandbox. A few minutes.";

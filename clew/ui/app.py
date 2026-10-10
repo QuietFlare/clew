@@ -41,6 +41,7 @@ import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath
+from urllib.parse import urlparse
 
 from clew.agent import tools
 from clew.builder import adapter as builder
@@ -507,7 +508,9 @@ class App:
     def state(self):
         return {"mainsheet": importlib.util.find_spec("mainsheet") is not None,
                 "classifier": "jev" if os.environ.get("TYPESAFE_API_KEY") else "name",
-                "api_key": bool(os.environ.get("ANTHROPIC_API_KEY")),
+                "api_key": bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")),
+                # Through a gateway: the host the agent's calls go to, and whether Jev's do.
+                "proxy": gateway_host(), "jev_proxy": bool(os.environ.get("CLEW_JEV_ENDPOINT")),
                 # An engine can be picked by folder only when its extractor lists runs.
                 "engines": [{"name": name, "folder": type(e).records is not Extractor.records}
                             for name, e in sorted(discover(Extractor).items())],
@@ -787,7 +790,8 @@ def run_agent(job, home, roots, definition=DEFINITION):
         job.state = "failed"
         job.error = next((line for line in reversed(job.log) if "failed" in line or "rror" in line),
                          f"the agent exited with status {status}")
-        if "authenticate" in job.error and not os.environ.get("ANTHROPIC_API_KEY"):
+        if "authenticate" in job.error and not (os.environ.get("ANTHROPIC_API_KEY")
+                                               or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
             job.error += ". Set ANTHROPIC_API_KEY in the terminal that starts clew ui."
 
 
@@ -888,6 +892,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send(200, app.add_record(files))
         except Refused as bad:
             self.send(bad.status, {"error": str(bad)})
+
+
+def gateway_host(env=os.environ):
+    """The host ANTHROPIC_BASE_URL names when the agent is sent through a gateway, else None."""
+    base = env.get("ANTHROPIC_BASE_URL") or ""
+    return urlparse(base).hostname if base and env.get("ANTHROPIC_AUTH_TOKEN") else None
 
 
 def forwarded_host(port, env=os.environ):

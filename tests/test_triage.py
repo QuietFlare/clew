@@ -306,6 +306,18 @@ class TestByName(unittest.TestCase):
         self.assertEqual(self.decided("toolkits in general"), triage.HELD)
 
 
+class TestEndpoint(unittest.TestCase):
+    """The request goes to the service unless the environment names a proxy."""
+
+    def test_the_service_by_default_and_a_proxy_when_named(self):
+        import os
+        from unittest import mock
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(classifier.endpoint(), classifier.ENDPOINT)
+        with mock.patch.dict(os.environ, {classifier.ENDPOINT_VARIABLE: "https://proxy.example/typesafe/v1/systemone"}):
+            self.assertEqual(classifier.endpoint(), "https://proxy.example/typesafe/v1/systemone")
+
+
 class TestAnswersFromElsewhere(unittest.TestCase):
     CRITERIA = {"toolkit": "", "none": ""}
 

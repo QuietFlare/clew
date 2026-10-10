@@ -65,7 +65,8 @@ def sort(incident, graph, offered, backend, key):
         answer = classifier.by_name(incident, words)
     else:
         criteria = asked["questions"][classifier.QUESTION]["criteria"]
-        answer = classifier.checked(classifier.jev(asked, key), criteria, triage.DEFAULT["model"])
+        answer = classifier.checked(classifier.jev(asked, key, classifier.endpoint()),
+                                    criteria, triage.DEFAULT["model"])
     return triage.triage(incident, offered, triage.DEFAULT, answer, backend,
                          named=triage.named_in_run(incident, graph))
 

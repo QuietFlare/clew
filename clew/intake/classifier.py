@@ -12,6 +12,7 @@ in triage, so swapping the classifier changes no rule.
 """
 
 import json
+import os
 import re
 import time
 import urllib.error
@@ -19,6 +20,12 @@ import urllib.request
 
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 KEY_VARIABLE = "TYPESAFE_API_KEY"
+ENDPOINT_VARIABLE = "CLEW_JEV_ENDPOINT"
+
+
+def endpoint():
+    """Where the request goes: the service, or a proxy the environment names."""
+    return os.environ.get(ENDPOINT_VARIABLE) or ENDPOINT
 
 # The one question a triage request carries, and the option that means
 # the incident concerns nothing in this graph.
