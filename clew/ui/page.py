@@ -215,7 +215,42 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
     </section>
   </div>
 </main>
-<main id="tab-reclaim" hidden><section class="card"><h2>Reclaim</h2><p>Not built yet. The command works: <code>clew reclaim</code>.</p></section></main>
+<main id="tab-reclaim" hidden>
+  <div>
+    <section class="card" id="r-card" hidden>
+      <h2>Reclaim</h2>
+      <p class="note" style="margin-top:0">Which of the run's work directories can go, each with its proof. Nothing is deleted here; the plan says what the command would remove with <span class="mono">--apply</span>.</p>
+      <label for="r-work">Work folder on this machine</label>
+      <input type="text" class="path" id="r-work" spellcheck="false" placeholder="the run's work directory">
+      <label for="r-results">Results folder (proves a published copy)</label>
+      <input type="text" class="path" id="r-results" spellcheck="false" placeholder="the published results tree">
+      <div class="check">
+        <input type="checkbox" id="r-intermediates">
+        <label for="r-intermediates" style="margin:0">Also assess directories whose outputs are only consumed downstream</label>
+      </div>
+      <p class="note" id="r-note"></p>
+      <p style="margin:1rem 0 0"><button class="go" id="r-go" disabled>Plan</button></p>
+      <p class="error" id="r-error" hidden></p>
+    </section>
+  </div>
+  <div>
+    <section class="card" id="r-result-card" hidden>
+      <h2>What can go</h2>
+      <dl class="kv" id="r-summary"></dl>
+    </section>
+    <section class="card" id="r-groups-card" hidden><h2>Each verdict, by process</h2><div id="r-groups"></div></section>
+    <section class="card" id="r-withheld-card" hidden><h2>What withheld the rest</h2><table id="r-withheld"></table></section>
+    <section class="card" id="r-limits-card" hidden><details><summary>Limits of this answer</summary><ul id="r-limits" style="margin:.5rem 0 0;padding-left:1.2rem;font-size:.88rem"></ul></details></section>
+    <section class="card" id="r-explain-card" hidden>
+      <h2>In words</h2>
+      <p class="note" style="margin-top:0">A model reads the plan above and says what it reports. It sees the plan, never the data, and it gives no opinion on whether anything should be deleted. The verdicts are the record's; this is a reading of them.</p>
+      <p style="margin:.6rem 0 0"><button class="plain" id="r-explain">Explain in words</button></p>
+      <p id="r-reading" hidden style="margin:.8rem 0 0"></p>
+      <p class="note" id="r-reader" hidden></p>
+      <p class="error" id="r-explain-error" hidden></p>
+    </section>
+  </div>
+</main>
 
 <main id="tab-providers" hidden>
   <div>
@@ -354,6 +389,7 @@ function ready_to_run() {
   $("run-change").disabled = !chosen;
   $("go").disabled = !(ready && chosen && $("incident").value.trim()) || polling !== null;
   drift_choices(chosen);
+  reclaim_ready(chosen);
   const extractor = $("b-what").value === "extractor";
   $("b-about").textContent = ABOUT[$("b-what").value];
   $("b-for-adapter").hidden = $("b-adapter-brief").hidden = extractor;
@@ -408,27 +444,89 @@ function show_drift(d) {
   $("d-limits-card").hidden = limits.length === 0;
   $("d-limits").replaceChildren(...limits.map((line) => el("li", line)));
   $("d-result-card").hidden = false;
-  shown_plan = d.plan;
-  $("d-explain-card").hidden = false;
-  $("d-reading").hidden = $("d-reader").hidden = true;
-  $("d-explain").disabled = !can_explain;
-  fail(can_explain ? "" : "No model credential in this environment, so no reading can be given.", "d-explain-error");
+  offer_reading("d", d.plan);
 }
 
-let shown_plan = null, can_explain = false;
+// The reading button under a plan: one per tab, the same behaviour.
+let can_explain = false;
+const shown_plan = {};
 
-$("d-explain").addEventListener("click", async () => {
-  fail("", "d-explain-error");
-  $("d-explain").disabled = true;
-  $("d-explain").textContent = "Reading…";
+function offer_reading(prefix, plan) {
+  shown_plan[prefix] = plan;
+  $(prefix + "-explain-card").hidden = false;
+  $(prefix + "-reading").hidden = $(prefix + "-reader").hidden = true;
+  $(prefix + "-explain").disabled = !can_explain;
+  fail(can_explain ? "" : "No model credential in this environment, so no reading can be given.", prefix + "-explain-error");
+}
+
+for (const prefix of ["d", "r"]) {
+  $(prefix + "-explain").addEventListener("click", async () => {
+    const button = $(prefix + "-explain");
+    fail("", prefix + "-explain-error");
+    button.disabled = true; button.textContent = "Reading…";
+    try {
+      const reading = await api("/api/explain", {plan: shown_plan[prefix]});
+      $(prefix + "-reading").textContent = reading.text; $(prefix + "-reading").hidden = false;
+      $(prefix + "-reader").textContent = "Read by " + reading.model + ". The table above is what was computed.";
+      $(prefix + "-reader").hidden = false;
+    } catch (bad) { fail(bad.message, prefix + "-explain-error"); }
+    button.textContent = "Explain in words"; button.disabled = false;
+  });
+}
+
+// ------------------------------------------------------------------ reclaim
+
+function human(n) {
+  for (const unit of ["B", "KB", "MB", "GB", "TB"]) {
+    if (n < 1024 || unit === "TB") return (unit === "B" ? Math.round(n) : n.toFixed(1)) + " " + unit;
+    n /= 1024;
+  }
+}
+
+function reclaim_ready(chosen) {
+  $("r-card").hidden = !chosen;
+  if (!chosen) return;
+  if (here.work_root && !$("r-work").value) $("r-work").value = here.work_root;
+  const work = $("r-work").value.trim();
+  $("r-go").disabled = !work;
+  $("r-note").textContent = work ? "" :
+    "Reclaim measures directories, so the run's work folder must be on this machine. A record uploaded on its own has none.";
+}
+
+function show_reclaim(r) {
+  pairs($("r-summary"), [["Run", r.run], ["Can go", human(r.reclaimable_bytes) + " in " + r.reclaimable_dirs + " of " + r.tasks_total + " directories"],
+    ["Kept", human(r.bytes.KEEP || 0) + " in " + (r.verdicts.KEEP || 0)], ["Already gone", r.verdicts.GONE || 0],
+    ["Work folder", r.work_root], ["Checked against", r.results || "no results folder, so nothing can be redundant"],
+    ["Intermediates", r.intermediates ? "assessed" : "not assessed"]]);
+  $("r-result-card").hidden = false;
+  $("r-groups-card").hidden = r.groups.length === 0;
+  $("r-groups").replaceChildren(...r.groups.map((g) => {
+    const block = el("div"); block.style.marginBottom = ".7rem";
+    const title = el("div"); title.append(el("strong", g.verdict + " "), el("span", g.meaning, "note"));
+    block.append(title, el("div", g.processes.map((p) => p.count + " " + p.process + " (" + human(p.bytes) + ")").join(", ")));
+    return block;
+  }));
+  $("r-withheld-card").hidden = r.withheld.length === 0;
+  const head = el("tr"); head.append(el("th", "Why kept"), el("th", "Directories"), el("th", "Processes"));
+  $("r-withheld").replaceChildren(head, ...r.withheld.map((w) => {
+    const row = el("tr"); row.append(el("td", w.cause), el("td", w.count), el("td", w.processes)); return row;
+  }));
+  const limits = (r.warnings || []).concat(r.caveats);
+  $("r-limits-card").hidden = limits.length === 0;
+  $("r-limits").replaceChildren(...limits.map((line) => el("li", line)));
+  offer_reading("r", r.plan);
+}
+
+$("r-go").addEventListener("click", async () => {
+  fail("", "r-error");
+  $("r-go").disabled = true;
   try {
-    const reading = await api("/api/explain", {plan: shown_plan});
-    $("d-reading").textContent = reading.text; $("d-reading").hidden = false;
-    $("d-reader").textContent = "Read by " + reading.model + ". The table above is what was computed."; $("d-reader").hidden = false;
-  } catch (bad) { fail(bad.message, "d-explain-error"); }
-  $("d-explain").textContent = "Explain in words";
-  $("d-explain").disabled = false;
+    show_reclaim(await api("/api/reclaim", {path: here.path, run: $("run").value, work_root: $("r-work").value,
+      results: $("r-results").value, intermediates: $("r-intermediates").checked}));
+  } catch (bad) { fail(bad.message, "r-error"); }
+  $("r-go").disabled = false;
 });
+$("r-work").addEventListener("input", () => reclaim_ready(picked()));
 
 $("d-go").addEventListener("click", async () => {
   fail("", "d-error");

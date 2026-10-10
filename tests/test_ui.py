@@ -148,14 +148,17 @@ class TestWhoMayCall(Served):
         self.assertEqual(serve.call_args.kwargs, {"hosts": ["clew.example:8770"], "bind": "0.0.0.0"})
 
 
-def two_run_store(root):
+def two_run_store(root, on_disk=False):
     """
     A Nextflow lineage store with three runs: `first` and `second` are
     separate sessions of one workflow whose ALIGN output differs; `resumed`
     is a resume of `first` and so shares its graph. Checksums are deep-mode
     from a Nextflow that computes them as labelled, so they are believed.
+    With `on_disk`, the first run's work directory and a published copy of
+    its output exist under `root`, with the copy recorded in the store.
     """
-    store = Path(root) / ".lineage"
+    root = Path(root)
+    store = root / ".lineage"
     (store / ".history").mkdir(parents=True)
     runs = {"first": ("a" * 32, "s-one", "2026-08-01 10:00:00 CEST"),
             "second": ("b" * 32, "s-two", "2026-08-02 10:00:00 CEST"),
@@ -167,6 +170,7 @@ def two_run_store(root):
             "version": "lineage/v1beta1", "kind": "WorkflowRun",
             "spec": {"sessionId": session, "name": name,
                      "metadata": {"nextflow": {"version": "26.09.2-edge"}}}}))
+    work = root / "work" if on_disk else Path("/work")
     for task_hash, run_hash, session, digest in (("1" * 32, "a" * 32, "s-one", "d1"),
                                                   ("2" * 32, "b" * 32, "s-two", "d2")):
         (store / task_hash / "out.bam").mkdir(parents=True)
@@ -174,12 +178,58 @@ def two_run_store(root):
             "version": "lineage/v1beta1", "kind": "TaskRun",
             "spec": {"sessionId": session, "workflowRun": f"lid://{run_hash}", "name": "PIPE:ALIGN",
                      "container": "img:1", "script": "align", "input": []}}))
+        task_dir = work / task_hash[:2] / task_hash[2:]
         (store / task_hash / "out.bam" / ".data.json").write_text(json.dumps({
             "version": "lineage/v1beta1", "kind": "FileOutput",
-            "spec": {"path": f"/work/{task_hash[:2]}/{task_hash[2:]}/out.bam", "size": 3,
+            "spec": {"path": f"{task_dir}/out.bam", "size": 3,
                      "checksum": {"value": digest, "algorithm": "nextflow", "mode": "deep"},
                      "workflowRun": f"lid://{run_hash}", "taskRun": f"lid://{task_hash}"}}))
-    return str(Path(root))
+        if on_disk and session == "s-one":
+            task_dir.mkdir(parents=True)
+            (task_dir / "out.bam").write_bytes(b"abc")
+            (root / "results" / "out").mkdir(parents=True)
+            (root / "results" / "out" / "out.bam").write_bytes(b"abc")
+            (store / run_hash / "out" / "out.bam").mkdir(parents=True)
+            (store / run_hash / "out" / "out.bam" / ".data.json").write_text(json.dumps({
+                "version": "lineage/v1beta1", "kind": "FileOutput",
+                "spec": {"path": f"{root}/results/out/out.bam", "size": 3,
+                         "checksum": {"value": digest, "algorithm": "nextflow", "mode": "deep"},
+                         "source": f"lid://{task_hash}/out.bam", "workflowRun": f"lid://{run_hash}"}}))
+    return str(root)
+
+
+class TestReclaim(Served):
+    """The run's work directories weighed on the page, from the record and the disk here."""
+
+    def setUp(self):
+        super().setUp()
+        self.record = two_run_store(Path(self.tmp.name) / "runs", on_disk=True)
+
+    def plan(self, **over):
+        body = dict({"path": self.record, "run": "first", "work_root": f"{self.record}/work",
+                     "results": f"{self.record}/results"}, **over)
+        return self.call("/api/reclaim", body)
+
+    def test_a_published_copy_in_the_record_proves_a_directory_redundant(self):
+        status, found = self.plan()
+        self.assertEqual(status, 200)
+        self.assertEqual(found["verdicts"], {"REDUNDANT": 1})
+        self.assertEqual((found["reclaimable_dirs"], found["reclaimable_bytes"], found["tasks_total"]), (1, 3, 1))
+        self.assertEqual(found["groups"][0]["processes"], [{"process": "ALIGN", "count": 1, "bytes": 3}])
+        self.assertEqual(found["withheld"], [])
+        self.assertIn("plan", found)
+
+    def test_without_the_results_folder_nothing_can_be_redundant(self):
+        status, found = self.plan(results="")
+        self.assertEqual(found["verdicts"], {"KEEP": 1})
+        self.assertEqual(found["withheld"][0]["count"], 1)
+        self.assertTrue(any("REDUNDANT" in line for line in found["caveats"]))
+
+    def test_the_work_folder_must_be_here(self):
+        self.assertEqual(self.plan(work_root="")[0], 400)
+        status, found = self.plan(work_root="/no/such/folder")
+        self.assertEqual(status, 400)
+        self.assertIn("not a folder", found["error"])
 
 
 class TestDrift(Served):

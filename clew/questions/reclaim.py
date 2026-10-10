@@ -393,6 +393,7 @@ def plan_to_dict(items, graph, work_root, results, intermediates, ignore=BOOKKEE
         "tasks_total": len(items),
         "verdicts": dict(sorted(counts.items())),
         "bytes": dict(sorted(size.items())),
+        "meanings": dict(EXPLAIN),
         "plan": items,
         "caveats": caveats(graph, results, intermediates, items, work_root),
     }

@@ -393,6 +393,47 @@ def text_of(path):
 DRIFTED = "DRIFTED"
 # The order the command prints verdicts in: findings first, the reassuring last.
 DRIFT_ORDER = ("UNSETTLED", "DOWNSTREAM", "UNVERIFIED", "REPRODUCED", "ADDED", "REMOVED")
+RECLAIM_ORDER = ("REDUNDANT", "SUPERSEDED", "FAILED", "INTERMEDIATE", "KEEP", "GONE")
+PROPOSED = ("REDUNDANT", "SUPERSEDED", "FAILED", "INTERMEDIATE")
+KEEP = "KEEP"
+
+
+def reclaim_answer(plan):
+    """
+    A reclaim plan, as `clew reclaim --json` wrote it, the way the page shows
+    it: what can go and what it weighs, each verdict by process with its
+    bytes, the causes that withheld the rest, and what the answer rests on.
+    """
+    items = plan["plan"]
+    tally = {}
+    for item in items:
+        by_process = tally.setdefault(item["verdict"], {})
+        cell = by_process.setdefault(item["process"].split(":")[-1], [0, 0])
+        cell[0] += 1
+        cell[1] += item.get("bytes", 0)
+    meanings = plan.get("meanings") or {}
+    groups = [{"verdict": verdict, "meaning": meanings.get(verdict, ""),
+               "processes": [{"process": p, "count": n, "bytes": b} for p, (n, b) in
+                             sorted(tally[verdict].items(), key=lambda kv: (-kv[1][1], kv[0]))]}
+              for verdict in RECLAIM_ORDER if verdict in tally]
+    kept = [i for i in items if i["verdict"] == KEEP]
+    causes = {}
+    for item in kept:
+        cause = item.get("cause") or item["reason"]
+        causes.setdefault(cause, {})
+        name = item["process"].split(":")[-1]
+        causes[cause][name] = causes[cause].get(name, 0) + 1
+    withheld = [{"cause": cause, "count": sum(by.values()),
+                 "processes": ", ".join(f"{n} {p}" for p, n in
+                                        sorted(by.items(), key=lambda kv: (-kv[1], kv[0])))}
+                for cause, by in sorted(causes.items(), key=lambda kv: -sum(kv[1].values()))]
+    size, verdicts = plan.get("bytes", {}), plan["verdicts"]
+    return {"run": plan.get("run"), "work_root": plan["work_root"], "results": plan.get("results"),
+            "intermediates": plan.get("intermediates", False), "tasks_total": plan["tasks_total"],
+            "verdicts": verdicts, "bytes": size,
+            "reclaimable_bytes": sum(size.get(v, 0) for v in PROPOSED),
+            "reclaimable_dirs": sum(verdicts.get(v, 0) for v in PROPOSED),
+            "groups": groups, "withheld": withheld, "caveats": plan["caveats"]}
 
 
 def drift_answer(plan):
@@ -607,6 +648,39 @@ class App:
                 lines = err.strip().splitlines()
                 raise Refused(lines[-1] if lines else f"clew drift exited {code}")
             return self.keep("drift", drift_answer(json.loads(out.read_text())))
+
+    def reclaim(self, body):
+        """
+        Which work directories of the run can go, with the proof. Needs the
+        run's work tree on this machine, and the results tree to prove a
+        published copy; the command answers and nothing is deleted.
+        """
+        found, run = self.chosen(body)
+        folders = {}
+        for key in ("work_root", "results"):
+            value = (body.get(key) or "").strip()
+            if value and not value.startswith("s3://") and not Path(value).expanduser().is_dir():
+                raise Refused(f"{value} is not a folder on this machine")
+            folders[key] = value if value.startswith("s3://") else str(Path(value).expanduser()) if value else ""
+        if not folders["work_root"]:
+            raise Refused("name the run's work folder: reclaim measures directories, so they must be here")
+        flags = ["--work-root", folders["work_root"]]
+        if folders["results"]:
+            flags += ["--results", folders["results"]]
+        if body.get("intermediates"):
+            flags.append("--intermediates")
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "reclaim.json"
+            code, _, err = tools.run_clew("reclaim", "--runs", found.path, "--run", run,
+                                          *flags, "--json", out)
+            if code != 0:
+                lines = err.strip().splitlines()
+                raise Refused(lines[-1] if lines else f"clew reclaim exited {code}")
+            answer = reclaim_answer(json.loads(out.read_text()))
+            # The command's warnings are about placing directories; they belong beside the limits.
+            answer["warnings"] = [line.removeprefix("clew: ") for line in err.strip().splitlines()
+                                  if line.startswith("clew: ")]
+            return self.keep("reclaim", answer)
 
     def keep(self, kind, answer):
         """The answer with a `plan` id the explain button can send back."""
@@ -932,7 +1006,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
                   "/api/build": app.build, "/api/install": app.install,
                   "/api/judge": app.judge, "/api/drift": app.drift,
-                  "/api/explain": app.explain}
+                  "/api/reclaim": app.reclaim, "/api/explain": app.explain}
         route = routes.get(self.path)
         if not route:
             return self.send(404, {"error": "not found"})
