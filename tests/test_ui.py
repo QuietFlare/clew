@@ -148,7 +148,7 @@ class TestWhoMayCall(Served):
         self.assertEqual(serve.call_args.kwargs, {"hosts": ["clew.example:8770"], "bind": "0.0.0.0"})
 
 
-def two_run_store(root, on_disk=False):
+def two_run_store(root, on_disk=False, mode="deep"):
     """
     A Nextflow lineage store with three runs: `first` and `second` are
     separate sessions of one workflow whose ALIGN output differs; `resumed`
@@ -182,7 +182,7 @@ def two_run_store(root, on_disk=False):
         (store / task_hash / "out.bam" / ".data.json").write_text(json.dumps({
             "version": "lineage/v1beta1", "kind": "FileOutput",
             "spec": {"path": f"{task_dir}/out.bam", "size": 3,
-                     "checksum": {"value": digest, "algorithm": "nextflow", "mode": "deep"},
+                     "checksum": {"value": digest, "algorithm": "nextflow", "mode": mode},
                      "workflowRun": f"lid://{run_hash}", "taskRun": f"lid://{task_hash}"}}))
         if on_disk and session == "s-one":
             task_dir.mkdir(parents=True)
@@ -193,9 +193,40 @@ def two_run_store(root, on_disk=False):
             (store / run_hash / "out" / "out.bam" / ".data.json").write_text(json.dumps({
                 "version": "lineage/v1beta1", "kind": "FileOutput",
                 "spec": {"path": f"{root}/results/out/out.bam", "size": 3,
-                         "checksum": {"value": digest, "algorithm": "nextflow", "mode": "deep"},
+                         "checksum": {"value": digest, "algorithm": "nextflow", "mode": mode},
                          "source": f"lid://{task_hash}/out.bam", "workflowRun": f"lid://{run_hash}"}}))
     return str(root)
+
+
+class TestDigest(Served):
+    """
+    A record the engine wrote without content checksums proves nothing
+    until the files are read: the Digest button reads them once and keeps
+    the digests beside the record, and the plan then has what it needs.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.record = two_run_store(Path(self.tmp.name) / "runs", on_disk=True, mode="standard")
+
+    def body(self, **over):
+        return dict({"path": self.record, "run": "first", "work_root": f"{self.record}/work",
+                     "results": f"{self.record}/results"}, **over)
+
+    def test_kept_until_digested_then_redundant(self):
+        status, before = self.call("/api/reclaim", self.body())
+        self.assertEqual(before["verdicts"], {"KEEP": 1})
+        self.assertIn("no content digest", before["withheld"][0]["cause"])
+        status, done = self.call("/api/digest", self.body())
+        self.assertEqual(status, 200)
+        self.assertTrue(any("hashed" in line for line in done["lines"]))
+        self.assertTrue((Path(self.record) / ".lineage" / ".clew").is_dir(), "the sidecar lives beside the record")
+        status, after = self.call("/api/reclaim", self.body())
+        self.assertEqual(after["verdicts"], {"REDUNDANT": 1})
+
+    def test_the_work_folder_is_required_and_must_exist(self):
+        self.assertEqual(self.call("/api/digest", self.body(work_root=""))[0], 400)
+        self.assertEqual(self.call("/api/digest", self.body(work_root="/no/such"))[0], 400)
 
 
 class TestReclaim(Served):

@@ -656,14 +656,7 @@ class App:
         published copy; the command answers and nothing is deleted.
         """
         found, run = self.chosen(body)
-        folders = {}
-        for key in ("work_root", "results"):
-            value = (body.get(key) or "").strip()
-            if value and not value.startswith("s3://") and not Path(value).expanduser().is_dir():
-                raise Refused(f"{value} is not a folder on this machine")
-            folders[key] = value if value.startswith("s3://") else str(Path(value).expanduser()) if value else ""
-        if not folders["work_root"]:
-            raise Refused("name the run's work folder: reclaim measures directories, so they must be here")
+        folders = self.folders(body)
         flags = ["--work-root", folders["work_root"]]
         if folders["results"]:
             flags += ["--results", folders["results"]]
@@ -681,6 +674,35 @@ class App:
             answer["warnings"] = [line.removeprefix("clew: ") for line in err.strip().splitlines()
                                   if line.startswith("clew: ")]
             return self.keep("reclaim", answer)
+
+    def folders(self, body):
+        """The work and results folders a request names, checked to exist here; work is required."""
+        folders = {}
+        for key in ("work_root", "results"):
+            value = (body.get(key) or "").strip()
+            if value and not value.startswith("s3://") and not Path(value).expanduser().is_dir():
+                raise Refused(f"{value} is not a folder on this machine")
+            folders[key] = value if value.startswith("s3://") else str(Path(value).expanduser()) if value else ""
+        if not folders["work_root"]:
+            raise Refused("name the run's work folder: the files to read are there")
+        return folders
+
+    def digest(self, body):
+        """
+        Content digests for the run's files, read once and kept in a sidecar
+        beside the record, for a record the engine wrote without them. The
+        command does the reading; the record itself is not touched.
+        """
+        found, run = self.chosen(body)
+        folders = self.folders(body)
+        flags = ["--work-root", folders["work_root"]]
+        if folders["results"]:
+            flags += ["--results", folders["results"]]
+        code, out, err = tools.run_clew("digest", "--runs", found.path, "--run", run, *flags)
+        if code != 0:
+            lines = err.strip().splitlines()
+            raise Refused(lines[-1] if lines else f"clew digest exited {code}")
+        return {"lines": [line for line in out.strip().splitlines() if line.strip()]}
 
     def keep(self, kind, answer):
         """The answer with a `plan` id the explain button can send back."""
@@ -1006,7 +1028,8 @@ class Handler(BaseHTTPRequestHandler):
                   "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
                   "/api/build": app.build, "/api/install": app.install,
                   "/api/judge": app.judge, "/api/drift": app.drift,
-                  "/api/reclaim": app.reclaim, "/api/explain": app.explain}
+                  "/api/reclaim": app.reclaim, "/api/digest": app.digest,
+                  "/api/explain": app.explain}
         route = routes.get(self.path)
         if not route:
             return self.send(404, {"error": "not found"})

@@ -229,7 +229,10 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
         <label for="r-intermediates" style="margin:0">Also assess directories whose outputs are only consumed downstream</label>
       </div>
       <p class="note" id="r-note"></p>
-      <p style="margin:1rem 0 0"><button class="go" id="r-go" disabled>Plan</button></p>
+      <p class="row" style="margin:1rem 0 0"><button class="go" id="r-go" disabled>Plan</button>
+        <button class="plain" id="r-digest" disabled title="Read every file under the two folders once and keep its content digest beside the record">Digest first</button></p>
+      <p class="note" id="r-digest-note" style="margin-top:.4rem">A record the engine wrote without content checksums proves nothing. Digest reads the files under the two folders once, keeps their digests beside the record, and Plan then has what it needs. Drift needs the same for both of its runs.</p>
+      <p class="note mono" id="r-digested" hidden></p>
       <p class="error" id="r-error" hidden></p>
     </section>
   </div>
@@ -488,7 +491,7 @@ function reclaim_ready(chosen) {
   if (!chosen) return;
   if (here.work_root && !$("r-work").value) $("r-work").value = here.work_root;
   const work = $("r-work").value.trim();
-  $("r-go").disabled = !work;
+  $("r-go").disabled = $("r-digest").disabled = !work;
   $("r-note").textContent = work ? "" :
     "Reclaim measures directories, so the run's work folder must be on this machine. A record uploaded on its own has none.";
 }
@@ -527,6 +530,18 @@ $("r-go").addEventListener("click", async () => {
   $("r-go").disabled = false;
 });
 $("r-work").addEventListener("input", () => reclaim_ready(picked()));
+$("r-digest").addEventListener("click", async () => {
+  fail("", "r-error");
+  $("r-digest").disabled = $("r-go").disabled = true;
+  $("r-digest").textContent = "Reading files…";
+  try {
+    const done = await api("/api/digest", {path: here.path, run: $("run").value, work_root: $("r-work").value,
+      results: $("r-results").value});
+    $("r-digested").textContent = done.lines.join(" · "); $("r-digested").hidden = false;
+  } catch (bad) { fail(bad.message, "r-error"); }
+  $("r-digest").textContent = "Digest first";
+  $("r-digest").disabled = $("r-go").disabled = false;
+});
 
 $("d-go").addEventListener("click", async () => {
   fail("", "d-error");
