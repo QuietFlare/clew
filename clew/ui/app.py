@@ -735,10 +735,11 @@ class Handler(BaseHTTPRequestHandler):
         Only a request addressed to this machine by name, or through the one
         forwarded host the server was started for: a rebound hostname is refused.
         """
-        port = self.server.server_address[1]
         host = self.headers.get("Host") or ""
-        return (host in (f"127.0.0.1:{port}", f"localhost:{port}")
-                or host.removesuffix(":443") in self.server.hosts)
+        # The port is not checked for the loopback names: a container publishes
+        # the server's port under whatever port the person chose.
+        name = host.rsplit(":", 1)[0]
+        return name in ("127.0.0.1", "localhost") or host.removesuffix(":443") in self.server.hosts
 
     def do_GET(self):
         if not self.local():
@@ -811,15 +812,18 @@ def forwarded_host(port, env=os.environ):
     return f"{name}-{port}.{domain}" if name and domain else None
 
 
-def serve(home, port=0, token=None, hosts=()):
+def serve(home, port=0, token=None, hosts=(), bind="127.0.0.1"):
     """
     A server bound to this machine. Returns it unstarted, with its link.
     `hosts` are the forwarded names it also answers to, none by default.
+    `bind` is the address to listen on: the loopback, or every interface
+    inside a container, where the loopback is not reachable from outside.
     """
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer((bind, port), Handler)
     server.app = App(home, token)
     server.hosts = frozenset(hosts)
-    return server, f"http://127.0.0.1:{server.server_address[1]}/?t={server.app.token}"
+    shown = "localhost" if bind == "0.0.0.0" else bind
+    return server, f"http://{shown}:{server.server_address[1]}/?t={server.app.token}"
 
 
 def main(argv=None):
@@ -832,13 +836,19 @@ def main(argv=None):
     parser.add_argument("--forwarded", action="store_true",
                         help="also answer through the host a GitHub Codespace forwards the port to; "
                              "the token still guards every request")
+    parser.add_argument("--bind", default="127.0.0.1",
+                        help="address to listen on; 0.0.0.0 inside a container, where the loopback "
+                             "cannot be reached from outside (default 127.0.0.1)")
+    parser.add_argument("--host", action="append", default=[], metavar="NAME[:PORT]",
+                        help="a further host name to answer to, when the page is reached through one; "
+                             "may repeat; the token still guards every request")
     args = parser.parse_args(argv)
 
     if forwarded_host(args.port) and not args.forwarded:
         # A Codespace: the only browser is on the other side of the port
         # forward, and nothing here can open it.
         args.forwarded, args.no_browser = True, True
-    hosts = []
+    hosts = list(args.host)
     if args.forwarded:
         if not args.port:
             raise SystemExit("--forwarded needs a fixed --port: the forwarded host carries it")
@@ -848,11 +858,11 @@ def main(argv=None):
                              "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN, which a Codespace sets")
         hosts.append(host)
     try:
-        server, link = serve(args.home, args.port, hosts=hosts)
+        server, link = serve(args.home, args.port, hosts=hosts, bind=args.bind)
     except OSError as bad:
         raise SystemExit(f"cannot listen on port {args.port}: {bad.strerror or bad}")
-    if hosts:
-        link = f"https://{hosts[0]}/?t={server.app.token}"
+    if args.forwarded:
+        link = f"https://{hosts[-1]}/?t={server.app.token}"
     print(f"Clew UI: {link}\nruns are kept in {server.app.home}\n"
           f"approved providers are kept in {server.app.providers}\nCtrl-C stops it", flush=True)
     if not args.no_browser:

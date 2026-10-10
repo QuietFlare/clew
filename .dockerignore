@@ -1,0 +1,16 @@
+.git
+.venv
+.claude
+.devcontainer
+.github
+.pytest_cache
+.coverage
+build
+dist
+*.egg-info
+__pycache__
+hackathon
+examples
+graph_ls.json
+jev_answers.json
+triage_answers.json

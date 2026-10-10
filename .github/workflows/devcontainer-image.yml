@@ -1,0 +1,44 @@
+# Build the Codespace image on Ubuntu and publish it, so a new Codespace
+# opens in the time of one image pull. The organisation's plan has no
+# prebuilds; this is the same thing done by hand.
+#
+# The build applies .devcontainer/Dockerfile plus the docker-in-docker
+# feature, as .devcontainer/build/devcontainer.json says, and pushes the
+# result to ghcr.io/quietflare/clew-devcontainer:latest, which
+# .devcontainer/devcontainer.json pulls. The package must be public once,
+# in its settings on github.com, for Codespaces to pull it without a token.
+
+name: devcontainer image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .devcontainer/**
+      - .github/workflows/devcontainer-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: devcontainers/ci@v0.3
+        with:
+          configFile: .devcontainer/build/devcontainer.json
+          imageName: ghcr.io/quietflare/clew-devcontainer
+          imageTag: latest
+          platform: linux/amd64
+          push: always
+          runCmd: nextflow -version && ls /opt/clew/demo-run

@@ -40,6 +40,16 @@ that decided is printed at the top. [docs/try.md](docs/try.md) carries on
 from there: drift between the two runs, reclaim, sealing the answer as
 evidence, and the page.
 
+**In Docker.** The page, the commands and the same two runs, in one image:
+
+```bash
+docker run -p 8770:8770 ghcr.io/quietflare/clew
+```
+
+Open the link it prints. Browse on the page uploads a run from your
+machine, or mount a launch folder with `-v /path/to/launch:/runs/mine`.
+From a checkout, `docker build -t clew .` gives the same image.
+
 **On your own machine.** Python 3.9 or later, no dependencies:
 
 ```bash

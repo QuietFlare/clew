@@ -110,6 +110,29 @@ class TestWhoMayCall(Served):
     def test_a_forwarded_host_is_refused_unless_asked_for(self):
         self.assertEqual(self.call("/api/state", host="me-8770.app.github.dev")[0], 403)
 
+    def test_the_loopback_names_are_answered_on_any_port(self):
+        # A container publishes the server's port under whatever port the person chose.
+        self.assertEqual(self.call("/api/state", host="localhost:9000")[0], 200)
+        self.assertEqual(self.call("/api/state", host="127.0.0.1:9000")[0], 200)
+        self.assertEqual(self.call("/api/state", host="localhost.evil.example:9000")[0], 403)
+
+    def test_bound_to_every_interface_the_link_says_localhost(self):
+        server, link = ui.serve(self.tmp.name, port=0, token="t0ken", bind="0.0.0.0")
+        self.addCleanup(server.server_close)
+        self.assertEqual(server.server_address[0], "0.0.0.0")
+        self.assertTrue(link.startswith("http://localhost:"), link)
+
+    def test_a_further_host_is_added_by_flag(self):
+        from unittest import mock
+        fake = mock.Mock()
+        fake.app.token, fake.app.home, fake.app.providers = "tok", "/h", "/p"
+        fake.serve_forever.side_effect = KeyboardInterrupt
+        with mock.patch.dict(ui.os.environ, {}, clear=True), \
+                mock.patch.object(ui, "serve", return_value=(fake, "http://localhost:8770/?t=tok")) as serve, \
+                mock.patch.object(ui.webbrowser, "open"):
+            ui.main(["--no-browser", "--bind", "0.0.0.0", "--host", "clew.example:8770", "--home", self.tmp.name])
+        self.assertEqual(serve.call_args.kwargs, {"hosts": ["clew.example:8770"], "bind": "0.0.0.0"})
+
 
 class TestForwarded(Served):
     """
