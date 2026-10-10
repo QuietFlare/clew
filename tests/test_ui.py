@@ -161,17 +161,22 @@ class TestForwarded(Served):
         self.assertIn("CODESPACE_NAME", str(refused.exception))
 
 
-def multipart(files, boundary="clew-test"):
+def multipart(files, boundary="clew-test", paths=True):
+    """What the page sends: a "path" field, then the file under its bare name, per file.
+    With paths=False, only the file, named by its path, as an older page would send."""
     body = b""
     for name, data in files:
-        body += (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{name}"\r\n'
+        if paths:
+            body += (f'--{boundary}\r\nContent-Disposition: form-data; name="path"\r\n\r\n{name}\r\n').encode()
+        sent = name.rsplit("/", 1)[-1] if paths else name
+        body += (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{sent}"\r\n'
                  f"Content-Type: application/octet-stream\r\n\r\n").encode() + data + b"\r\n"
     return body + f"--{boundary}--\r\n".encode(), f"multipart/form-data; boundary={boundary}"
 
 
 class TestAddRecord(Served):
-    def upload(self, files, token="t0ken"):
-        body, kind = multipart(files)
+    def upload(self, files, token="t0ken", paths=True):
+        body, kind = multipart(files, paths=paths)
         request = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/upload", method="POST", data=body,
                                          headers={"X-Clew-Token": token, "Content-Type": kind})
         try:
@@ -189,6 +194,11 @@ class TestAddRecord(Served):
         self.assertEqual(root, Path(self.tmp.name).resolve() / "records" / "Petri")
         self.assertEqual((root / ".lineage" / ".history" / "abc").read_bytes(), b"2026-01-01\tr\ts\tlid://abc")
         self.assertEqual(got["files"], 3)
+
+    def test_the_file_name_alone_still_places_a_file(self):
+        status, got = self.upload([("Petri/.lineage/.history/abc", b"x")], paths=False)
+        self.assertEqual(status, 200, got)
+        self.assertTrue((Path(got["path"]) / ".lineage" / ".history" / "abc").is_file())
 
     def test_a_bare_lineage_folder_gets_a_dated_name_and_stays_lineage(self):
         status, got = self.upload([(".lineage/.history/abc", b"x"), (".lineage/abc/.data.json", b"{}")])

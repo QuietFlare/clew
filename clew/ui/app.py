@@ -789,8 +789,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise Refused("the upload must be multipart/form-data")
             head = f"Content-Type: {kind}\r\nMIME-Version: 1.0\r\n\r\n".encode()
             message = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(head + self.rfile.read(length))
-            files = [(part.get_filename(), part.get_payload(decode=True) or b"")
-                     for part in message.iter_parts() if part.get_filename()]
+            # Each file is preceded by a "path" field carrying its relative path, since a
+            # browser may rewrite the file name it sends. Without one, the file name serves.
+            files, path = [], None
+            for part in message.iter_parts():
+                if part.get_filename():
+                    files.append((path or part.get_filename(), part.get_payload(decode=True) or b""))
+                    path = None
+                elif part.get_param("name", header="content-disposition") == "path":
+                    path = (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
             if not files:
                 raise Refused("nothing was uploaded")
             self.send(200, app.add_record(files))

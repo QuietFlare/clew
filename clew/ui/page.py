@@ -611,6 +611,7 @@ $("path").addEventListener("keydown", (event) => { if (event.key === "Enter") op
 const BULK = /^(work|results[^/]*|logs|\.nextflow|\.snakemake|cromwell-executions|__pycache__)$/;
 $("record-files").addEventListener("change", async () => {
   const all = [...$("record-files").files];
+  $("found").textContent = "Reading the folder: " + all.length + " files";
   const segments = (f) => f.webkitRelativePath.split("/");
   let keep = all.filter((f) => segments(f).includes(".lineage"));
   if (!keep.length) keep = all.filter((f) => !segments(f).some((s) => BULK.test(s)));
@@ -622,8 +623,9 @@ $("record-files").addEventListener("change", async () => {
     $("found").textContent = "That is " + mb + " MB. Pick the .lineage folder itself, or a folder without work/ and results/.";
     return;
   }
+  // The path travels as its own field: a browser may rewrite the file name it sends.
   const form = new FormData();
-  keep.forEach((f) => form.append("file", f, f.webkitRelativePath));
+  keep.forEach((f) => { form.append("path", f.webkitRelativePath); form.append("file", f, f.name); });
   $("found").textContent = "Uploading " + keep.length + " files, " + mb + " MB";
   $("pick").disabled = true;
   try {
