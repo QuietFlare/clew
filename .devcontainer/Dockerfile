@@ -17,8 +17,7 @@ FROM python:3.12-slim
 
 ENV NXF_VER=26.09.2-edge
 ENV NXF_CACHE_MODE=DEEP
-# Nextflow keeps its libraries under NXF_HOME. A shared place, not root's
-# home, so the vscode user finds them and nothing downloads on first use.
+# Where Nextflow keeps plugins it fetches; writable by the vscode user.
 ENV NXF_HOME=/opt/nextflow
 
 RUN apt-get update \
@@ -28,10 +27,10 @@ RUN apt-get update \
  && useradd --create-home --shell /bin/bash vscode \
  && echo "vscode ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/vscode
 
-# The Nextflow launcher. Its libraries are fetched further down, as the
-# user who will run it, into NXF_HOME.
+# Nextflow's self-contained build: the launcher with its libraries embedded,
+# so nothing is fetched on first use. NXF_HOME is where it keeps plugins.
 RUN curl -fsSL -o /usr/local/bin/nextflow \
-      "https://github.com/nextflow-io/nextflow/releases/download/v${NXF_VER}/nextflow" \
+      "https://github.com/nextflow-io/nextflow/releases/download/v${NXF_VER}/nextflow-${NXF_VER}-dist" \
  && chmod 755 /usr/local/bin/nextflow \
  && mkdir -p /opt/nextflow && chown vscode:vscode /opt/nextflow
 
@@ -46,7 +45,5 @@ RUN pip install --no-cache-dir "mainsheet>=0.1"
 
 USER vscode
 WORKDIR /home/vscode
-# Nextflow fetches its framework and plugins on first use. Do that now, as
-# the user who will run it, and fail the build if it did not land in NXF_HOME.
-# It also writes a scratch file in the working folder, hence the WORKDIR.
-RUN nextflow info && ls /opt/nextflow/framework/${NXF_VER}/*.jar
+# Prove it runs as the user who will run it, with nothing left to download.
+RUN nextflow -version
