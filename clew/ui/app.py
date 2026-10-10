@@ -93,7 +93,8 @@ def browse(path):
     except OSError as bad:
         raise Refused(f"cannot read {here}: {bad.strerror or bad}")
     answer = {"path": str(here), "parent": str(here.parent) if here.parent != here else None,
-              "folders": folders, "engine": None, "runs": []}
+              "folders": folders, "engine": None, "runs": [],
+              "launchlike": any((here / sign).exists() for sign in LAUNCH_SIGNS)}
     found = recognise(here)
     if found:
         newest_first = list(reversed(found.records()))[:MOST_RUNS]
@@ -111,6 +112,11 @@ def browse(path):
                 break
     return answer
 
+
+# What a launch folder tends to hold, when no extractor recognises it. Only
+# such a folder gets the offer to have an extractor written for it.
+LAUNCH_SIGNS = ("work", ".nextflow", "nextflow.config", "main.nf", ".snakemake", "Snakefile",
+                "cromwell-executions", "cromwell-workflow-logs", "results", "logs")
 
 PROMPT = "Pick the folder your workflow was launched from"
 PROMPT_FILE = "Pick the sheet the workflow was launched from"
@@ -389,7 +395,8 @@ class App:
                              for name, a in sorted(adapters().items())],
                 "local": self.local(), "providers": str(self.providers),
                 "builder": {"agent": builder.AGENT, "model": builder.MODEL},
-                "home": str(self.home), "start": str(Path.cwd())}
+                "home": str(self.home), "start": str(Path.cwd()),
+                "dialog": picker(str(Path.cwd())) is not None}
 
     def local(self):
         """Each provider file in the local folder and whether it may load. Nothing is imported to say so."""

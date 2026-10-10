@@ -95,7 +95,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
   <section class="card">
     <div id="summary">
       <h2 style="margin:0">Run</h2>
-      <span id="run-summary">none picked</span>
+      <span id="run-summary">No run picked yet</span>
       <button class="plain" id="run-change">Change</button>
     </div>
     <div id="picker">
@@ -115,7 +115,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
           <select id="engine"><option value="">Detect from the folder</option></select>
           <label for="run">Run</label>
           <select id="run" disabled></select>
-          <p class="note" id="found"></p>
+          <p class="note" id="found">Open the folder the workflow was launched from: click through the list, or type its path.</p>
           <p style="margin:.4rem 0 0"><button class="plain" id="near" hidden></button>
             <button class="plain" id="unread" hidden>Have an agent write an extractor for it</button></p>
         </div>
@@ -126,7 +126,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
 
 <main id="tab-impact">
   <div>
-    <section class="card">
+    <section class="card" id="incident-card" hidden>
       <h2>Incident</h2>
       <label for="incident">What changed or went wrong</label>
       <textarea id="incident" placeholder="The duplicate marking step flags optical duplicates wrongly on patterned flowcells."></textarea>
@@ -147,7 +147,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
   </div>
 
   <div>
-    <section class="card">
+    <section class="card" id="progress-card" hidden>
       <h2>Progress</h2>
       <ol class="steps" id="steps"><li class="skipped"><span></span><span>Nothing run yet</span><span></span></li></ol>
       <p class="note" id="spent"></p>
@@ -308,8 +308,9 @@ function picked() { return here && here.engine && $("run").value; }
 function ready_to_run() {
   const chosen = picked();
   $("run-summary").textContent = chosen ?
-    here.engine + " run " + $("run").value + ", " + here.runs.length + " in " + here.path : "none picked";
+    here.engine + " run " + $("run").value + ", " + here.runs.length + " in " + here.path : "No run picked yet";
   $("picker").hidden = !picking && chosen;
+  $("incident-card").hidden = $("progress-card").hidden = !chosen;
   $("run-change").textContent = $("picker").hidden ? "Change" : "Done";
   $("run-change").disabled = !chosen;
   $("go").disabled = !(ready && chosen && $("incident").value.trim()) || polling !== null;
@@ -360,7 +361,7 @@ async function open(path) {
        " Open the folder the workflow was launched from.");
   }
   $("near").hidden = !here.nearby || !!here.engine;
-  $("unread").hidden = !!here.engine || !!here.nearby;
+  $("unread").hidden = !!here.engine || !!here.nearby || !here.launchlike;
   if (here.nearby) $("near").textContent = "Use " + here.nearby.name;
   picking = !picked();
   ready_to_run();
@@ -378,6 +379,8 @@ function progress(list, spent, job) {
 }
 
 function listed(state) {
+  // No folder dialog on this machine, a Codespace for one: the list is the way to pick.
+  $("pick").hidden = $("b-pick").hidden = $("b-pick-record").hidden = !state.dialog;
   engines = state.engines;
   $("engine").replaceChildren($("engine").firstElementChild, ...engines.map((e) => {
     const o = el("option", e.folder ? e.name : e.name + " (by id only)");
