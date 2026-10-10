@@ -208,6 +208,67 @@ class TestAddRecord(Served):
         except urllib.error.HTTPError as bad:
             return bad.code, json.loads(bad.read())
 
+    def archive(self, files, name, token="t0ken"):
+        """Upload one archive, built here the way Finder or the page would build it."""
+        import io
+        import tarfile
+        import zipfile
+        buf = io.BytesIO()
+        if name.endswith(".zip"):
+            with zipfile.ZipFile(buf, "w") as z:
+                for path, data in files:
+                    z.writestr(path, data)
+        else:
+            with tarfile.open(fileobj=buf, mode="w:gz" if name.endswith((".tgz", ".gz")) else "w") as t:
+                for path, data in files:
+                    info = tarfile.TarInfo(path)
+                    info.size = len(data)
+                    t.addfile(info, io.BytesIO(data))
+        boundary = "clew-arch"
+        body = (f'--{boundary}\r\nContent-Disposition: form-data; name="archive"; filename="{name}"\r\n'
+                f"Content-Type: application/octet-stream\r\n\r\n").encode() + buf.getvalue() + \
+            f"\r\n--{boundary}--\r\n".encode()
+        request = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/upload", method="POST", data=body,
+                                         headers={"X-Clew-Token": token, "Content-Type": f"multipart/form-data; boundary={boundary}"})
+        try:
+            with urllib.request.urlopen(request, timeout=10) as reply:
+                return reply.status, json.loads(reply.read())
+        except urllib.error.HTTPError as bad:
+            return bad.code, json.loads(bad.read())
+
+    def test_a_tar_gz_of_a_store_unpacks_and_opens(self):
+        files = [(f"demo/{p.relative_to(RUNS)}", p.read_bytes()) for p in RUNS.rglob("*") if p.is_file()]
+        status, got = self.archive(files, "record.tar.gz")
+        self.assertEqual(status, 200, got)
+        self.assertEqual(got["engine"], "horus")
+        self.assertEqual(got["runs"], 1)
+        self.assertEqual(self.call("/api/browse", {"path": got["path"]})[1]["engine"], "horus")
+
+    def test_a_zip_from_finder_unpacks_without_its_metadata(self):
+        files = [(f"demo/{p.relative_to(RUNS)}", p.read_bytes()) for p in RUNS.rglob("*") if p.is_file()]
+        files += [("__MACOSX/demo/._run.json", b"\x00\x05\x16\x07"), ("demo/.DS_Store", b"\x00Bud1")]
+        status, got = self.archive(files, "demo.zip")
+        self.assertEqual(status, 200, got)
+        root = Path(got["path"])
+        self.assertFalse((root / ".DS_Store").exists())
+        self.assertFalse((Path(self.tmp.name) / "records" / "__MACOSX").exists())
+
+    def test_an_archive_that_climbs_out_is_refused(self):
+        status, got = self.archive([("demo/../../escape", b"no")], "bad.tgz")
+        self.assertEqual(status, 400)
+        self.assertIn("refusing", got["error"])
+
+    def test_an_archive_of_the_wrong_kind_is_refused(self):
+        status, got = self.archive([("demo/x", b"x")], "record.rar")
+        self.assertEqual(status, 400)
+        self.assertIn("must be", got["error"])
+
+    def test_an_upload_with_no_record_is_refused_and_not_kept(self):
+        status, got = self.upload([("photos/holiday.txt", b"sun")])
+        self.assertEqual(status, 400, got)
+        self.assertIn("No run record", got["error"])
+        self.assertFalse((Path(self.tmp.name) / "records" / "photos").exists())
+
     def test_a_launch_folder_keeps_its_name_and_only_its_record_is_written(self):
         status, got = self.upload([("Petri/.lineage/.history/abc", b"2026-01-01\tr\ts\tlid://abc"),
                                    ("Petri/.lineage/abc/.data.json", b"{}"),

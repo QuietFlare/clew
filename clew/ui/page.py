@@ -116,7 +116,7 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
           <select id="engine"><option value="">Detect from the folder</option></select>
           <label for="run">Run</label>
           <select id="run" disabled></select>
-          <p class="note" id="found">Open the folder the workflow was launched from: click through the list, or type its path.</p>
+          <p class="note" id="found">Open the folder the workflow was launched from: click through the list, type its path, or Browse to upload one from your machine. A .zip of it can be dropped here.</p>
           <p style="margin:.4rem 0 0"><button class="plain" id="near" hidden></button>
             <button class="plain" id="unread" hidden>Have an agent write an extractor for it</button></p>
         </div>
@@ -608,34 +608,89 @@ $("path").addEventListener("keydown", (event) => { if (event.key === "Enter") op
 
 // A folder from the person's own machine, through the browser's folder chooser. Only the
 // record travels: the .lineage tree when there is one, otherwise everything but the bulk.
+// It goes up as one archive, built here, so ten thousand small files are one request.
 const BULK = /^(work|results[^/]*|logs|\.nextflow|\.snakemake|cromwell-executions|__pycache__)$/;
-$("record-files").addEventListener("change", async () => {
-  const all = [...$("record-files").files];
-  $("found").textContent = "Reading the folder: " + all.length + " files";
-  const segments = (f) => f.webkitRelativePath.split("/");
-  let keep = all.filter((f) => segments(f).includes(".lineage"));
-  if (!keep.length) keep = all.filter((f) => !segments(f).some((s) => BULK.test(s)));
-  keep = keep.filter((f) => !/^(\._|\.DS_Store)/.test(f.name));
-  const bytes = keep.reduce((n, f) => n + f.size, 0);
-  const mb = Math.round(bytes / 1048576);
-  if (!keep.length) { $("found").textContent = "Nothing in that folder looks like a record."; return; }
-  if (bytes > 512 * 1048576) {
-    $("found").textContent = "That is " + mb + " MB. Pick the .lineage folder itself, or a folder without work/ and results/.";
-    return;
-  }
-  // The path travels as its own field: a browser may rewrite the file name it sends.
+const ARCHIVE = /\.(zip|tgz|tar|tar\.gz)$/i;
+
+// A ustar tar, the format tar has read since 1988: a 512-byte header per file, the
+// content padded to 512. Long paths split at a slash into the prefix field.
+function tarOf(files, contents) {
+  const enc = new TextEncoder();
+  const chunks = [];
+  const field = (block, at, len, text) => block.set(enc.encode(text).slice(0, len), at);
+  const octal = (block, at, len, n) => field(block, at, len, n.toString(8).padStart(len - 1, "0") + "\0");
+  files.forEach((f, i) => {
+    let name = f.webkitRelativePath, prefix = "";
+    if (name.length > 100) {
+      const cut = name.lastIndexOf("/", 155);
+      if (cut > 0 && name.length - cut - 1 <= 100) { prefix = name.slice(0, cut); name = name.slice(cut + 1); }
+    }
+    const h = new Uint8Array(512);
+    field(h, 0, 100, name); octal(h, 100, 8, 0o644); octal(h, 108, 8, 0); octal(h, 116, 8, 0);
+    octal(h, 124, 12, contents[i].byteLength); octal(h, 136, 12, Math.floor(f.lastModified / 1000));
+    h.fill(32, 148, 156); h[156] = 48; field(h, 257, 6, "ustar\0"); field(h, 263, 2, "00"); field(h, 345, 155, prefix);
+    let sum = 0; for (const b of h) sum += b;
+    field(h, 148, 8, sum.toString(8).padStart(6, "0") + "\0 ");
+    chunks.push(h, contents[i]);
+    const pad = (512 - contents[i].byteLength % 512) % 512;
+    if (pad) chunks.push(new Uint8Array(pad));
+  });
+  chunks.push(new Uint8Array(1024));
+  return new Blob(chunks, {type: "application/x-tar"});
+}
+
+async function gzipped(blob) {
+  if (typeof CompressionStream === "undefined") return null;
+  return new Response(blob.stream().pipeThrough(new CompressionStream("gzip"))).blob();
+}
+
+async function sendArchive(blob, name) {
   const form = new FormData();
-  keep.forEach((f) => { form.append("path", f.webkitRelativePath); form.append("file", f, f.name); });
-  $("found").textContent = "Uploading " + keep.length + " files, " + mb + " MB";
+  form.append("archive", blob, name);
+  $("found").textContent = "Uploading " + name + ", " + Math.round(blob.size / 1048576) + " MB";
   $("pick").disabled = true;
   try {
     const reply = await fetch("/api/upload", {method: "POST", body: form, headers: {"X-Clew-Token": token}});
     const data = await reply.json().catch(() => ({error: "the server sent no answer"}));
     if (!reply.ok) throw new Error(data.error || ("error " + reply.status));
     await open(data.path);
+    if (data.notes && data.notes.length) $("found").textContent += " " + data.notes.join(" ");
   } catch (bad) { $("found").textContent = bad.message; }
   $("pick").disabled = false;
+}
+
+$("record-files").addEventListener("change", async () => {
+  const all = [...$("record-files").files];
   $("record-files").value = "";
+  $("found").textContent = "Reading the folder: " + all.length + " files";
+  const segments = (f) => f.webkitRelativePath.split("/");
+  let keep = all.filter((f) => segments(f).includes(".lineage"));
+  if (!keep.length) keep = all.filter((f) => !segments(f).some((s) => BULK.test(s)));
+  keep = keep.filter((f) => !/^(\._|\.DS_Store)/.test(f.name));
+  const bytes = keep.reduce((n, f) => n + f.size, 0);
+  if (!keep.length) { $("found").textContent = "Nothing in that folder looks like a record."; return; }
+  if (bytes > 512 * 1048576) {
+    $("found").textContent = "That is " + Math.round(bytes / 1048576) + " MB. Pick the .lineage folder itself, or a folder without work/ and results/.";
+    return;
+  }
+  $("found").textContent = "Packing " + keep.length + " files";
+  try {
+    const contents = [];
+    for (const f of keep) contents.push(new Uint8Array(await f.arrayBuffer()));
+    const tar = tarOf(keep, contents);
+    const gz = await gzipped(tar);
+    await sendArchive(gz || tar, gz ? "record.tar.gz" : "record.tar");
+  } catch (bad) { $("found").textContent = bad.message; }
+});
+
+// An archive made by hand, Finder's Compress for one, dropped on the run card. The way
+// through for a browser whose folder chooser cannot cope with thousands of files.
+$("picker").addEventListener("dragover", (event) => { event.preventDefault(); });
+$("picker").addEventListener("drop", async (event) => {
+  event.preventDefault();
+  const file = [...event.dataTransfer.files].find((f) => ARCHIVE.test(f.name));
+  if (!file) { $("found").textContent = "Drop a .zip or .tgz of the launch folder, or of .lineage."; return; }
+  await sendArchive(file, file.name);
 });
 $("up").addEventListener("click", () => here && here.parent && open(here.parent));
 $("run-change").addEventListener("click", () => { picking = $("picker").hidden; ready_to_run(); });

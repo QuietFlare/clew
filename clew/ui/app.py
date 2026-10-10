@@ -25,7 +25,10 @@ import email.parser
 import email.policy
 import hmac
 import importlib.util
+import io
 import json
+import tarfile
+import zipfile
 import os
 import re
 import secrets
@@ -121,6 +124,45 @@ def browse(path):
 # such a folder gets the offer to have an extractor written for it.
 LAUNCH_SIGNS = ("work", ".nextflow", "nextflow.config", "main.nf", ".snakemake", "Snakefile",
                 "cromwell-executions", "cromwell-workflow-logs", "results", "logs")
+
+NOISE_FILE = re.compile(r"^(\._.*|\.DS_Store|Thumbs\.db)$")  # what a laptop leaves in a folder
+MOST_UNPACKED = 2 << 30  # bytes an archive may unpack to
+
+
+def unpack_archive(data, filename):
+    """The files inside an uploaded .tar, .tar.gz, .tgz or .zip, as [(path, bytes)].
+    Only regular files, only relative paths; a path that climbs out is refused."""
+    members, total = [], 0
+
+    def take(path, size, read):
+        nonlocal total
+        path = path.replace("\\", "/").lstrip("./")
+        parts = PurePosixPath(path).parts
+        if not parts or PurePosixPath(path).is_absolute() or ".." in parts:
+            raise Refused(f"refusing the path {path} inside the archive")
+        total += size
+        if total > MOST_UNPACKED:
+            raise Refused(f"the archive unpacks to over {MOST_UNPACKED >> 30} GB")
+        members.append((path, read()))
+
+    name = filename.lower()
+    try:
+        if name.endswith(".zip"):
+            with zipfile.ZipFile(io.BytesIO(data)) as z:
+                for info in z.infolist():
+                    if not info.is_dir():
+                        take(info.filename, info.file_size, lambda: z.read(info))
+        elif name.endswith((".tar", ".tar.gz", ".tgz")):
+            with tarfile.open(fileobj=io.BytesIO(data), mode="r:*") as t:
+                for info in t:
+                    if info.isfile():
+                        take(info.name, info.size, lambda: t.extractfile(info).read())
+        else:
+            raise Refused("the archive must be a .zip, .tar, .tar.gz or .tgz")
+    except (zipfile.BadZipFile, tarfile.TarError, EOFError) as bad:
+        raise Refused(f"cannot read the archive: {bad}")
+    return members
+
 
 def record_layout(names):
     """
@@ -410,6 +452,10 @@ class App:
     def add_record(self, files):
         """Files uploaded from a person's own machine, [(path as uploaded, bytes)], written under
         records/ in Clew's home so the page can open them like any folder here."""
+        files = [(name, data) for name, data in files if not NOISE_FILE.match(PurePosixPath(name).name)
+                 and not name.startswith("__MACOSX/")]
+        if not files:
+            raise Refused("nothing in the upload looks like a record")
         name, placed = record_layout([name for name, _ in files])
         root = self.home / "records" / re.sub(r"[^A-Za-z0-9._-]", "_", name)
         if root.exists():
@@ -423,7 +469,21 @@ class App:
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(data)
             written += 1
-        return {"path": str(root), "files": written}
+        # Validate now, not later: a folder no extractor recognises is not kept,
+        # and a record whose checksums do not hash content is said so at once.
+        found = recognise(root)
+        if not found:
+            shutil.rmtree(root, ignore_errors=True)
+            raise Refused("No run record in that folder. Clew looks for the engine's own record: "
+                          "for Nextflow a .lineage folder, written with lineage.enabled = true.")
+        notes = []
+        try:
+            graph = found.load()
+            notes = [note for note in graph.get("coverage", []) if "hecksum" in note]
+        except (SystemExit, OSError, ValueError, KeyError):
+            pass
+        return {"path": str(root), "files": written, "engine": found.kind,
+                "runs": len(found.records()), "notes": notes}
 
     def state(self):
         return {"mainsheet": importlib.util.find_spec("mainsheet") is not None,
@@ -790,14 +850,19 @@ class Handler(BaseHTTPRequestHandler):
                 raise Refused("the upload must be multipart/form-data")
             head = f"Content-Type: {kind}\r\nMIME-Version: 1.0\r\n\r\n".encode()
             message = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(head + self.rfile.read(length))
-            # Each file is preceded by a "path" field carrying its relative path, since a
-            # browser may rewrite the file name it sends. Without one, the file name serves.
+            # One "archive" part, a folder packed by the page or by hand, is unpacked here.
+            # Otherwise each file is preceded by a "path" field carrying its relative path,
+            # since a browser may rewrite the file name it sends; the file name serves without.
             files, path = [], None
             for part in message.iter_parts():
+                field = part.get_param("name", header="content-disposition")
+                if field == "archive" and part.get_filename():
+                    files = unpack_archive(part.get_payload(decode=True) or b"", part.get_filename())
+                    break
                 if part.get_filename():
                     files.append((path or part.get_filename(), part.get_payload(decode=True) or b""))
                     path = None
-                elif part.get_param("name", header="content-disposition") == "path":
+                elif field == "path":
                     path = (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
             if not files:
                 raise Refused("nothing was uploaded")
