@@ -121,5 +121,7 @@ lineage.enabled = true
 ```
 
 Then `clew extract nextflow --store .lineage --list-runs` and the commands
-above with your paths. [Sources](sources.md) says what each engine
+above with your paths. To see a run of yours on the page in a Codespace,
+zip its `.lineage` folder on your machine and Browse to the zip; it holds
+the record, which is small, and none of the data. [Sources](sources.md) says what each engine
 records and what that limits.
