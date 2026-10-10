@@ -333,10 +333,22 @@ function adapter_fields() {
   }));
 }
 
+// Browse, Open and Up are held while the server works, so a second click cannot
+// start a second unpack of the same archive.
+function hold(message) {
+  const buttons = ["pick", "open", "up"].map($);
+  if (message) $("found").textContent = message;
+  buttons.forEach((b) => { b.disabled = true; });
+  return () => buttons.forEach((b) => { b.disabled = false; });
+}
+
 async function open(path) {
+  const archive = /\.(zip|tgz|tar|tar\.gz)$/i.test(path || "");
+  const release = hold(archive ? "Unpacking " + path.split("/").pop() + ". A store of ten thousand records takes a moment." : null);
   try {
     here = await api("/api/browse", {path});
-  } catch (bad) { $("found").textContent = bad.message; return; }
+  } catch (bad) { $("found").textContent = bad.message; release(); return; }
+  release();
   $("path").value = here.path;
   $("up").disabled = !here.parent;
   if (here.notes && here.notes.length) $("found").textContent = here.notes.join(" ");
@@ -614,8 +626,7 @@ const ARCHIVE = /\.(zip|tgz|tar|tar\.gz)$/i;
 async function sendArchive(blob, name) {
   const form = new FormData();
   form.append("archive", blob, name);
-  $("found").textContent = "Uploading " + name + ", " + Math.round(blob.size / 1048576) + " MB";
-  $("pick").disabled = true;
+  const release = hold("Uploading and unpacking " + name + ", " + Math.round(blob.size / 1048576) + " MB. This takes a moment.");
   try {
     const reply = await fetch("/api/upload", {method: "POST", body: form, headers: {"X-Clew-Token": token}});
     const data = await reply.json().catch(() => ({error: "the server sent no answer"}));
@@ -623,7 +634,7 @@ async function sendArchive(blob, name) {
     await open(data.path);
     if (data.notes && data.notes.length) $("found").textContent += " " + data.notes.join(" ");
   } catch (bad) { $("found").textContent = bad.message; }
-  $("pick").disabled = false;
+  release();
 }
 
 $("record-files").addEventListener("change", async () => {
