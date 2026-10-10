@@ -1,0 +1,82 @@
+# Record the two demo runs on Ubuntu and attach them to a release as
+# clew-demo-runs.tgz, the file docs/try.md and the Codespace fetch.
+#
+# Run by hand, with the release tag to attach to. The runs are nf-core/demo
+# 1.2.0 on its test profile: `baseline`, and `trimmed`, the same pipeline
+# with five bases cut from the start of every read. Nextflow records both
+# in a lineage store with content checksums, which is what every command
+# in docs/try.md reads.
+#
+# Built here and not on a laptop on purpose: a tarball made on macOS
+# carries ._* AppleDouble files that GNU tar unpacks as real files, and the
+# first one of those in .history broke `clew extract` for everyone.
+
+name: demo runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Release tag to attach clew-demo-runs.tgz to
+        required: true
+        default: v0.6.1
+
+permissions:
+  contents: write
+
+env:
+  NXF_VER: 26.09.2-edge
+  NXF_CACHE_MODE: DEEP
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Nextflow
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/nextflow
+          nextflow -version
+
+      - name: Record the two runs
+        run: |
+          mkdir demo-run && cd demo-run
+          cat > nextflow.config <<'EOF'
+          // Record lineage. Content digests need NXF_CACHE_MODE=DEEP in the
+          // environment before Nextflow starts; the config cannot set it.
+          lineage.enabled = true
+          EOF
+          cat > trim.config <<'EOF'
+          // The second run: five bases trimmed from the start of every read.
+          process { withName: 'SEQTK_TRIM' { ext.args = '-b 5' } }
+          EOF
+          nextflow run nf-core/demo -r 1.2.0 -profile test,docker -name baseline --outdir results-baseline
+          nextflow run nf-core/demo -r 1.2.0 -profile test,docker -name trimmed --outdir results-trimmed -c trim.config
+
+      - name: Read the record back with Clew
+        run: |
+          pip install -q -e .
+          clew extract nextflow --store demo-run/.lineage --list-runs | tee runs.txt
+          grep -q baseline runs.txt && grep -q trimmed runs.txt
+
+      - name: Pack
+        run: |
+          tar --exclude='.nextflow' --exclude='.nextflow.log*' -czf clew-demo-runs.tgz demo-run
+          # Nothing a laptop would have left behind.
+          if tar -tzf clew-demo-runs.tgz | grep -E '(^|/)\._|\.DS_Store'; then
+            echo "::error::metadata files in the tarball"; exit 1
+          fi
+          ls -la clew-demo-runs.tgz
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ inputs.release }}
+        run: gh release upload "$RELEASE" clew-demo-runs.tgz --clobber
