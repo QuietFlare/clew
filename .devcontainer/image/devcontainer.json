@@ -1,0 +1,7 @@
+{
+  "name": "Clew image build",
+  "build": { "dockerfile": "../Dockerfile", "context": ".." },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false }
+  }
+}
