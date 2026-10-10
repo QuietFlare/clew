@@ -53,6 +53,17 @@ runs under. Run the suite before opening a pull request:
 make test
 ```
 
+## The design a pull request is checked against
+
+[spec/clew.excalidraw](spec/clew.excalidraw) is the module design and
+[spec/rules.md](spec/rules.md) the rules a diagram cannot show. A
+workflow lints both on every pull request and, once a reviewer is
+switched on, reads the change against them. When the code departs from
+the diagram, change the diagram in the same pull request; approving the
+pull request accepts both. `spec/clew.png` is rendered by CI, so edit the
+`.excalidraw` and never the PNG. [docs/architecture.md](docs/architecture.md)
+has the package layout the diagram follows.
+
 ## Licensing of contributions
 
 Clew is licensed under [AGPL-3.0](LICENSE). By submitting a contribution

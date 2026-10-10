@@ -203,11 +203,6 @@ with your own coding agent, or with Clew's.
   ledger or the contracts mention a sample, a donor, a consent or an
   engine.
 
-The design every pull request is checked against is
-[spec/clew.excalidraw](spec/clew.excalidraw), with its rules in
-[spec/rules.md](spec/rules.md). [Architecture](docs/architecture.md) has
-the package layout and the import rule.
-
 ## Status
 
 Verified on real Nextflow, Snakemake, Cromwell and Horus runs. DNAnexus
