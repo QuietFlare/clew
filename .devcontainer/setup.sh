@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Runs once when the Codespace is created. Installs Clew from this checkout
-# with the agent extra, a Nextflow that records content checksums in its
-# lineage store, and two recorded runs to point Clew at. docs/try.md says
-# what to do next.
+# Runs once when the container is created, inside the prebuild when there
+# is one. Installs Clew from this checkout with the agent extra, a Nextflow
+# that records content checksums in its lineage store, and two recorded
+# runs to point Clew at. docs/try.md says what to do next.
 set -euo pipefail
 
 pip install -e '.[agent]'
