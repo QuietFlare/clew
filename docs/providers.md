@@ -301,3 +301,9 @@ and the check cannot know that. The person who approves it reads the
 code first. The Providers tab of `clew ui` runs the same steps with the
 checks and the code on the page, and `skills/clew-provider/SKILL.md`
 gives the same brief to a person's own coding agent, ending at the check.
+
+Approved files live in `~/.clew/providers`, or the folder
+`CLEW_PROVIDER_DIR` names, and every command loads them from there. The
+approval record pins the file's hash. A changed file stops loading until
+someone approves it again. `clew build judge <folder>` runs the check
+again on a finished build without the agent.
