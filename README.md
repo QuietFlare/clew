@@ -24,8 +24,9 @@ A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
 ## Try it in five minutes
 
-**In a Codespace.** Clew, Nextflow and two recorded nf-core/demo runs are
-installed when it opens. Type:
+**In a Codespace.** Clew, Nextflow and two recorded nf-core/demo runs
+install while it opens; wait until the terminal prints "Clew is
+installed", about two minutes. Then type:
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/QuietFlare/clew)
 
