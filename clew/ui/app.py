@@ -28,6 +28,7 @@ import importlib.util
 import io
 import json
 import tarfile
+import tempfile
 import zipfile
 import os
 import re
@@ -52,6 +53,7 @@ from clew.contracts import Adapter, Extractor, discover
 from clew.contracts.registry import approval_of, file_hash, local_folder
 from clew.extract.runs import Runs
 from clew.ui.page import PAGE
+from clew.views.drift_report import label as drift_label
 
 INCIDENT = "incident"
 MOST_INCIDENT = 20000
@@ -60,6 +62,7 @@ MOST_UPLOAD = 512 << 20  # a record uploaded through the page
 MOST_LOG = 400
 MOST_RUNS = 200
 MOST_ITEMS = 15
+MOST_ROOTS = 60
 MOST_SHEET = 5 << 20
 MOST_NOTES = 2000
 MOST_CODE = 100000
@@ -385,6 +388,40 @@ def text_of(path):
         return None
 
 
+DRIFTED = "DRIFTED"
+# The order the command prints verdicts in: findings first, the reassuring last.
+DRIFT_ORDER = ("UNSETTLED", "DOWNSTREAM", "UNVERIFIED", "REPRODUCED", "ADDED", "REMOVED")
+
+
+def drift_answer(plan):
+    """
+    A drift plan, as `clew drift --json` wrote it, the way the page shows it:
+    the roots as rows, since they are the finding, every other verdict
+    grouped by cause and counted by process, and what the answer rests on.
+    """
+    items = plan["plan"]
+    roots = [i for i in items if i["verdict"] == DRIFTED]
+    tally = {}
+    for item in items:
+        if item["verdict"] != DRIFTED:
+            by_process = tally.setdefault(item["verdict"], {})
+            name = item["process"].split(":")[-1]
+            by_process[name] = by_process.get(name, 0) + 1
+    meanings = plan.get("meanings") or {}
+    groups = [{"verdict": verdict, "meaning": meanings.get(verdict, ""),
+               "processes": [{"process": p, "count": n} for p, n in
+                             sorted(tally[verdict].items(), key=lambda kv: (-kv[1], kv[0]))]}
+              for verdict in DRIFT_ORDER if verdict in tally]
+    return {"before": plan["before"], "after": plan["after"], "tasks_total": plan["tasks_total"],
+            "verdicts": plan["verdicts"],
+            "roots": [{"task": drift_label(i), "process": i["process"].split(":")[-1],
+                       "cause": i["cause"], "files": i.get("files", [])}
+                      for i in roots[:MOST_ROOTS]],
+            "more_roots": max(0, len(roots) - MOST_ROOTS),
+            "groups": groups, "ignored": plan["ignored_outputs"],
+            "caveats": plan["caveats"], "coverage": plan.get("coverage") or []}
+
+
 def build_status(job, providers):
     """What a build's folder shows, step by step: the brief, what the agent wrote, the verdict, the approval."""
     work, live = job.folder / "work", job.made()
@@ -541,6 +578,29 @@ class App:
         if run not in {r["name"] for r in found.records()}:
             raise Refused(f"no run named {run!r} in that folder")
         return found, run
+
+    def drift(self, body):
+        """
+        Where two runs of the record part ways. The command answers, as it
+        does on a terminal, with no agent and no job folder; the page only
+        lays its plan out.
+        """
+        found, after = self.chosen(body)
+        before = body.get("before") or ""
+        if before not in {r["name"] for r in found.records()}:
+            raise Refused(f"no run named {before!r} in that folder")
+        if before == after:
+            raise Refused("pick two different runs")
+        ignore = [g.strip() for g in (body.get("ignore") or "").split(",") if g.strip()]
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "drift.json"
+            code, _, err = tools.run_clew("drift", "--runs", found.path, "--before", before,
+                                          "--after", after, "--json", out,
+                                          *[flag for glob in ignore for flag in ("--ignore", glob)])
+            if code != 0:
+                lines = err.strip().splitlines()
+                raise Refused(lines[-1] if lines else f"clew drift exited {code}")
+            return drift_answer(json.loads(out.read_text()))
 
     def new_job(self, kind=INCIDENT):
         """A job and its folder. One at a time, of either kind."""
@@ -843,7 +903,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/api/pick": lambda body: pick(body.get("path"), body.get("what") == "file"),
                   "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
                   "/api/build": app.build, "/api/install": app.install,
-                  "/api/judge": app.judge}
+                  "/api/judge": app.judge, "/api/drift": app.drift}
         route = routes.get(self.path)
         if not route:
             return self.send(404, {"error": "not found"})

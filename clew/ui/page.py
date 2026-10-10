@@ -72,6 +72,10 @@ th { color: hsl(var(--steel)); font-weight: 500; }
 pre { margin: 0; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow: auto; }
 pre.code { max-height: 34rem; padding: .6rem .7rem; background: hsl(var(--muted)); border-radius: calc(var(--radius) - 2px);
            font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
+#d-roots td:first-child { white-space: nowrap; }
+#d-roots td:nth-child(2) { min-width: 14rem; }
+#d-roots td:nth-child(3) { overflow-wrap: anywhere; }
+#d-roots { table-layout: fixed; }
 td.pass { color: hsl(var(--ok)); }
 td.miss { color: hsl(var(--destructive)); font-weight: 600; }
 details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; }
@@ -177,7 +181,32 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
   </div>
 </main>
 
-<main id="tab-drift" hidden><section class="card"><h2>Drift</h2><p>Not built yet. The command works: <code>clew drift</code>.</p></section></main>
+<main id="tab-drift" hidden>
+  <div>
+    <section class="card" id="d-card" hidden>
+      <h2>Compare</h2>
+      <p class="note" style="margin-top:0">The run picked above is the later one. Pick the earlier run of the same workflow to compare it with. Outputs are compared by the content checksums the record carries.</p>
+      <label for="d-before">Earlier run</label>
+      <select id="d-before"></select>
+      <label for="d-ignore">Outputs to ignore (names or globs, comma separated)</label>
+      <input type="text" class="mono" id="d-ignore" value="versions.yml" spellcheck="false">
+      <p class="note">Bookkeeping files change with every tool version whether or not the science did. Add <span class="mono">*_fastqc.zip</span> for FastQC's timestamped archives.</p>
+      <p style="margin:1rem 0 0"><button class="go" id="d-go" disabled>Compare</button></p>
+      <p class="error" id="d-error" hidden></p>
+    </section>
+  </div>
+  <div>
+    <section class="card" id="d-result-card" hidden>
+      <h2>Where the runs part ways</h2>
+      <dl class="kv" id="d-summary"></dl>
+      <p class="note" id="d-none" hidden></p>
+      <table id="d-roots" hidden></table>
+      <p class="note" id="d-more"></p>
+    </section>
+    <section class="card" id="d-groups-card" hidden><h2>The rest, by cause</h2><div id="d-groups"></div></section>
+    <section class="card" id="d-limits-card" hidden><details><summary>Limits of this answer</summary><ul id="d-limits" style="margin:.5rem 0 0;padding-left:1.2rem;font-size:.88rem"></ul></details></section>
+  </div>
+</main>
 <main id="tab-reclaim" hidden><section class="card"><h2>Reclaim</h2><p>Not built yet. The command works: <code>clew reclaim</code>.</p></section></main>
 
 <main id="tab-providers" hidden>
@@ -316,6 +345,7 @@ function ready_to_run() {
   $("run-change").textContent = $("picker").hidden ? "Change" : "Done";
   $("run-change").disabled = !chosen;
   $("go").disabled = !(ready && chosen && $("incident").value.trim()) || polling !== null;
+  drift_choices(chosen);
   const extractor = $("b-what").value === "extractor";
   $("b-about").textContent = ABOUT[$("b-what").value];
   $("b-for-adapter").hidden = $("b-adapter-brief").hidden = extractor;
@@ -323,6 +353,64 @@ function ready_to_run() {
   const briefed = extractor ? $("b-record").value.trim() : chosen && $("b-kind").value.trim();
   $("b-go").disabled = !(ready && $("b-name").value.trim() && briefed) || polling !== null;
 }
+
+// The earlier runs on offer: every other run in the record, the one just
+// before the picked run selected, since that is the usual question.
+function drift_choices(chosen) {
+  $("d-card").hidden = !chosen;
+  if (!chosen) return;
+  const later = $("run").value, keep = $("d-before").value;
+  const others = here.runs.filter((r) => r.name !== later);   // newest first
+  const index = here.runs.findIndex((r) => r.name === later);
+  const previous = here.runs[index + 1] ? here.runs[index + 1].name : (others[0] ? others[0].name : "");
+  $("d-before").replaceChildren(...others.map((r) => {
+    const option = el("option", r.name + (r.timestamp ? "   " + r.timestamp : "")); option.value = r.name;
+    option.selected = r.name === (others.some((o) => o.name === keep) ? keep : previous);
+    return option;
+  }));
+  $("d-before").disabled = others.length === 0;
+  $("d-go").disabled = others.length === 0;
+  fail(others.length === 0 ? "This record holds one run. Drift needs two runs of the same workflow." : "", "d-error");
+}
+
+function show_drift(d) {
+  const counts = Object.entries(d.verdicts).map(([v, n]) => n + " " + v.toLowerCase()).join(", ");
+  pairs($("d-summary"), [["Earlier", d.before], ["Later", d.after], ["Tasks", d.tasks_total],
+    ["Verdicts", counts], ["Ignored", d.ignored.join(", ")]]);
+  const roots = d.roots; $("d-roots").hidden = roots.length === 0; $("d-none").hidden = roots.length > 0;
+  if (roots.length === 0) {
+    const unverified = d.verdicts.UNVERIFIED || 0;
+    $("d-none").textContent = unverified === d.tasks_total ?
+      "Nothing could be compared: no output carries a content checksum on both sides. The limits below say why." :
+      "No root: every output that could be compared has the same checksum in both runs.";
+  }
+  const head = el("tr"); head.append(el("th", "Task"), el("th", "Cause"), el("th", "Differs"));
+  $("d-roots").replaceChildren(head, ...roots.map((r) => {
+    const row = el("tr"); row.append(el("td", r.task), el("td", r.cause), el("td", r.files.join(", "), "mono")); return row;
+  }));
+  $("d-more").textContent = d.more_roots ? "and " + d.more_roots + " more roots; clew drift --verbose lists them" : "";
+  $("d-groups-card").hidden = d.groups.length === 0;
+  $("d-groups").replaceChildren(...d.groups.map((g) => {
+    const block = el("div"); block.style.marginBottom = ".7rem";
+    const title = el("div"); title.append(el("strong", g.verdict + " "), el("span", g.meaning, "note"));
+    block.append(title, el("div", g.processes.map((p) => p.count + " " + p.process).join(", ")));
+    return block;
+  }));
+  const limits = d.coverage.concat(d.caveats);
+  $("d-limits-card").hidden = limits.length === 0;
+  $("d-limits").replaceChildren(...limits.map((line) => el("li", line)));
+  $("d-result-card").hidden = false;
+}
+
+$("d-go").addEventListener("click", async () => {
+  fail("", "d-error");
+  $("d-go").disabled = true;
+  try {
+    show_drift(await api("/api/drift", {path: here.path, run: $("run").value, before: $("d-before").value,
+      ignore: $("d-ignore").value}));
+  } catch (bad) { fail(bad.message, "d-error"); }
+  $("d-go").disabled = false;
+});
 
 function adapter_fields() {
   const chosen = adapters.find((a) => a.name === $("adapter").value);

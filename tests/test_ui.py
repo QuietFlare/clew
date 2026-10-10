@@ -147,6 +147,77 @@ class TestWhoMayCall(Served):
         self.assertEqual(serve.call_args.kwargs, {"hosts": ["clew.example:8770"], "bind": "0.0.0.0"})
 
 
+def two_run_store(root):
+    """
+    A Nextflow lineage store with three runs: `first` and `second` are
+    separate sessions of one workflow whose ALIGN output differs; `resumed`
+    is a resume of `first` and so shares its graph. Checksums are deep-mode
+    from a Nextflow that computes them as labelled, so they are believed.
+    """
+    store = Path(root) / ".lineage"
+    (store / ".history").mkdir(parents=True)
+    runs = {"first": ("a" * 32, "s-one", "2026-08-01 10:00:00 CEST"),
+            "second": ("b" * 32, "s-two", "2026-08-02 10:00:00 CEST"),
+            "resumed": ("c" * 32, "s-one", "2026-08-03 10:00:00 CEST")}
+    for name, (run_hash, session, stamp) in runs.items():
+        (store / ".history" / run_hash).write_text(f"{stamp}\t{name}\t{session}\tlid://{run_hash}\n")
+        (store / run_hash).mkdir()
+        (store / run_hash / ".data.json").write_text(json.dumps({
+            "version": "lineage/v1beta1", "kind": "WorkflowRun",
+            "spec": {"sessionId": session, "name": name,
+                     "metadata": {"nextflow": {"version": "26.09.2-edge"}}}}))
+    for task_hash, run_hash, session, digest in (("1" * 32, "a" * 32, "s-one", "d1"),
+                                                  ("2" * 32, "b" * 32, "s-two", "d2")):
+        (store / task_hash / "out.bam").mkdir(parents=True)
+        (store / task_hash / ".data.json").write_text(json.dumps({
+            "version": "lineage/v1beta1", "kind": "TaskRun",
+            "spec": {"sessionId": session, "workflowRun": f"lid://{run_hash}", "name": "PIPE:ALIGN",
+                     "container": "img:1", "script": "align", "input": []}}))
+        (store / task_hash / "out.bam" / ".data.json").write_text(json.dumps({
+            "version": "lineage/v1beta1", "kind": "FileOutput",
+            "spec": {"path": f"/work/{task_hash[:2]}/{task_hash[2:]}/out.bam", "size": 3,
+                     "checksum": {"value": digest, "algorithm": "nextflow", "mode": "deep"},
+                     "workflowRun": f"lid://{run_hash}", "taskRun": f"lid://{task_hash}"}}))
+    return str(Path(root))
+
+
+class TestDrift(Served):
+    """Two runs of the record compared on the page, with no agent and no job."""
+
+    def setUp(self):
+        super().setUp()
+        self.record = two_run_store(Path(self.tmp.name) / "runs")
+
+    def compare(self, before, after, **over):
+        return self.call("/api/drift", dict({"path": self.record, "run": after, "before": before}, **over))
+
+    def test_the_root_and_its_cause_are_read_from_the_record(self):
+        status, found = self.compare("first", "second")
+        self.assertEqual(status, 200)
+        self.assertEqual((found["before"], found["after"], found["tasks_total"]), ("first", "second", 1))
+        self.assertEqual(found["verdicts"], {"DRIFTED": 1})
+        self.assertEqual([r["process"] for r in found["roots"]], ["ALIGN"])
+        self.assertEqual(found["roots"][0]["cause"], "same inputs and recipe, different outputs")
+        self.assertEqual(found["roots"][0]["files"], ["out.bam"])
+        self.assertEqual(found["ignored"], ["versions.yml"])
+        self.assertTrue(any("paired by name" in line for line in found["caveats"]))
+
+    def test_an_ignored_output_is_not_compared(self):
+        status, found = self.compare("first", "second", ignore="out.bam, versions.yml")
+        self.assertEqual(found["verdicts"], {"REPRODUCED": 1})
+        self.assertEqual(found["roots"], [])
+        self.assertEqual(found["groups"][0]["verdict"], "REPRODUCED")
+
+    def test_two_runs_of_one_resume_chain_are_refused(self):
+        status, found = self.compare("first", "resumed")
+        self.assertEqual(status, 400)
+        self.assertIn("resume chain", found["error"])
+
+    def test_the_same_run_twice_and_an_unknown_run_are_refused(self):
+        self.assertEqual(self.compare("second", "second")[0], 400)
+        self.assertEqual(self.compare("nowhere", "second")[0], 400)
+
+
 class TestForwarded(Served):
     """
     A Codespace reaches the server through one forwarded name. Only that

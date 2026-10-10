@@ -307,7 +307,8 @@ def print_plan(items, before_path, after_path, ignore, verbose=False, source=Non
         print(line)
 
 
-def plan_to_dict(items, before_path, after_path, ignore, source=None):
+def plan_to_dict(items, before_path, after_path, ignore, source=None, coverage=()):
+    """The plan as data. `coverage` is what the two graphs said they could not see."""
     return {
         "clew_drift_version": 1,
         "lineage": str(source) if source else None,
@@ -316,9 +317,19 @@ def plan_to_dict(items, before_path, after_path, ignore, source=None):
         "ignored_outputs": list(ignore),
         "tasks_total": len(items),
         "verdicts": dict(sorted(summarise(items).items())),
+        "meanings": dict(EXPLAIN),
         "plan": items,
         "caveats": caveats(ignore),
+        "coverage": list(coverage),
     }
+
+
+def coverage_of(*graphs):
+    """Every coverage note the graphs carry, once each, in order."""
+    notes = []
+    for graph in graphs:
+        notes += [n for n in graph.get("coverage") or [] if n not in notes]
+    return notes
 
 
 def main(argv=None):
@@ -365,7 +376,8 @@ def main(argv=None):
     items = drift(before, after, ignore)
     print_plan(items, args.before, args.after, ignore, args.verbose, source)
     if args.json_out or args.html_out:
-        built = plan_to_dict(items, args.before, args.after, ignore, source)
+        built = plan_to_dict(items, args.before, args.after, ignore, source,
+                             coverage_of(before, after))
         if args.html_out:
             drift_report.write(built, args.html_out)
         if args.json_out == "-":
