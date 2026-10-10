@@ -131,6 +131,11 @@ def picker(start, file=False):
                 "Add-Type -AssemblyName System.Windows.Forms; "
                 f"$d = New-Object System.Windows.Forms.{dialog}; "
                 f"if ($d.ShowDialog() -eq 'OK') {{ $d.{chosen} }}"]
+    if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+        # Headless Linux, a Codespace among others: no dialog can open, and
+        # tkinter would only fail after a pause. The page then says to type
+        # the path or click through the list.
+        return None
     if shutil.which("zenity"):
         return ["zenity", "--file-selection", *([] if file else ["--directory"]),
                 f"--title={prompt}", f"--filename={start}/"]
@@ -152,9 +157,12 @@ def pick(start, file=False):
     if command is None:
         return {"available": False, "path": None}
     try:
-        chosen = subprocess.run(command, capture_output=True, text=True, timeout=300).stdout.strip()
+        done = subprocess.run(command, capture_output=True, text=True, timeout=300)
     except (OSError, subprocess.TimeoutExpired):
         return {"available": True, "path": None}
+    if done.returncode != 0:
+        return {"available": False, "path": None}
+    chosen = done.stdout.strip()
     there = bool(chosen) and (Path(chosen).is_file() if file else Path(chosen).is_dir())
     return {"available": True, "path": chosen if there else None}
 
@@ -381,7 +389,7 @@ class App:
                              for name, a in sorted(adapters().items())],
                 "local": self.local(), "providers": str(self.providers),
                 "builder": {"agent": builder.AGENT, "model": builder.MODEL},
-                "home": str(self.home), "start": str(Path.home())}
+                "home": str(self.home), "start": str(Path.cwd())}
 
     def local(self):
         """Each provider file in the local folder and whether it may load. Nothing is imported to say so."""
@@ -748,6 +756,10 @@ def main(argv=None):
                              "the token still guards every request")
     args = parser.parse_args(argv)
 
+    if forwarded_host(args.port) and not args.forwarded:
+        # A Codespace: the only browser is on the other side of the port
+        # forward, and nothing here can open it.
+        args.forwarded, args.no_browser = True, True
     hosts = []
     if args.forwarded:
         if not args.port:

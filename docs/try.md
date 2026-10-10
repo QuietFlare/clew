@@ -93,13 +93,15 @@ per directory before removing it.
 ## The page
 
 ```bash
-clew ui --forwarded --no-browser
+clew ui
 ```
 
-In a Codespace, open the printed link, or the port labelled Clew UI. On
-your own machine drop `--forwarded`. Pick `examples/demo-run` in the run
-bar, write an incident such as "the seqtk container has a defect", and
-press Run. Triage, the plan and the seal appear as their files appear.
+On your own machine the page opens. In a Codespace it cannot, so the
+command prints the forwarded link instead: open that one, with its token,
+not the port's bare address. Pick `examples/demo-run` in the run bar, by
+clicking through the folders or typing the path, write an incident such
+as "the seqtk container has a defect", and press Run. Triage, the plan
+and the seal appear as their files appear.
 
 Triage with a typed classifier needs `TYPESAFE_API_KEY`, and the agent
 that runs the steps needs `ANTHROPIC_API_KEY`. In a Codespace, set them as

@@ -135,6 +135,24 @@ class TestForwarded(Served):
         self.assertEqual(ui.forwarded_host(8770, env), "me-8770.app.github.dev")
         self.assertIsNone(ui.forwarded_host(8770, {}))
 
+    def test_a_codespace_forwards_and_prints_the_link_unasked(self):
+        import io
+        import os
+        from contextlib import redirect_stdout
+        from unittest import mock
+        fake = mock.Mock()
+        fake.app.token, fake.app.home, fake.app.providers = "tok", "/h", "/p"
+        fake.serve_forever.side_effect = KeyboardInterrupt
+        env = {"CODESPACE_NAME": "me", "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN": "app.github.dev"}
+        out = io.StringIO()
+        with mock.patch.dict(os.environ, env, clear=True), \
+                mock.patch.object(ui, "serve", return_value=(fake, "http://127.0.0.1:8770/?t=tok")) as serve, \
+                mock.patch.object(ui.webbrowser, "open") as opened, redirect_stdout(out):
+            ui.main(["--port", "8770", "--home", self.tmp.name])
+        self.assertEqual(serve.call_args.kwargs["hosts"], ["me-8770.app.github.dev"])
+        self.assertIn("Clew UI: https://me-8770.app.github.dev/?t=tok", out.getvalue())
+        opened.assert_not_called()
+
     def test_the_flag_refuses_to_run_outside_a_codespace(self):
         import os
         from unittest import mock
@@ -250,8 +268,25 @@ class TestPicking(unittest.TestCase):
         with mock.patch.object(ui.sys, "platform", "win32"):
             self.assertEqual(ui.picker("C:/x")[0], "powershell")
         with mock.patch.object(ui.sys, "platform", "linux"), \
+                mock.patch.dict(ui.os.environ, {"DISPLAY": ":0"}), \
                 mock.patch.object(ui.shutil, "which", lambda name: name == "zenity"):
             self.assertEqual(ui.picker("/x")[0], "zenity")
+
+    def test_headless_linux_has_no_dialog(self):
+        # A Codespace: zenity or tkinter may be installed, but there is no
+        # display to open them on, and the page must say so at once.
+        from unittest import mock
+        with mock.patch.object(ui.sys, "platform", "linux"), \
+                mock.patch.dict(ui.os.environ, {}, clear=True), \
+                mock.patch.object(ui.shutil, "which", lambda name: True):
+            self.assertIsNone(ui.picker("/x"))
+
+    def test_a_dialog_that_fails_to_open_is_not_available(self):
+        from unittest import mock
+        done = mock.Mock(stdout="", returncode=1)
+        with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
+                mock.patch.object(ui.subprocess, "run", return_value=done):
+            self.assertEqual(ui.pick("/"), {"available": False, "path": None})
 
     def test_no_dialog_at_all_is_said(self):
         from unittest import mock
@@ -260,14 +295,14 @@ class TestPicking(unittest.TestCase):
 
     def test_a_cancelled_dialog_gives_no_path(self):
         from unittest import mock
-        done = mock.Mock(stdout="\n")
+        done = mock.Mock(stdout="\n", returncode=0)
         with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
                 mock.patch.object(ui.subprocess, "run", return_value=done):
             self.assertEqual(ui.pick("/"), {"available": True, "path": None})
 
     def test_a_chosen_folder_comes_back(self):
         from unittest import mock
-        done = mock.Mock(stdout=str(RUNS) + "/\n")
+        done = mock.Mock(stdout=str(RUNS) + "/\n", returncode=0)
         with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
                 mock.patch.object(ui.subprocess, "run", return_value=done):
             self.assertEqual(Path(ui.pick("/")["path"]), RUNS)
@@ -535,7 +570,7 @@ class TestBuild(Served):
             self.assertIn("choose file", " ".join(ui.picker("/x", file=True)))
             self.assertIn("choose folder", " ".join(ui.picker("/x")))
         for chosen, found in ((DOCKING / "ligands.smi", str(DOCKING / "ligands.smi")), (DOCKING, None)):
-            done = mock.Mock(stdout=f"{chosen}\n")
+            done = mock.Mock(stdout=f"{chosen}\n", returncode=0)
             with mock.patch.object(ui, "picker", lambda start, file=False: ["x"]), \
                     mock.patch.object(ui.subprocess, "run", return_value=done):
                 self.assertEqual(ui.pick("/", file=True)["path"], found)
