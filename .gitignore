@@ -33,4 +33,11 @@ hackathon/
 evals/.cache/
 
 # the recorded runs the Codespace fetches, see docs/try.md
-examples/demo-run/
+examples/demo-run
+
+# written by the walkthrough in docs/try.md when run from here
+plan.json
+triage.json
+clew.html
+# the demo runs docs/try.md fetches, and the Codespace links, into examples/
+examples/demo-run

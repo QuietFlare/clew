@@ -2,7 +2,7 @@
 Can a typed classifier turn an incident report into the right trigger?
 
     python examples/jev_triage_trial.py --dry-run
-    python examples/jev_triage_trial.py --out triage_answers.json
+    python examples/jev_triage_trial.py --out evals/triage_answers.json
 
 The options are the tools the shipped sarek run actually used, read from
 its graph, plus `none`. Each incident is one call. The answer is compared
