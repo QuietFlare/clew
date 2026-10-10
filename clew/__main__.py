@@ -3,15 +3,13 @@ The clew command.
 
 Every subcommand is its own module with its own --help. This file only
 routes to them, and imports the chosen one lazily so that, for example,
-running the stdlib-only demo never touches the database driver.
+running a stdlib-only command never touches the database driver.
 """
 
 import importlib
 import sys
 
 COMMANDS = {
-    "demo": ("clew.demo",
-             "the shipped sample run: three triggers, one engine"),
     "impact": ("clew.questions.impact",
                "what a removal, defect or update reaches, and what to do"),
     "triage": ("clew.intake.triage",
@@ -23,7 +21,7 @@ COMMANDS = {
     "serve": ("clew.agent.server",
               "Clew's working tools over MCP, for any agent"),
     "ui": ("clew.ui.app",
-           "a local page: pick a run, give an incident, watch the agent work"),
+           "a local page: impact, drift and reclaim on a run you pick, and the agent at work"),
     "gate": ("clew.questions.gate",
              "block a run whose inputs the log says are not usable"),
     "reclaim": ("clew.questions.reclaim",

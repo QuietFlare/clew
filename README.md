@@ -54,11 +54,10 @@ From a checkout, `docker build -t clew .` gives the same image.
 
 ```bash
 pip install clew-lineage
-clew demo
 ```
 
-`clew demo` runs three questions over a sample run that ships with the
-package. [docs/try.md](docs/try.md) takes it from there.
+[docs/try.md](docs/try.md) fetches the two recorded runs and takes it
+from there.
 
 ## The flow
 
@@ -156,15 +155,15 @@ clew ui
 
 A [Mainsheet](https://github.com/QuietFlare/mainsheet) agent runs steps 3
 and 4 under a policy gate, in a sandbox, with a signed record of the run.
-`clew ui` is the page to watch it work. `clew serve` offers the same seven
-tools over MCP to any agent, and no tool decides a held incident. More in
+`clew ui` is the page: impact, drift and reclaim on a run you pick, and
+the agent at work. `clew serve` offers the same seven tools over MCP to
+any agent, and no tool decides a held incident. More in
 [the agent](docs/agent.md).
 
 ## Command reference
 
 | Command | Does |
 |---|---|
-| `clew demo` | the shipped sample run: three triggers, one engine |
 | `clew extract <engine>` | build a graph from an engine's record |
 | `clew digest` | hash a run's files once, for graphs without content digests |
 | `clew stitch` | join run graphs where one run consumed another's outputs |
@@ -173,13 +172,13 @@ tools over MCP to any agent, and no tool decides a held incident. More in
 | `clew drift` | where two runs of the same workflow part ways, and why |
 | `clew triage` | turn an incident report into a trigger, or hold it for a person |
 | `clew decide` | record a person's decision on an incident that triage held |
-| `clew evidence` | build, verify, witness and sign evidence bundles |
+| `clew evidence` | seal, verify, witness and sign evidence bundles |
 | `clew log` | the append-only event log: init, append, list, verify, head |
 | `clew rulebook` | the versioned remediation policy: show, export, check, diff, register |
 | `clew gate` | block a run whose inputs the log says are not usable |
 | `clew dashboard` | one self-contained HTML page over sealed bundles |
 | `clew mcp` | read-only MCP server over sealed bundles, for auditors |
-| `clew ui` | a local page: pick a run, give an incident, watch the agent work |
+| `clew ui` | a local page: impact, drift and reclaim on a run you pick, and the agent at work |
 | `clew serve` | Clew's working tools over MCP, for any agent |
 | `clew build` | have an agent write an adapter or an extractor, then check it |
 | `clew providers` | every adapter and extractor installed, or approve one a judge passed |
@@ -229,7 +228,7 @@ with your own coding agent, or with Clew's.
 Verified on real Nextflow, Snakemake, Cromwell and Horus runs. DNAnexus
 and Latch are built from the platform APIs and await their first live
 runs. Triage has one eval baseline, on the release notes of sixteen
-projects. The adapter builder has run live once. 894 tests run on Python
+projects. The adapter builder has run live once. 946 tests run on Python
 3.9, 3.11 and 3.13 on every push. [CHANGELOG.md](CHANGELOG.md) lists what
 changed in each release.
 
