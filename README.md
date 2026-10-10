@@ -320,6 +320,15 @@ gives the same brief to a person's own coding agent.
 [auditor surfaces](docs/auditors.md), [architecture](docs/architecture.md),
 [sources](docs/sources.md) for what each engine records and what that limits.
 
+### The agreed design
+
+Every pull request is reviewed against this diagram and
+[spec/rules.md](spec/rules.md). When the code departs from it, the diagram
+changes in the same pull request, and approving the pull request accepts
+both. The source is [spec/clew.excalidraw](spec/clew.excalidraw).
+
+![Clew: the agreed design](spec/clew.png)
+
 ## Status
 
 Verified on real Nextflow, Snakemake, Cromwell and Horus runs. DNAnexus
