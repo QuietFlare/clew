@@ -12,6 +12,8 @@ extractor and the store adapter are two independent witnesses of the same
 pipeline, and every impact number must agree between them.
 """
 
+import contextlib
+import io
 import json
 import sys
 import tempfile
@@ -159,6 +161,19 @@ class SyntheticStore(unittest.TestCase):
         # Selectable by name and by run-hash prefix.
         self.assertEqual(ls.pick_run(runs, "first_run")["run_hash"], RUN_A)
         self.assertEqual(ls.pick_run(runs, RUN_A[:8])["name"], "first_run")
+
+    def test_history_ignores_files_nextflow_did_not_write(self):
+        # A tarball made on macOS, unpacked on Linux, leaves ._* AppleDouble
+        # files beside every entry; they are binary and not UTF-8.
+        history = self.store / ".history"
+        (history / "._3bdc97ce8ffe55fdbe46efdcd6e0cb3f").write_bytes(
+            b"\x00\x05\x16\x07\x00\x02\x00\x00Mac OS X        \x00\x02" + b"\xa3" * 40)
+        (history / ".DS_Store").write_bytes(b"\x00\x00\x00\x01Bud1")
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            runs = ls.load_history(self.store)
+        self.assertEqual([r["name"] for r in runs],
+                         ["first_run", "second_run", "other_run"])
+        self.assertEqual(err.getvalue(), "")
 
     def test_ambiguous_run_selection_refuses(self):
         runs = ls.load_history(self.store)

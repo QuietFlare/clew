@@ -94,7 +94,16 @@ def load_history(store):
     if not history.is_dir():
         return runs
     for entry in history.iterdir():
-        line = entry.read_text().strip()
+        # Nextflow names an entry after its run hash. Anything dotted is
+        # not Nextflow's: a .DS_Store, or the ._* AppleDouble files a
+        # tarball made on macOS leaves behind when unpacked on Linux.
+        if entry.name.startswith(".") or not entry.is_file():
+            continue
+        try:
+            line = entry.read_text(encoding="utf-8").strip()
+        except UnicodeDecodeError:
+            print(f"warning: {entry} is not a Nextflow history entry, skipped", file=sys.stderr)
+            continue
         if not line:
             continue
         parts = line.split("\t")
