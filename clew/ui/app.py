@@ -126,6 +126,7 @@ LAUNCH_SIGNS = ("work", ".nextflow", "nextflow.config", "main.nf", ".snakemake",
                 "cromwell-executions", "cromwell-workflow-logs", "results", "logs")
 
 NOISE_FILE = re.compile(r"^(\._.*|\.DS_Store|Thumbs\.db)$")  # what a laptop leaves in a folder
+ARCHIVE_NAME = re.compile(r"\.(zip|tgz|tar|tar\.gz)$", re.IGNORECASE)
 MOST_UNPACKED = 2 << 30  # bytes an archive may unpack to
 
 
@@ -485,6 +486,19 @@ class App:
         return {"path": str(root), "files": written, "engine": found.kind,
                 "runs": len(found.records()), "notes": notes}
 
+    def browse(self, path):
+        """A folder, as browse() reads it; or the path of an archive on this machine, which is
+        unpacked into records/ and opened, for someone who typed the zip's path into the box."""
+        here = Path(path or "").expanduser()
+        if here.is_file() and ARCHIVE_NAME.search(here.name):
+            if here.stat().st_size > MOST_UPLOAD:
+                raise Refused(f"{here.name} is over {MOST_UPLOAD >> 20} MB")
+            added = self.add_record(unpack_archive(here.read_bytes(), here.name))
+            answer = browse(added["path"])
+            answer["notes"] = added["notes"]
+            return answer
+        return browse(path)
+
     def state(self):
         return {"mainsheet": importlib.util.find_spec("mainsheet") is not None,
                 "classifier": "jev" if os.environ.get("TYPESAFE_API_KEY") else "name",
@@ -816,7 +830,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/upload":
             return self.upload(app)
         routes = {"/api/state": lambda body: app.state(),
-                  "/api/browse": lambda body: browse(body.get("path")),
+                  "/api/browse": lambda body: app.browse(body.get("path")),
                   "/api/pick": lambda body: pick(body.get("path"), body.get("what") == "file"),
                   "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
                   "/api/build": app.build, "/api/install": app.install,

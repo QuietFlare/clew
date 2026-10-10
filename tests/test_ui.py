@@ -236,6 +236,19 @@ class TestAddRecord(Served):
         except urllib.error.HTTPError as bad:
             return bad.code, json.loads(bad.read())
 
+    def test_the_path_of_an_archive_on_this_machine_opens_it(self):
+        import io
+        import zipfile
+        where = Path(self.tmp.name) / "store.zip"
+        with zipfile.ZipFile(where, "w") as z:
+            for p in RUNS.rglob("*"):
+                if p.is_file():
+                    z.write(p, f"demo/{p.relative_to(RUNS)}")
+        status, found = self.call("/api/browse", {"path": str(where)})
+        self.assertEqual(status, 200, found)
+        self.assertEqual(found["engine"], "horus")
+        self.assertEqual(found["path"], str(Path(self.tmp.name).resolve() / "records" / "demo"))
+
     def test_a_tar_gz_of_a_store_unpacks_and_opens(self):
         files = [(f"demo/{p.relative_to(RUNS)}", p.read_bytes()) for p in RUNS.rglob("*") if p.is_file()]
         status, got = self.archive(files, "record.tar.gz")

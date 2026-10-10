@@ -339,6 +339,7 @@ async function open(path) {
   } catch (bad) { $("found").textContent = bad.message; return; }
   $("path").value = here.path;
   $("up").disabled = !here.parent;
+  if (here.notes && here.notes.length) $("found").textContent = here.notes.join(" ");
   $("folders").replaceChildren(...here.folders.map((name) => {
     const button = el("button", name);
     button.addEventListener("click", () => open(here.path + (here.path.endsWith("/") ? "" : "/") + name));
@@ -353,7 +354,8 @@ async function open(path) {
   run.disabled = here.runs.length === 0;
   const wanted = $("engine").value;
   if (here.engine) {
-    $("found").textContent = here.engine + " record, " + here.runs.length + " run" + (here.runs.length === 1 ? "" : "s") +
+    $("found").textContent = ($("found").textContent && here.notes && here.notes.length ? $("found").textContent + " " : "") +
+      here.engine + " record, " + here.runs.length + " run" + (here.runs.length === 1 ? "" : "s") +
       (wanted && wanted !== here.engine ? ". You chose " + wanted + ", this folder is " + here.engine + "." : "");
     if (here.work_root && !$("work").value) $("work").value = here.work_root;
   } else {
