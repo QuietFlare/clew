@@ -7,6 +7,7 @@ what it reads from a folder, and that a step counts as done only when its
 file exists.
 """
 
+import io
 import json
 import sys
 import tempfile
@@ -216,6 +217,74 @@ class TestDrift(Served):
     def test_the_same_run_twice_and_an_unknown_run_are_refused(self):
         self.assertEqual(self.compare("second", "second")[0], 400)
         self.assertEqual(self.compare("nowhere", "second")[0], 400)
+
+    def test_a_reading_is_the_models_words_on_the_plan_shown_and_is_given_once(self):
+        """
+        The model sees the plan the page laid out, nothing else, and a
+        second click costs no second call. The verdicts are not touched.
+        """
+        from unittest import mock
+        plan = self.compare("first", "second")[1]
+        asked = []
+
+        def reads(kind, answer):
+            asked.append((kind, answer))
+            return {"text": "One task, ALIGN, drifted; its inputs and recipe match.", "model": "m"}
+        with mock.patch.object(ui.summary, "explain", reads):
+            status, reading = self.call("/api/explain", {"plan": plan["plan"]})
+            self.assertEqual((status, reading["model"]), (200, "m"))
+            self.assertIn("ALIGN", reading["text"])
+            self.assertEqual(self.call("/api/explain", {"plan": plan["plan"]})[1], reading)
+        self.assertEqual(len(asked), 1)
+        self.assertEqual(asked[0][0], "drift")
+        self.assertEqual(asked[0][1]["roots"], plan["roots"])
+        self.assertEqual(self.call("/api/explain", {"plan": "nothing"})[0], 404)
+
+    def test_no_credential_is_said_rather_than_tried(self):
+        import os
+        from unittest import mock
+        plan = self.compare("first", "second")[1]
+        with mock.patch.dict(os.environ, {}, clear=True):
+            status, found = self.call("/api/explain", {"plan": plan["plan"]})
+        self.assertEqual(status, 400)
+        self.assertIn("credential", found["error"])
+
+
+class TestSummary(unittest.TestCase):
+    """The model client: what it sends, and what it does with the answer."""
+
+    def test_the_request_carries_the_plan_the_rules_and_the_credential(self):
+        from unittest import mock
+        from clew.agent import summary
+        seen = {}
+
+        def opened(call, timeout):
+            seen["url"], seen["headers"] = call.full_url, dict(call.headers)
+            seen["body"] = json.loads(call.data)
+            return io.BytesIO(json.dumps({"model": "m-1", "content": [
+                {"type": "text", "text": "Two roots."}]}).encode())
+        env = {"ANTHROPIC_AUTH_TOKEN": "t", "ANTHROPIC_BASE_URL": "https://proxy.example/"}
+        with mock.patch.object(summary.urllib.request, "urlopen", opened):
+            reading = summary.explain("drift", {"roots": [{"task": "ALIGN"}]}, env=env)
+        self.assertEqual(reading, {"text": "Two roots.", "model": "m-1"})
+        self.assertEqual(seen["url"], "https://proxy.example/v1/messages")
+        self.assertEqual(seen["headers"]["Authorization"], "Bearer t")
+        self.assertEqual(seen["headers"]["User-agent"], "clew-lineage")
+        self.assertIn("ALIGN", seen["body"]["messages"][0]["content"])
+        self.assertIn("do not judge", seen["body"]["system"])
+
+    def test_a_refusal_names_the_models_error(self):
+        from unittest import mock
+        from urllib.error import HTTPError
+        from clew.agent import summary
+        body = io.BytesIO(json.dumps({"error": {"message": "allowance used up"}}).encode())
+
+        def opened(call, timeout):
+            raise HTTPError(call.full_url, 402, "no", {}, body)
+        with mock.patch.object(summary.urllib.request, "urlopen", opened), \
+                self.assertRaises(summary.Refused) as refused:
+            summary.explain("drift", {}, env={"ANTHROPIC_API_KEY": "k"})
+        self.assertIn("allowance used up", str(refused.exception))
 
 
 class TestForwarded(Served):

@@ -72,10 +72,10 @@ th { color: hsl(var(--steel)); font-weight: 500; }
 pre { margin: 0; font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 16rem; overflow: auto; }
 pre.code { max-height: 34rem; padding: .6rem .7rem; background: hsl(var(--muted)); border-radius: calc(var(--radius) - 2px);
            font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: .5rem 0; }
-#d-roots td:first-child { white-space: nowrap; }
-#d-roots td:nth-child(2) { min-width: 14rem; }
-#d-roots td:nth-child(3) { overflow-wrap: anywhere; }
 #d-roots { table-layout: fixed; }
+#d-roots td { overflow-wrap: anywhere; vertical-align: top; }
+#d-roots th:nth-child(1) { width: 30%; }
+#d-roots th:nth-child(2) { width: 36%; }
 td.pass { color: hsl(var(--ok)); }
 td.miss { color: hsl(var(--destructive)); font-weight: 600; }
 details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; }
@@ -205,6 +205,14 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
     </section>
     <section class="card" id="d-groups-card" hidden><h2>The rest, by cause</h2><div id="d-groups"></div></section>
     <section class="card" id="d-limits-card" hidden><details><summary>Limits of this answer</summary><ul id="d-limits" style="margin:.5rem 0 0;padding-left:1.2rem;font-size:.88rem"></ul></details></section>
+    <section class="card" id="d-explain-card" hidden>
+      <h2>In words</h2>
+      <p class="note" style="margin-top:0">A model reads the plan above and says what it reports. It sees the plan, never the data, and it gives no opinion on whether the difference matters. The verdicts are the record's; this is a reading of them.</p>
+      <p style="margin:.6rem 0 0"><button class="plain" id="d-explain">Explain in words</button></p>
+      <p id="d-reading" hidden style="margin:.8rem 0 0"></p>
+      <p class="note" id="d-reader" hidden></p>
+      <p class="error" id="d-explain-error" hidden></p>
+    </section>
   </div>
 </main>
 <main id="tab-reclaim" hidden><section class="card"><h2>Reclaim</h2><p>Not built yet. The command works: <code>clew reclaim</code>.</p></section></main>
@@ -400,7 +408,27 @@ function show_drift(d) {
   $("d-limits-card").hidden = limits.length === 0;
   $("d-limits").replaceChildren(...limits.map((line) => el("li", line)));
   $("d-result-card").hidden = false;
+  shown_plan = d.plan;
+  $("d-explain-card").hidden = false;
+  $("d-reading").hidden = $("d-reader").hidden = true;
+  $("d-explain").disabled = !can_explain;
+  fail(can_explain ? "" : "No model credential in this environment, so no reading can be given.", "d-explain-error");
 }
+
+let shown_plan = null, can_explain = false;
+
+$("d-explain").addEventListener("click", async () => {
+  fail("", "d-explain-error");
+  $("d-explain").disabled = true;
+  $("d-explain").textContent = "Reading…";
+  try {
+    const reading = await api("/api/explain", {plan: shown_plan});
+    $("d-reading").textContent = reading.text; $("d-reading").hidden = false;
+    $("d-reader").textContent = "Read by " + reading.model + ". The table above is what was computed."; $("d-reader").hidden = false;
+  } catch (bad) { fail(bad.message, "d-explain-error"); }
+  $("d-explain").textContent = "Explain in words";
+  $("d-explain").disabled = false;
+});
 
 $("d-go").addEventListener("click", async () => {
   fail("", "d-error");
@@ -767,6 +795,7 @@ for (const tab of document.querySelectorAll("nav button")) tab.addEventListener(
       el("span", !state.mainsheet ? "Agent: Mainsheet not installed" : state.proxy ? "Agent: via " + state.proxy : state.api_key ? "Agent: ready" : "Agent: stored login, no API key",
          "badge" + (!state.mainsheet ? " bad" : state.api_key ? " ok" : "")));
     listed(state);
+    can_explain = state.api_key;
     $("b-who").textContent = "An agent on " + state.builder.model + " writes it in a sandbox. A few minutes.";
     ready = state.mainsheet;
     if (!ready) {

@@ -23,6 +23,7 @@ incident needs Mainsheet in the same environment.
 import argparse
 import email.parser
 import email.policy
+import hashlib
 import hmac
 import importlib.util
 import io
@@ -44,7 +45,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlparse
 
-from clew.agent import tools
+from clew.agent import summary, tools
 from clew.builder import adapter as builder
 from clew.builder import build
 from clew.builder import extractor as extractor_builder
@@ -63,6 +64,7 @@ MOST_LOG = 400
 MOST_RUNS = 200
 MOST_ITEMS = 15
 MOST_ROOTS = 60
+MOST_PLANS = 50        # plans kept for the explain button, newest win
 MOST_SHEET = 5 << 20
 MOST_NOTES = 2000
 MOST_CODE = 100000
@@ -490,6 +492,10 @@ class App:
         self.providers = local_folder()
         self.jobs = {}
         self.lock = threading.Lock()
+        # Plans the page laid out, by hash, so the explain button can name
+        # one; and the model's reading of each, so a second click is free.
+        self.plans = {}
+        self.readings = {}
 
     def add_record(self, files):
         """Files uploaded from a person's own machine, [(path as uploaded, bytes)], written under
@@ -600,7 +606,29 @@ class App:
             if code != 0:
                 lines = err.strip().splitlines()
                 raise Refused(lines[-1] if lines else f"clew drift exited {code}")
-            return drift_answer(json.loads(out.read_text()))
+            return self.keep("drift", drift_answer(json.loads(out.read_text())))
+
+    def keep(self, kind, answer):
+        """The answer with a `plan` id the explain button can send back."""
+        key = hashlib.sha256(json.dumps(answer, sort_keys=True).encode()).hexdigest()[:16]
+        with self.lock:
+            self.plans[key] = (kind, answer)
+            for old in list(self.plans)[:-MOST_PLANS]:
+                del self.plans[old]
+        return dict(answer, plan=key)
+
+    def explain(self, body):
+        """A model's reading of a plan the page showed, in words. Cached per plan."""
+        key = body.get("plan") or ""
+        if key not in self.plans:
+            raise Refused("that plan is no longer here; run it again", 404)
+        if key not in self.readings:
+            kind, answer = self.plans[key]
+            try:
+                self.readings[key] = summary.explain(kind, answer)
+            except summary.Refused as bad:
+                raise Refused(str(bad))
+        return self.readings[key]
 
     def new_job(self, kind=INCIDENT):
         """A job and its folder. One at a time, of either kind."""
@@ -903,7 +931,8 @@ class Handler(BaseHTTPRequestHandler):
                   "/api/pick": lambda body: pick(body.get("path"), body.get("what") == "file"),
                   "/api/run": app.start, "/api/job": app.job, "/api/decide": app.decide,
                   "/api/build": app.build, "/api/install": app.install,
-                  "/api/judge": app.judge, "/api/drift": app.drift}
+                  "/api/judge": app.judge, "/api/drift": app.drift,
+                  "/api/explain": app.explain}
         route = routes.get(self.path)
         if not route:
             return self.send(404, {"error": "not found"})
