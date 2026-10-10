@@ -107,6 +107,8 @@ details summary { cursor: pointer; color: hsl(var(--steel)); font-size: .85rem; 
             <button class="plain" id="pick">Browse</button>
             <button class="plain" id="open">Open</button>
             <button class="plain" id="up" title="Parent folder">Up</button>
+            <button class="plain" id="add-record" title="Upload a launch folder or a .lineage folder from your machine">Add a record</button>
+            <input type="file" id="record-files" webkitdirectory multiple hidden>
           </div>
           <div id="folders"></div>
         </div>
@@ -609,6 +611,37 @@ $("pick").addEventListener("click", async () => {
   $("pick").disabled = false;
 });
 $("path").addEventListener("keydown", (event) => { if (event.key === "Enter") open($("path").value); });
+
+// A folder from the person's own machine, through the browser's folder chooser. Only the
+// record travels: the .lineage tree when there is one, otherwise everything but the bulk.
+const BULK = /^(work|results[^/]*|logs|\.nextflow|\.snakemake|cromwell-executions|__pycache__)$/;
+$("add-record").addEventListener("click", () => $("record-files").click());
+$("record-files").addEventListener("change", async () => {
+  const all = [...$("record-files").files];
+  const segments = (f) => f.webkitRelativePath.split("/");
+  let keep = all.filter((f) => segments(f).includes(".lineage"));
+  if (!keep.length) keep = all.filter((f) => !segments(f).some((s) => BULK.test(s)));
+  keep = keep.filter((f) => !/^(\._|\.DS_Store)/.test(f.name));
+  const bytes = keep.reduce((n, f) => n + f.size, 0);
+  const mb = Math.round(bytes / 1048576);
+  if (!keep.length) { $("found").textContent = "Nothing in that folder looks like a record."; return; }
+  if (bytes > 512 * 1048576) {
+    $("found").textContent = "That is " + mb + " MB. Pick the .lineage folder itself, or a folder without work/ and results/.";
+    return;
+  }
+  const form = new FormData();
+  keep.forEach((f) => form.append("file", f, f.webkitRelativePath));
+  $("found").textContent = "Uploading " + keep.length + " files, " + mb + " MB";
+  $("add-record").disabled = true;
+  try {
+    const reply = await fetch("/api/upload", {method: "POST", body: form, headers: {"X-Clew-Token": token}});
+    const data = await reply.json().catch(() => ({error: "the server sent no answer"}));
+    if (!reply.ok) throw new Error(data.error || ("error " + reply.status));
+    await open(data.path);
+  } catch (bad) { $("found").textContent = bad.message; }
+  $("add-record").disabled = false;
+  $("record-files").value = "";
+});
 $("up").addEventListener("click", () => here && here.parent && open(here.parent));
 $("run-change").addEventListener("click", () => { picking = $("picker").hidden; ready_to_run(); });
 $("incident").addEventListener("input", ready_to_run);

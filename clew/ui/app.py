@@ -21,10 +21,13 @@ incident needs Mainsheet in the same environment.
 """
 
 import argparse
+import email.parser
+import email.policy
 import hmac
 import importlib.util
 import json
 import os
+import re
 import secrets
 import shlex
 import shutil
@@ -34,7 +37,7 @@ import threading
 import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from clew.agent import tools
 from clew.builder import adapter as builder
@@ -49,6 +52,7 @@ from clew.ui.page import PAGE
 INCIDENT = "incident"
 MOST_INCIDENT = 20000
 MOST_BODY = 1 << 20
+MOST_UPLOAD = 512 << 20  # a record uploaded through the page
 MOST_LOG = 400
 MOST_RUNS = 200
 MOST_ITEMS = 15
@@ -117,6 +121,25 @@ def browse(path):
 # such a folder gets the offer to have an extractor written for it.
 LAUNCH_SIGNS = ("work", ".nextflow", "nextflow.config", "main.nf", ".snakemake", "Snakefile",
                 "cromwell-executions", "cromwell-workflow-logs", "results", "logs")
+
+def record_layout(names):
+    """
+    Where the files of an uploaded folder land: (record name, uploaded path -> path under it).
+    A launch folder keeps its name and loses one level; a bare `.lineage` picked on its own
+    gets a dated name and stays `.lineage` inside it, where the extractor looks.
+    """
+    paths = [PurePosixPath(n) for n in names]
+    for p in paths:
+        if p.is_absolute() or not p.parts or any(part in ("", ".", "..") for part in p.parts):
+            raise Refused(f"refusing the path {p}")
+    tops = {p.parts[0] for p in paths}
+    if len(tops) != 1:
+        raise Refused("pick one folder")
+    top = tops.pop()
+    if top.startswith("."):
+        return time.strftime("record-%Y%m%d-%H%M%S"), {str(p): str(p) for p in paths}
+    return top, {str(p): str(PurePosixPath(*p.parts[1:])) for p in paths if len(p.parts) > 1}
+
 
 PROMPT = "Pick the folder your workflow was launched from"
 PROMPT_FILE = "Pick the sheet the workflow was launched from"
@@ -383,6 +406,24 @@ class App:
         self.providers = local_folder()
         self.jobs = {}
         self.lock = threading.Lock()
+
+    def add_record(self, files):
+        """Files uploaded from a person's own machine, [(path as uploaded, bytes)], written under
+        records/ in Clew's home so the page can open them like any folder here."""
+        name, placed = record_layout([name for name, _ in files])
+        root = self.home / "records" / re.sub(r"[^A-Za-z0-9._-]", "_", name)
+        if root.exists():
+            raise Refused(f"{root} is already here; open it from the list, or remove it first")
+        written = 0
+        for uploaded, data in files:
+            under = placed.get(uploaded)
+            if not under:
+                continue
+            dest = root / under
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+            written += 1
+        return {"path": str(root), "files": written}
 
     def state(self):
         return {"mainsheet": importlib.util.find_spec("mainsheet") is not None,
@@ -711,6 +752,8 @@ class Handler(BaseHTTPRequestHandler):
         given = self.headers.get("X-Clew-Token") or ""
         if not self.local() or not hmac.compare_digest(given, app.token):
             return self.send(403, {"error": "open the link the terminal printed"})
+        if self.path == "/api/upload":
+            return self.upload(app)
         routes = {"/api/state": lambda body: app.state(),
                   "/api/browse": lambda body: browse(body.get("path")),
                   "/api/pick": lambda body: pick(body.get("path"), body.get("what") == "file"),
@@ -732,6 +775,27 @@ class Handler(BaseHTTPRequestHandler):
             self.send(bad.status, {"error": str(bad)})
         except ValueError:
             self.send(400, {"error": "the request is not JSON"})
+
+
+    def upload(self, app):
+        """A folder sent by the browser as multipart/form-data, one part per file, its relative
+        path as the filename. Parsed with the email package: it is the same wire format."""
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length > MOST_UPLOAD:
+                raise Refused(f"the upload is over {MOST_UPLOAD >> 20} MB; pick the .lineage folder itself", 413)
+            kind = self.headers.get("Content-Type") or ""
+            if not kind.startswith("multipart/form-data"):
+                raise Refused("the upload must be multipart/form-data")
+            head = f"Content-Type: {kind}\r\nMIME-Version: 1.0\r\n\r\n".encode()
+            message = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(head + self.rfile.read(length))
+            files = [(part.get_filename(), part.get_payload(decode=True) or b"")
+                     for part in message.iter_parts() if part.get_filename()]
+            if not files:
+                raise Refused("nothing was uploaded")
+            self.send(200, app.add_record(files))
+        except Refused as bad:
+            self.send(bad.status, {"error": str(bad)})
 
 
 def forwarded_host(port, env=os.environ):

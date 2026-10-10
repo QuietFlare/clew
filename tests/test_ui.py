@@ -161,6 +161,62 @@ class TestForwarded(Served):
         self.assertIn("CODESPACE_NAME", str(refused.exception))
 
 
+def multipart(files, boundary="clew-test"):
+    body = b""
+    for name, data in files:
+        body += (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{name}"\r\n'
+                 f"Content-Type: application/octet-stream\r\n\r\n").encode() + data + b"\r\n"
+    return body + f"--{boundary}--\r\n".encode(), f"multipart/form-data; boundary={boundary}"
+
+
+class TestAddRecord(Served):
+    def upload(self, files, token="t0ken"):
+        body, kind = multipart(files)
+        request = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/upload", method="POST", data=body,
+                                         headers={"X-Clew-Token": token, "Content-Type": kind})
+        try:
+            with urllib.request.urlopen(request, timeout=10) as reply:
+                return reply.status, json.loads(reply.read())
+        except urllib.error.HTTPError as bad:
+            return bad.code, json.loads(bad.read())
+
+    def test_a_launch_folder_keeps_its_name_and_only_its_record_is_written(self):
+        status, got = self.upload([("Petri/.lineage/.history/abc", b"2026-01-01\tr\ts\tlid://abc"),
+                                   ("Petri/.lineage/abc/.data.json", b"{}"),
+                                   ("Petri/petri.config", b"lineage.enabled = true")])
+        self.assertEqual(status, 200, got)
+        root = Path(got["path"])
+        self.assertEqual(root, Path(self.tmp.name).resolve() / "records" / "Petri")
+        self.assertEqual((root / ".lineage" / ".history" / "abc").read_bytes(), b"2026-01-01\tr\ts\tlid://abc")
+        self.assertEqual(got["files"], 3)
+
+    def test_a_bare_lineage_folder_gets_a_dated_name_and_stays_lineage(self):
+        status, got = self.upload([(".lineage/.history/abc", b"x"), (".lineage/abc/.data.json", b"{}")])
+        self.assertEqual(status, 200, got)
+        root = Path(got["path"])
+        self.assertTrue(root.name.startswith("record-"), root)
+        self.assertTrue((root / ".lineage" / ".history" / "abc").is_file())
+
+    def test_paths_that_climb_out_are_refused(self):
+        status, got = self.upload([("Petri/../../etc/passwd", b"no")])
+        self.assertEqual(status, 400)
+        self.assertIn("refusing", got["error"])
+        self.assertFalse((Path(self.tmp.name) / "records").exists())
+
+    def test_the_token_guards_uploads_too(self):
+        status, _ = self.upload([("Petri/.lineage/x", b"x")], token="wrong")
+        self.assertEqual(status, 403)
+
+    def test_an_uploaded_store_opens_like_any_folder(self):
+        files = [(f"demo/{p.relative_to(RUNS)}", p.read_bytes()) for p in RUNS.rglob("*") if p.is_file()]
+        status, got = self.upload(files)
+        self.assertEqual(status, 200, got)
+        status, found = self.call("/api/browse", {"path": got["path"]})
+        self.assertEqual(status, 200)
+        self.assertTrue(found["engine"], found)
+        self.assertTrue(found["runs"])
+
+
 class TestFolders(Served):
     def test_a_plain_folder_lists_its_subfolders_and_no_runs(self):
         (Path(self.tmp.name) / "alpha").mkdir()
