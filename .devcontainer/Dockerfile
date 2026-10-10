@@ -45,6 +45,8 @@ RUN mkdir -p /opt/clew && tar -xzf /tmp/demo-runs.tgz -C /opt/clew && rm /tmp/de
 RUN pip install --no-cache-dir "mainsheet>=0.1"
 
 USER vscode
+WORKDIR /home/vscode
 # Nextflow fetches its framework and plugins on first use. Do that now, as
 # the user who will run it, and fail the build if it did not land in NXF_HOME.
+# It also writes a scratch file in the working folder, hence the WORKDIR.
 RUN nextflow info && ls /opt/nextflow/framework/${NXF_VER}/*.jar
