@@ -137,7 +137,10 @@ def unpack_archive(data, filename):
 
     def take(path, size, read):
         nonlocal total
-        path = path.replace("\\", "/").lstrip("./")
+        path = path.replace("\\", "/")
+        while path.startswith("./"):
+            path = path[2:]
+        path = path.lstrip("/")
         parts = PurePosixPath(path).parts
         if not parts or PurePosixPath(path).is_absolute() or ".." in parts:
             raise Refused(f"refusing the path {path} inside the archive")

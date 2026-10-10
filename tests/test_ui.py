@@ -266,6 +266,14 @@ class TestAddRecord(Served):
         self.assertFalse((root / ".DS_Store").exists())
         self.assertFalse((Path(self.tmp.name) / "records" / "__MACOSX").exists())
 
+    def test_a_zip_of_lineage_itself_keeps_its_dot(self):
+        status, got = self.archive([(".lineage/.history/abc", b"x"), ("./.lineage/abc/.data.json", b"{}")], "lineage.zip")
+        self.assertEqual(status, 200, got)
+        root = Path(got["path"])
+        self.assertTrue(root.name.startswith("record-"), root)
+        self.assertTrue((root / ".lineage" / ".history" / "abc").is_file())
+        self.assertFalse((root / "lineage").exists())
+
     def test_an_archive_that_climbs_out_is_refused(self):
         status, got = self.archive([("demo/../../escape", b"no")], "bad.tgz")
         self.assertEqual(status, 400)
