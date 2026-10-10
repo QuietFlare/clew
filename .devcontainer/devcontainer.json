@@ -1,6 +1,7 @@
 {
   "name": "Clew",
   "image": "ghcr.io/quietflare/clew-devcontainer:latest",
+  "remoteUser": "vscode",
   "containerEnv": {
     "NXF_VER": "26.09.2-edge",
     "NXF_CACHE_MODE": "DEEP"
