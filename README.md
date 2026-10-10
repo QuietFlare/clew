@@ -24,20 +24,28 @@ A clew is the ball of thread Ariadne gave Theseus. You follow it back out.
 
 ## Try it in five minutes
 
+**In a Codespace.** Clew, Nextflow and two recorded nf-core/demo runs are
+installed when it opens. Type:
+
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/QuietFlare/clew)
 
-Two recorded nf-core/demo runs are already in the Codespace. On your own
-machine:
+```bash
+clew extract nextflow --store examples/demo-run/.lineage --list-runs
+```
+
+Then follow [docs/try.md](docs/try.md): impact, drift and reclaim on those
+two runs, and the page.
+
+**On your own machine.** Python 3.9 or later, no dependencies:
 
 ```bash
 pip install clew-lineage
 clew demo
 ```
 
-`clew demo` answers three questions over a real nf-core/sarek run of 81
-tasks that ships with the package. [Try it](docs/try.md) then walks the
-two recorded runs through impact, drift, reclaim and the page. Python 3.9
-or later, no dependencies.
+`clew demo` answers three questions over an nf-core/sarek run of 81 tasks
+that ships with the package. To go further, fetch the same two runs the
+Codespace has, as [docs/try.md](docs/try.md) shows at the top.
 
 ## The flow
 
