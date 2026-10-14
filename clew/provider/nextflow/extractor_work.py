@@ -242,7 +242,7 @@ class NextflowWork(Extractor):
     description = "a Nextflow work/ tree, from its symlinks, any engine version"
 
     def add_arguments(self, parser):
-        parser.add_argument("--jsonl", required=True, help="Petri weblog JSONL for one run")
+        parser.add_argument("--jsonl", required=True, help="Nextflow weblog JSONL for one run")
         parser.add_argument("--work", required=True, help="Nextflow work/ directory")
         parser.add_argument("--allow-partial", action="store_true",
                             help="write the graph even when some tasks' work "

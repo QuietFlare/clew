@@ -6,14 +6,43 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-14
+
 ### Added
 
+- Two ways to try Clew with nothing installed. A Codespace opens with
+  Nextflow, Docker and two recorded nf-core/demo runs already in the
+  image, and `docker run -p 8770:8770 ghcr.io/quietflare/clew` serves the
+  page with the same runs. [docs/try.md](docs/try.md) walks through both.
+  In a Codespace, triage and the agent go through a proxy QuietFlare runs
+  unless you set your own keys.
+- Drift and Reclaim tabs on the page. Drift compares two runs of the
+  picked record, roots with their causes and the rest by cause. Reclaim
+  weighs the run's work directories from the record and the disk, with
+  the proof and the causes that withheld the rest, and deletes nothing.
+  "Explain in words" has a model read the plan on the page and say what
+  it reports, never whether it matters.
+- Browse on the page uploads a run from your own machine: a launch
+  folder, a `.lineage` folder, or a zip or tgz of either, in every
+  browser.
 - The Nextflow lineage extractor reads the copies `publishDir` made, with
   their checksums, into the graph's published files. On a store recorded
   with `NXF_CACHE_MODE=DEEP`, `clew reclaim` proves a work directory
   redundant from the record alone, with no `clew digest` pass.
+- Each command ends with the next one: `--list-runs` with extract,
+  extract with impact, impact with seal, seal with verify.
+- The agreed design lives in `spec/`: a module diagram, the rules and a
+  module map, reviewed on every pull request.
+
+### Changed
+
+- `clew demo` is gone. The recorded runs and `docs/try.md` replace it.
 
 ### Fixed
+
+- A `.history` entry Nextflow did not write, such as a macOS `._*` file
+  left by a tarball, is skipped with a warning instead of crashing the
+  extractor.
 
 - A content-mode checksum label in a Nextflow lineage store is believed
   only when the run record names Nextflow 26.09.0-edge or later. Earlier
@@ -421,7 +450,8 @@ First release on PyPI as `clew-lineage`.
 - A CI gate that fails closed on unknown subjects.
 - A self-contained dashboard and a read-only MCP server for auditors.
 
-[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/QuietFlare/clew/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/QuietFlare/clew/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/QuietFlare/clew/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/QuietFlare/clew/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/QuietFlare/clew/compare/v0.4.0...v0.5.0

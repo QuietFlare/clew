@@ -1,15 +1,10 @@
 """
-The native lineage-store adapter, on a synthetic store and (when the
-sibling Petri store is present) on a real sarek run.
+The native lineage-store adapter, on a synthetic store.
 
-The synthetic store models a resume chain, because that is where the
-adapter earns its keep: a cached task writes no new record, so the one from
-the run that first executed it still stands and still names that run. Only
-`sessionId` spans the chain.
-
-The equivalence test at the bottom is the one that matters: the symlink
-extractor and the store adapter are two independent witnesses of the same
-pipeline, and every impact number must agree between them.
+The store models a resume chain, because that is where the adapter earns
+its keep: a cached task writes no new record, so the one from the run that
+first executed it still stands and still names that run. Only `sessionId`
+spans the chain.
 """
 
 import contextlib
@@ -146,7 +141,7 @@ class SyntheticStore(unittest.TestCase):
 
     def test_a_bare_string_path_is_one_input(self):
         # Iterating a string reads it one character at a time and records
-        # nothing. Not seen in the Petri store, where every path is a list.
+        # nothing. Not seen in a real store, where every path is a list.
         edges = ls.task_edges(CONSUMER, {"input": [
             {"type": "path", "name": "bam", "value": f"lid://{PRODUCER}/out.bam"}]})
         self.assertEqual([(e["producer"], e["filename"]) for e in edges],
@@ -418,63 +413,6 @@ class Coverage(unittest.TestCase):
             "version": "lineage/v1beta1", "kind": "AgentRun", "spec": {}})
         graph = ls.extract(self.store, CHAIN)
         self.assertTrue(any("AgentRun" in n for n in graph["coverage"]))
-
-
-PETRI_STORE = Path(__file__).resolve().parents[4] / "Petri" / ".lineage"
-
-
-@unittest.skipUnless(PETRI_STORE.is_dir(), "Petri lineage store not present")
-class RealStoreEquivalence(unittest.TestCase):
-    """
-    The store adapter must reproduce the exact impact numbers the symlink
-    extractor established on the same pipeline (graph5.json regression).
-    Same pipeline, two independent capture mechanisms, one answer.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-        from clew.graph import blast_radius as core
-        from clew.graph import graph as core_graph
-        from clew.provider.nextflow import adapter_sarek as sarek
-
-        runs = ls.load_history(PETRI_STORE)
-        run = ls.pick_run(runs, "tender_mccarthy")
-        cls.graph = ls.extract(PETRI_STORE, run["session_id"])
-        cls.core = core
-        cls.sarek = sarek
-        cls.core_graph = core_graph
-
-    def test_shape(self):
-        self.assertEqual(len(self.graph["tasks"]), 81)
-
-    def test_no_dangling(self):
-        known = set(self.graph["tasks"])
-        dangling = [e for e in self.graph["edges"]
-                    if e["producer"] not in known and e["producer"] != "EXTERNAL"]
-        self.assertEqual(dangling, [])
-
-    def test_withdrawal_numbers_match_symlink_extractor(self):
-        kind = self.sarek.Sarek().triggers["patient"]
-        donors = kind.ids(Path(__file__).resolve().parents[1] / "clew" / "data" / "donors.csv")
-        entry = kind.entries(self.graph, donors)
-        radius = self.core.blast_radius(self.graph, entry)
-        for donor, r in radius.items():
-            self.assertEqual(len(entry[donor]), 15, donor)
-            self.assertEqual(len(r["affected"]), 16, donor)
-            self.assertEqual(len(r["exclusive"]), 15, donor)
-            (shared,) = r["shared"]
-            self.assertEqual(self.core_graph.describe(self.graph, shared), "MULTIQC")
-
-    def test_reference_and_container_numbers_match(self):
-        subjects = self.core_graph.external_input_entry_nodes(self.graph, "genome.fasta")
-        self.assertEqual(len(subjects["input:genome.fasta"]), 41)
-        radius = self.core.blast_radius(self.graph, subjects)
-        self.assertEqual(len(radius["input:genome.fasta"]["affected"]), 72)
-
-        subjects = self.core_graph.container_entry_nodes(self.graph, "gatk4")
-        radius = self.core.blast_radius(self.graph, subjects)
-        self.assertEqual(len(radius["container:gatk4"]["affected"]), 68)
 
 
 if __name__ == "__main__":

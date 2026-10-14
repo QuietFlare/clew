@@ -107,9 +107,6 @@ unless you point them at a database you own:
 CLEW_TEST_DSN=postgresql://user:pw@localhost:5432/clew python3 -m unittest discover -s tests
 ```
 
-Four more read the sibling Petri project's `.lineage` store and skip when
-it is not on disk.
-
 The log's arithmetic sits on the other side of that line on purpose.
 Hashing and chain verification are pure functions on plain dicts, so an
 auditor checking an exported bundle needs a JSON file and an interpreter,

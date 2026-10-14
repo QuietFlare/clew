@@ -525,17 +525,17 @@ class TestAddRecord(Served):
         self.assertFalse((Path(self.tmp.name) / "records" / "photos").exists())
 
     def test_a_launch_folder_keeps_its_name_and_only_its_record_is_written(self):
-        status, got = self.upload([("Petri/.lineage/.history/abc", b"2026-01-01\tr\ts\tlid://abc"),
-                                   ("Petri/.lineage/abc/.data.json", b"{}"),
-                                   ("Petri/petri.config", b"lineage.enabled = true")])
+        status, got = self.upload([("launch/.lineage/.history/abc", b"2026-01-01\tr\ts\tlid://abc"),
+                                   ("launch/.lineage/abc/.data.json", b"{}"),
+                                   ("launch/nextflow.config", b"lineage.enabled = true")])
         self.assertEqual(status, 200, got)
         root = Path(got["path"])
-        self.assertEqual(root, Path(self.tmp.name).resolve() / "records" / "Petri")
+        self.assertEqual(root, Path(self.tmp.name).resolve() / "records" / "launch")
         self.assertEqual((root / ".lineage" / ".history" / "abc").read_bytes(), b"2026-01-01\tr\ts\tlid://abc")
         self.assertEqual(got["files"], 3)
 
     def test_the_file_name_alone_still_places_a_file(self):
-        status, got = self.upload([("Petri/.lineage/.history/abc", b"x")], paths=False)
+        status, got = self.upload([("launch/.lineage/.history/abc", b"x")], paths=False)
         self.assertEqual(status, 200, got)
         self.assertTrue((Path(got["path"]) / ".lineage" / ".history" / "abc").is_file())
 
@@ -547,13 +547,13 @@ class TestAddRecord(Served):
         self.assertTrue((root / ".lineage" / ".history" / "abc").is_file())
 
     def test_paths_that_climb_out_are_refused(self):
-        status, got = self.upload([("Petri/../../etc/passwd", b"no")])
+        status, got = self.upload([("launch/../../etc/passwd", b"no")])
         self.assertEqual(status, 400)
         self.assertIn("refusing", got["error"])
         self.assertFalse((Path(self.tmp.name) / "records").exists())
 
     def test_the_token_guards_uploads_too(self):
-        status, _ = self.upload([("Petri/.lineage/x", b"x")], token="wrong")
+        status, _ = self.upload([("launch/.lineage/x", b"x")], token="wrong")
         self.assertEqual(status, 403)
 
     def test_an_uploaded_store_opens_like_any_folder(self):
