@@ -1,5 +1,5 @@
-"""from clew.provider.nextflow import NextflowAdapter"""
+"""from clew.provider.nextflow import NextflowAdapter, SheetKind"""
 
-from .adapter import NextflowAdapter
+from .adapter import NextflowAdapter, SheetKind
 
-__all__ = ["NextflowAdapter"]
+__all__ = ["NextflowAdapter", "SheetKind"]

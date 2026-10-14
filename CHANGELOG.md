@@ -40,6 +40,10 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `from clew.provider.nextflow import NextflowAdapter, SheetKind`, the
+  import the providers guide shows, now works; the package exported only
+  `NextflowAdapter`.
+
 - A `.history` entry Nextflow did not write, such as a macOS `._*` file
   left by a tarball, is skipped with a warning instead of crashing the
   extractor.
