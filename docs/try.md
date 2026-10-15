@@ -212,10 +212,16 @@ For a run that happened without the store, Clew reads the symlinks
 Nextflow leaves in `work`, on any Nextflow version. It needs the run's
 weblog, which the `nf-weblog` plugin posts as JSON events to a URL. The
 old `-with-weblog` flag is gone from Nextflow. Start a receiver in a
-second terminal; it appends each event to the file named:
+second terminal; it appends each event to the file named. The file
+appears with the run's first event, not before. The receiver is a
+script in this repository; with only the pip install, fetch it first:
 
 ```bash
-mkdir -p ~/worktrial && python examples/weblog_receiver.py ~/worktrial/weblog.jsonl
+curl -sL -o weblog_receiver.py https://raw.githubusercontent.com/QuietFlare/clew/main/examples/weblog_receiver.py
+```
+
+```bash
+mkdir -p ~/worktrial && python weblog_receiver.py ~/worktrial/weblog.jsonl
 ```
 
 In the first terminal, a config that turns the plugin on. A `plugins`
