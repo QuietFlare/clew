@@ -33,6 +33,14 @@ follow [Semantic Versioning](https://semver.org/).
   extract with impact, impact with seal, seal with verify.
 - The agreed design lives in `spec/`: a module diagram, the rules and a
   module map, reviewed on every pull request.
+- `examples/weblog_receiver.py` collects the events the `nf-weblog`
+  plugin posts into the JSONL file `clew extract nextflow-work` reads, so
+  a run made without the lineage store still gets a graph from its work
+  tree. [docs/try.md](docs/try.md) walks through it: receiver up, then
+  the run, then the extractor.
+- The plan table on the page shows each task's hash beside its process
+  and tag, so three rows of one process read apart, as they do in the
+  terminal.
 
 ### Changed
 
