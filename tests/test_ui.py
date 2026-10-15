@@ -31,7 +31,8 @@ RECORD = {"outcome": "ask", "choice": "shell", "confidence": 0.9, "trigger": "co
           "incident": {"sha256": "0" * 64, "text": "n"}}
 PLAN = {"trigger": "container:shell", "policy_version": "v1", "tasks_affected": 1,
         "tasks_total": 4, "actions": {"REGENERATE": 1},
-        "plan": [{"process": "analyse", "action": "REGENERATE", "rule": "R8"}]}
+        "plan": [{"task": "ab/123456", "process": "analyse", "name": "WF:ANALYSE (sample1)",
+                  "action": "REGENERATE", "rule": "R8"}]}
 
 
 def leaves(outcome="ask", plan=True, review=None):
@@ -603,6 +604,10 @@ class TestRun(Served):
         self.assertEqual(states, {"extract": "done", "triage": "done", "impact": "done",
                                   "evidence": "skipped", "act": "skipped"})
         self.assertEqual(job["plan"]["actions"], {"REGENERATE": 1})
+        # Each row carries the hash and the tag, so three rows of one process
+        # can be told apart on the page as in the terminal.
+        self.assertEqual(job["plan"]["items"], [{"task": "ab/123456", "process": "ANALYSE (sample1)",
+                                                 "action": "REGENERATE", "rule": "R8"}])
         self.assertEqual((job["turns"], job["cost"]), (12, 0.03))
         folder = Path(job["folder"])
         self.assertTrue((folder / "graph.json").is_file())

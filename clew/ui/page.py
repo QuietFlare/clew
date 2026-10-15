@@ -711,9 +711,10 @@ function show(job) {
   if (p) {
     pairs($("plan"), [["Trigger", p.trigger], ["Affected", p.tasks_affected + " of " + p.tasks_total + " tasks"],
       ["Verdicts", Object.entries(p.actions).map(([k, v]) => v + " " + k).join(", ")], ["Policy", p.policy]]);
-    const head = el("tr"); head.append(el("th", "Task"), el("th", "Verdict"), el("th", "Rule"));
+    const head = el("tr"); head.append(el("th", "Task"), el("th", "Process"), el("th", "Verdict"), el("th", "Rule"));
     $("items").replaceChildren(head, ...p.items.map((i) => {
-      const row = el("tr"); row.append(el("td", i.process), el("td", i.action), el("td", i.rule)); return row;
+      const row = el("tr");
+      row.append(el("td", i.task, "mono"), el("td", i.process), el("td", i.action), el("td", i.rule)); return row;
     }));
     $("more").textContent = p.more ? "and " + p.more + " more in plan.json" : "";
   }

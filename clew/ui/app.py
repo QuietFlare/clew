@@ -375,7 +375,11 @@ def status(job):
         answer["plan"] = {"trigger": plan["trigger"], "policy": plan["policy_version"],
                           "tasks_affected": plan["tasks_affected"],
                           "tasks_total": plan["tasks_total"], "actions": plan["actions"],
-                          "items": [{"process": item["process"],
+                          # The hash and the tag tell three rows of one process
+                          # apart, as the terminal does.
+                          "items": [{"task": item.get("task", ""),
+                                     "process": drift_label({"name": item.get("name") or item["process"],
+                                                             "task": item.get("task", "")}),
                                      "action": item["action"] or "UNDETERMINED",
                                      "rule": item["rule"] or ""}
                                     for item in plan["plan"][:MOST_ITEMS]],
