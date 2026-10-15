@@ -203,3 +203,51 @@ and the commands above with your paths. To see a run of yours on the page
 in a Codespace, zip its `.lineage` folder on your machine and Browse to
 the zip; it holds the record, which is small, and none of the data.
 [Sources](sources.md) says what each engine records and what that limits.
+
+## A run without lineage: the work tree
+
+For a run that happened without the store, Clew reads the symlinks
+Nextflow leaves in `work`, on any Nextflow version. It needs the run's
+weblog, which the `nf-weblog` plugin posts as JSON events to a URL. The
+old `-with-weblog` flag is gone from Nextflow. Start a receiver in a
+second terminal; it appends each event to the file named:
+
+```bash
+mkdir -p ~/worktrial && python examples/weblog_receiver.py ~/worktrial/weblog.jsonl
+```
+
+In the first terminal, a config that turns the plugin on. A `plugins`
+block in your config replaces the pipeline's own, so nf-core/demo's
+`nf-schema` has to be listed again or the run fails at its first
+function:
+
+```bash
+cat > ~/worktrial/weblog.config <<'EOF'
+plugins {
+    id 'nf-schema@2.7.2'
+    id 'nf-weblog'
+}
+weblog {
+    enabled = true
+    url = 'http://127.0.0.1:8765'
+}
+EOF
+```
+
+```bash
+cd ~/worktrial && nextflow run nf-core/demo -r 1.2.0 -profile test,docker -name symlinks --outdir results -c weblog.config
+```
+
+```bash
+clew extract nextflow-work --jsonl ~/worktrial/weblog.jsonl --work ~/worktrial/work
+```
+
+Eight tasks, six edges resolved to a task: the FastQC archives that
+MultiQC reads. Everything else is external: the raw reads, and the
+report files the workflow itself writes for MultiQC, which no task
+produced. Add `--json-out graph.json` and the commands above take
+`--graph graph.json` in place of `--runs` and `--run`. Do this before
+`nextflow clean`: it removes the symlinks, and a trail never captured
+cannot be rebuilt. The trail has one gap the store does not: a file a
+task passes on unchanged is staged from the original, so that hop is
+not on disk. [Sources](sources.md) has the rest.
