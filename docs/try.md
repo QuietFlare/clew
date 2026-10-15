@@ -246,15 +246,31 @@ EOF
 cd ~/worktrial && nextflow run nf-core/demo -r 1.2.0 -profile test,docker -name symlinks --outdir results -c weblog.config
 ```
 
+The order matters: receiver up, then the run, then the extractor. A run
+made before the receiver was up sent its events nowhere, and the work
+tree alone has no task list, so run it again under a new name.
+
 ```bash
-clew extract nextflow-work --jsonl ~/worktrial/weblog.jsonl --work ~/worktrial/work
+clew extract nextflow-work --jsonl ~/worktrial/weblog.jsonl --work ~/worktrial/work --json-out work-graph.json
 ```
 
 Eight tasks, six edges resolved to a task: the FastQC archives that
 MultiQC reads. Everything else is external: the raw reads, and the
 report files the workflow itself writes for MultiQC, which no task
-produced. Add `--json-out graph.json` and the commands above take
-`--graph graph.json` in place of `--runs` and `--run`. Do this before
+produced. Impact takes `--graph work-graph.json` in place of `--runs`
+and `--run`, with the same three triggers as above and the same
+answers. Reclaim needs content checksums, which the work tree does not
+carry, so hash once first:
+
+```bash
+clew digest --graph work-graph.json --work-root ~/worktrial/work --results ~/worktrial/results
+```
+
+```bash
+clew reclaim --graph work-graph.json --work-root ~/worktrial/work --results ~/worktrial/results
+```
+
+Drift needs two runs, so it stays with the store. Do all of this before
 `nextflow clean`: it removes the symlinks, and a trail never captured
 cannot be rebuilt. The trail has one gap the store does not: a file a
 task passes on unchanged is staged from the original, so that hop is
