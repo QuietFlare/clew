@@ -1,18 +1,96 @@
-# Try Clew on a recorded run
+# Try Clew on nf-core/demo
 
-Two runs of [nf-core/demo](https://github.com/nf-core/demo) 1.2.0 are in
-`examples/demo-run`: `baseline`, and `trimmed`, which is the same pipeline
-with five bases cut from the start of every read. Nextflow recorded both in
-a lineage store with content checksums, so every command below answers
-from the record and nothing has to be computed first.
+The walkthrough uses [nf-core/demo](https://github.com/nf-core/demo) 1.2.0
+on its test profile. First set Nextflow up to record lineage, then record
+two runs, then ask Clew about them one command at a time. Every answer
+comes from the record; nothing is computed first.
 
-In a Codespace the runs are already there. Anywhere else, fetch them once:
+In a Codespace steps 1 and 2 are done: the environment is set and both
+runs are in `examples/demo-run`. Read them to see what was set, then go
+on to step 3.
+
+## 1. Set Nextflow up for lineage
+
+Three settings make a store that Clew can read in full. Docker is needed
+too, since the test profile runs in containers.
+
+Nextflow 26.09.0-edge or later. Earlier versions label their checksums as
+content checksums but compute them in standard mode, and Clew says so when
+it reads such a store.
+
+```bash
+export NXF_VER=26.09.2-edge
+```
+
+`NXF_CACHE_MODE=DEEP` in the environment before Nextflow starts. This is
+what makes the recorded checksums content hashes rather than path and
+time. No config setting replaces it.
+
+```bash
+export NXF_CACHE_MODE=DEEP
+```
+
+Lineage enabled in the config of the folder you run from. The runs below
+go in `examples/demo-run`, which is where every later command looks.
+
+```bash
+mkdir -p examples/demo-run && cd examples/demo-run
+```
+
+```bash
+cat > nextflow.config <<'EOF'
+lineage.enabled = true
+EOF
+```
+
+Check all three before running anything:
+
+```bash
+nextflow -version && echo $NXF_CACHE_MODE && cat nextflow.config
+```
+
+## 2. Record two runs
+
+The first run is the pipeline as shipped. It pulls the containers, so it
+takes longer than the second.
+
+```bash
+nextflow run nf-core/demo -r 1.2.0 -profile test,docker -name baseline --outdir results-baseline
+```
+
+The second cuts five bases from the start of every read and changes
+nothing else:
+
+```bash
+cat > trim.config <<'EOF'
+process { withName: 'SEQTK_TRIM' { ext.args = '-b 5' } }
+EOF
+```
+
+```bash
+nextflow run nf-core/demo -r 1.2.0 -profile test,docker -name trimmed --outdir results-trimmed -c trim.config
+```
+
+Both runs are now in `.lineage` beside `work` and the two results
+folders. Go back to the checkout root, where the rest of the page runs:
+
+```bash
+cd ../..
+```
+
+In a Codespace, both runs are already recorded in this folder. Do not
+record them again there: a second run with the same name makes `--run`
+ambiguous. To record them yourself, use a fresh folder and your own paths
+from then on.
+
+Anywhere else, if you would rather not run Nextflow, fetch the two runs
+recorded on CI instead:
 
 ```bash
 curl -sL https://github.com/QuietFlare/clew/releases/download/v0.6.1/clew-demo-runs.tgz | tar -xz -C examples
 ```
 
-## See what was recorded
+## 3. See what was recorded
 
 ```bash
 clew extract nextflow --store examples/demo-run/.lineage --list-runs
@@ -21,7 +99,7 @@ clew extract nextflow --store examples/demo-run/.lineage --list-runs
 Two runs, each with a timestamp and a hash. Every other command names the
 store with `--runs` and a run with `--run`.
 
-## Impact: a container is bad, what did it reach
+## 4. Impact: a container is bad, what did it reach
 
 Say the seqtk container turns out to have a defect.
 
@@ -49,7 +127,7 @@ Verify recomputes every verdict from the inputs in the bundle, with no
 database and no credentials. Hand the folder to someone else and they can
 do the same.
 
-## Drift: two runs differ, where did it start
+## 5. Drift: two runs differ, where did it start
 
 ```bash
 clew drift --runs examples/demo-run/.lineage --before baseline --after trimmed
@@ -77,7 +155,7 @@ pipeline writes those for the report, and they carry the run's name and
 command line, which differed. That cause was read from the record too.
 Four roots in all: three SEQTK_TRIM and one MULTIQC.
 
-## Reclaim: which work directories can go, with proof
+## 6. Reclaim: which work directories can go, with proof
 
 ```bash
 clew reclaim --runs examples/demo-run/.lineage --run baseline \
@@ -90,7 +168,7 @@ reading the files. Four are KEEP, with the reason. Nothing is deleted.
 `--apply --receipt receipt.jsonl` would delete the four and write one line
 per directory before removing it.
 
-## The page
+## 7. The page
 
 ```bash
 clew ui
@@ -119,18 +197,9 @@ more or set your own key.
 
 ## Bring your own run
 
-The Codespace ships Nextflow 26.09.2-edge with `NXF_CACHE_MODE=DEEP` set,
-which is what makes the store carry content checksums; Nextflow before
-26.09.0-edge labels its checksums with that mode but computes them in
-standard mode, and Clew says so when it reads such a store. Add lineage
-to your config and run as usual:
-
-```groovy
-lineage.enabled = true
-```
-
-Then `clew extract nextflow --store .lineage --list-runs` and the commands
-above with your paths. To see a run of yours on the page in a Codespace,
-zip its `.lineage` folder on your machine and Browse to the zip; it holds
-the record, which is small, and none of the data. [Sources](sources.md) says what each engine
-records and what that limits.
+The three settings from step 1 in your own folder, then your pipeline as
+usual. After that, `clew extract nextflow --store .lineage --list-runs`
+and the commands above with your paths. To see a run of yours on the page
+in a Codespace, zip its `.lineage` folder on your machine and Browse to
+the zip; it holds the record, which is small, and none of the data.
+[Sources](sources.md) says what each engine records and what that limits.
